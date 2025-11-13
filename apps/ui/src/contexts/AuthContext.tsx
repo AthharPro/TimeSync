@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { getCurrentUser, logout as logoutAPI } from '../api/auth';
 
 // Define types locally

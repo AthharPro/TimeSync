@@ -8,7 +8,7 @@ const SearchBar = ({searchBy}:{searchBy?:string}) => {
   searchBy=searchBy===undefined ? "" : searchBy;
     const dispatch = useDispatch();
     const searchText = useSelector(
-        (state: any) => state.searchBar.searchText
+        (state: { searchBar: { searchText: string } }) => state.searchBar.searchText
       );
   return (
     <BaseTextField

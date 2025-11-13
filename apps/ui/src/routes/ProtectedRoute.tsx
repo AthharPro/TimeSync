@@ -11,7 +11,7 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
   allowedRoles = []
 }) => {
   const { authState, checkAuth } = useAuth();
-  const { user, isLoading } = authState;
+  const { user } = authState;
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
 
@@ -23,7 +23,7 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
         setIsCheckingAuth(true);
         try {
           await checkAuth();
-        } catch (error) {
+        } catch {
           // Auth check failed, user will be redirected to login
         } finally {
           setHasCheckedAuth(true);
@@ -64,7 +64,7 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
       return <Navigate to={redirectPath} replace />;
     }
   }
-  return <>{children}</>;
+  return children;
 };
 
 export default ProtectedRoute;
