@@ -1,7 +1,31 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getCurrentUser, logout as logoutAPI } from '../api/auth';
-import { IUser, AuthState, AuthContextType, AuthProviderProps } from '../interfaces';
 
+// Define types locally
+export interface IUser {
+  _id: string;
+  email: string;
+  role: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface AuthState {
+  user: IUser | null;
+  isLoading: boolean;
+}
+
+export interface AuthContextType {
+  authState: AuthState;
+  login: (user: IUser) => void;
+  logout: () => Promise<void>;
+  updateUser: (updates: Partial<IUser>) => void;
+  checkAuth: () => Promise<void>;
+}
+
+export interface AuthProviderProps {
+  children: ReactNode;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -63,7 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (authState.user) {
       const updatedUser = { ...authState.user, ...updates };
       
-      setAuthState(prev => ({
+      setAuthState((prev: AuthState) => ({
         ...prev,
         user: updatedUser,
       }));
@@ -71,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const checkAuth = async () => {
-    setAuthState(prev => ({
+    setAuthState((prev: AuthState) => ({
       ...prev,
       isLoading: true,
     }));
