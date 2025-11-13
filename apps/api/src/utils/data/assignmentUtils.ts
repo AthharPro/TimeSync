@@ -58,7 +58,7 @@ export const getSupervisedUserIds = async (supervisorId: string): Promise<string
 
   return Array.from(
     new Set([...projectSupervisedUserIds, ...teamSupervisedUserIds])
-  );
+  ) as string[];
 };
 
 export const updateUserTeamMemberships = async (

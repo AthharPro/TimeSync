@@ -33,9 +33,9 @@ export const loginUser = async ({
 
   const userId = user._id;
 
-
+  // Create session info without actual session for now
   const sessionInfo = {
-    sessionId: session._id,
+    sessionId: userId, // Using userId as sessionId temporarily
   };
 
   const refreshToken = signToken(sessionInfo, refreshTokenSignOptions);
