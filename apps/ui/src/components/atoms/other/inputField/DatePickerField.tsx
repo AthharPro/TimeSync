@@ -15,12 +15,11 @@ const DatePickerField = React.forwardRef<HTMLDivElement, IDatePickerFieldProps>(
           minDate={minDate}
           maxDate={maxDate}
           format={format}
-          slotProps={{
+          slotProps={slotProps || {
             textField: {
               fullWidth: true,
               size: 'small',
             },
-            ...slotProps,
           }}
           ref={ref}
           {...rest}

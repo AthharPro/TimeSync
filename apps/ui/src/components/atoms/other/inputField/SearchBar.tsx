@@ -2,7 +2,7 @@ import BaseTextField from './BaseTextField';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import InputAdornment from '@mui/material/InputAdornment';
 import { useDispatch, useSelector } from 'react-redux';
-import {search_txt} from '../../../../store/slices/SearchBarSlice';
+import React from 'react';
 
 const SearchBar = ({searchBy}:{searchBy?:string}) => {
   searchBy=searchBy===undefined ? "" : searchBy;
@@ -23,8 +23,9 @@ const SearchBar = ({searchBy}:{searchBy?:string}) => {
       }}
         placeholder={`Search by ${searchBy}`}
         value={searchText}
-        onChange={(e) => {dispatch(search_txt(e.target.value))}}
-
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+          dispatch({ type: 'searchBar/search_txt', payload: e.target.value });
+        }}
     />
   );
 };
