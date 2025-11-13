@@ -1,7 +1,5 @@
 import { Router } from "express";
 import { loginHandler, logoutHandler } from "../controllers/auth.controller";
-import authenticate from "../middleware/authenticate";
-import { UserRole } from "@tms/shared";
 
 const authRoutes=Router();
 

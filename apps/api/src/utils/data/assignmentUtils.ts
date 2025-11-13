@@ -32,7 +32,7 @@ export const isEmployeeAssignedToProjectOrTeam = async (userId: string): Promise
     });
 
     return !!supervisorOfProject;
-  } catch (error) {
+  } catch {
    
     return false;
   }
@@ -66,33 +66,22 @@ export const updateUserTeamMemberships = async (
   newMembers: string[], 
   oldMembers: string[] = []
 ): Promise<void> => {
-  try {
- 
-    
-    const teamObjectId = new mongoose.Types.ObjectId(teamId);
-    
-    const membersToAdd = newMembers.filter(id => !oldMembers.includes(id));
-    if (membersToAdd.length > 0) {
-     
-      const result = await UserModel.updateMany(
-        { _id: { $in: membersToAdd.map(id => new mongoose.Types.ObjectId(id)) } },
-        { $addToSet: { teams: teamObjectId } }
-      );
-     
-    }
+  const teamObjectId = new mongoose.Types.ObjectId(teamId);
+  
+  const membersToAdd = newMembers.filter(id => !oldMembers.includes(id));
+  if (membersToAdd.length > 0) {
+    await UserModel.updateMany(
+      { _id: { $in: membersToAdd.map(id => new mongoose.Types.ObjectId(id)) } },
+      { $addToSet: { teams: teamObjectId } }
+    );
+  }
 
-    const membersToRemove = oldMembers.filter(id => !newMembers.includes(id));
-    if (membersToRemove.length > 0) {
-      console.log('Removing members from team:', membersToRemove);
-      const result = await UserModel.updateMany(
-        { _id: { $in: membersToRemove.map(id => new mongoose.Types.ObjectId(id)) } },
-        { $pull: { teams: teamObjectId } }
-      );
-     
-    }
-
-  } catch (error) {
-    
-    throw error; 
+  const membersToRemove = oldMembers.filter(id => !newMembers.includes(id));
+  if (membersToRemove.length > 0) {
+    console.log('Removing members from team:', membersToRemove);
+    await UserModel.updateMany(
+      { _id: { $in: membersToRemove.map(id => new mongoose.Types.ObjectId(id)) } },
+      { $pull: { teams: teamObjectId } }
+    );
   }
 };

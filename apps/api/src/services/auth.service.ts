@@ -1,28 +1,17 @@
 import UserModel from '../models/user.model';
-import { ONE_DAY_MS, thirtyDaysFromNow, fiveMinutesAgo, oneHourFromNow } from '../utils/data';
 import {
   UNAUTHORIZED,
-  INTERNAL_SERVER_ERROR,
-  NOT_FOUND,
-  TOO_MANY_REQUESTS,
 } from '../constants/http';
 import {
-  RefreshTokenPayload,
   refreshTokenSignOptions,
   signToken,
-  verifyToken,
 } from '../utils/auth';
-import { APP_ORIGIN } from '../constants/env';
-import VerificationCodeModel from '../models/verificationCode.model';
-import { hashValue } from '../utils/auth';
-import { JWT_SECRET } from '../constants/env';
 import { LoginParams } from '../interfaces/auth';
 import { appAssert } from '../utils';
 
 export const loginUser = async ({
   email,
   password,
-  userAgent,
 }: LoginParams) => {
   const user = await UserModel.findOne({ email });
   appAssert(user, UNAUTHORIZED, 'Invalid email');

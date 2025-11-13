@@ -1,4 +1,4 @@
-import mongoose, { Model } from 'mongoose';
+import mongoose from 'mongoose';
 import { hashValue, compareValue } from '../utils/auth';
 import { generateNextEmployeeId } from '../utils/user';
 import { UserRole } from '@tms/shared';

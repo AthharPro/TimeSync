@@ -3,7 +3,7 @@ import AppError  from '../error/appError';
 import { HttpStatusCode } from '../../constants/http';
 
 type AppAssert = (
-    condition : any,
+    condition : unknown,
     httpStatusCode:HttpStatusCode,
     message:string,
     appErrorCode?: string
