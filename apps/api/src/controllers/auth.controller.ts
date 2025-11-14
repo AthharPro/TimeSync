@@ -8,9 +8,11 @@ export const loginHandler = catchErrors(async (req, res) => {
   const request = loginSchema.parse({
     ...req.body
   });
-  const { accessToken, refreshToken, user, isChangedPwd } = await loginUser(
-    request
-  );
+  const { accessToken, refreshToken, user, isChangedPwd } = await loginUser({
+    email: request.email,
+    password: request.password,
+    userAgent: request.userAgent
+  });
 
   return setAuthCookies({ res, accessToken, refreshToken }).status(OK).json({
     message: 'Login successful',

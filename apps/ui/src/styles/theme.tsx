@@ -1,7 +1,7 @@
 import { createTheme } from '@mui/material';
 import { grey } from '@mui/material/colors';
 const fonts = {
-  primary: 'Lora',
+  primary: 'Roboto, Arial, sans-serif',
 };
 const theme = createTheme({
   palette: {

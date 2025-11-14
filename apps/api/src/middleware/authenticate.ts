@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { appAssert } from "../utils/validation";
+import { appAssert } from "../utils/error";
 import { UNAUTHORIZED, FORBIDDEN } from "../constants/http";
 import { verifyToken } from "../utils/auth";
 import { UserRole } from "@tms/shared"; 
