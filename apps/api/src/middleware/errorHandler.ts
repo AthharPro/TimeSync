@@ -23,7 +23,8 @@ const handleAppError = (res: Response, error: AppError) => {
   });
 };
 
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   console.error(`PATH: ${req.path}`, err);
 
   if (req.path === REFRESH_PATH) {

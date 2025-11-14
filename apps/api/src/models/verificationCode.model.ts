@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import VerificationCodeType from "../constants/verificationCodeType";
 import { IVerificationCodeDocument } from '../interfaces';
 
 const VerificationCodeSchema = new mongoose.Schema<IVerificationCodeDocument>(

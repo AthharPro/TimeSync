@@ -39,7 +39,9 @@ export default function CustomAppBar() {
             sx={{
               textTransform: 'none',
             }}
-            onClick={() => {}}
+            onClick={() => {
+              // TODO: Implement user menu dropdown
+            }}
           >
             Hi,&nbsp;User
           </Button>

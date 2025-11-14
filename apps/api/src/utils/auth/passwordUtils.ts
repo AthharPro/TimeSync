@@ -20,7 +20,7 @@ function secureShuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
-export const generateRandomPassword = (length: number = 12): string => {
+export const generateRandomPassword = (length = 12): string => {
   const minLength = Math.max(length, 8);
 
   const required = [

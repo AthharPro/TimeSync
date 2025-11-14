@@ -10,7 +10,7 @@ export interface IPopupLayoutProps {
   showCloseButton?: boolean;
   disableBackdropClick?: boolean;
   contentPadding?: number | string;
-  titleProps?: Record<string, any>;
-  contentProps?: { sx?: object } & Record<string, any>;
+  titleProps?: Record<string, unknown>;
+  contentProps?: { sx?: object } & Record<string, unknown>;
   actions?: React.ReactNode;
 }
