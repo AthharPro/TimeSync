@@ -19,7 +19,7 @@ export interface FeatureListItemProps {
 
 export interface SectionContainerProps extends React.PropsWithChildren {
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
-  component?: React.ElementType<any>;
+  component?: React.ElementType;
 }
 
 export interface ISectionTitleProps {
@@ -55,7 +55,7 @@ export interface LandingActionButtonsProps {
 export interface NavItemSectionProps {
   items: { label: string; target: string }[];
   onNavigate: (id: string) => void;
-  display?: any;
+  display?: React.CSSProperties['display'];
   direction?: 'row' | 'column';
   alignItems?: string;
 }

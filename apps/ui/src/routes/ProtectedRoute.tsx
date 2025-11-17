@@ -23,7 +23,8 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
         setIsCheckingAuth(true);
         try {
           await checkAuth();
-        } catch {
+        } catch (error) {
+          console.error('Auth check failed:', error);
         } finally {
           setHasCheckedAuth(true);
           setIsCheckingAuth(false);
@@ -34,7 +35,7 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
     };
 
     performAuthCheck();
-  }, [requireAuth, hasCheckedAuth, isCheckingAuth]);
+  }, [requireAuth, hasCheckedAuth, isCheckingAuth, checkAuth]);
 
   if (requireAuth) {
     if (!isAuthenticated) {
