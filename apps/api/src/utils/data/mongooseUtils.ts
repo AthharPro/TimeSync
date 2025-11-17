@@ -19,13 +19,13 @@ export const isValidObjectId = (id: string): boolean => {
   return mongoose.Types.ObjectId.isValid(id) && id.length === 24;
 };
 
-export const createSafeUpdateObject = <T extends Record<string, any>>(data: T): Partial<T> => {
+export const createSafeUpdateObject = <T extends Record<string, unknown>>(data: T): Partial<T> => {
   const updateObject: Partial<T> = {};
   
   Object.keys(data).forEach(key => {
     const value = data[key];
     if (value !== undefined) {
-      updateObject[key as keyof T] = value;
+      updateObject[key as keyof T] = value as T[keyof T];
     }
   });
   
@@ -45,18 +45,23 @@ export const createPopulateOptions = (
   return options;
 };
 
-export const createObjectIdMatchStage = (field: string, ids: string[]): Record<string, any> => {
+export const createObjectIdMatchStage = (field: string, ids: string[]): Record<string, unknown> => {
   const validIds = stringArrayToObjectIds(ids);
   return validIds.length > 0 ? { [field]: { $in: validIds } } : {};
 };
 
-export const extractObjectIdString = (doc: any, field: string): string | undefined => {
+export const extractObjectIdString = (doc: Record<string, unknown>, field: string): string | undefined => {
   const value = doc[field];
   if (!value) return undefined;
   
   if (typeof value === 'string') return value;
-  if (value._id) return value._id.toString();
-  if (value.toString) return value.toString();
+  if (typeof value === 'object' && value !== null && '_id' in value) {
+    const objValue = value as { _id: { toString(): string } };
+    return objValue._id.toString();
+  }
+  if (typeof value === 'object' && value !== null && 'toString' in value) {
+    return (value as { toString(): string }).toString();
+  }
   
   return undefined;
 };

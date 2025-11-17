@@ -46,7 +46,9 @@ apiClient.interceptors.response.use(
         try {
        
           await apiClient.get('/auth/logout');
-        } catch {}
+        } catch {
+          // Ignore logout errors during session cleanup
+        }
       
         if (typeof window !== 'undefined') {
           window.location.assign('/');

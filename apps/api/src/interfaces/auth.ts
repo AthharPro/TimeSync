@@ -1,7 +1,5 @@
-import mongoose, { Document } from 'mongoose';
-
 export interface IAuthResult {
-  user: any;
+  user: unknown;
   accessToken: string;
   refreshToken: string;
 }
