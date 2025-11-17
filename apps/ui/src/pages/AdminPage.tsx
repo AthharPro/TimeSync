@@ -6,7 +6,8 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import HistoryIcon from '@mui/icons-material/History';
-import MyTimesheetWindow from '../components/organisms/window/MyTimesheetWindow';
+// import MyTimesheetWindow from '../components/organisms/window/MyTimesheetWindow';
+import ProjectWindow from '../components/organisms/window/ProjectWindow';
 
 
 const AdminPage = () => {
@@ -26,7 +27,8 @@ const AdminPage = () => {
 
   return (
     <MainLayout items={items}>
-      <MyTimesheetWindow/>
+      {/* <MyTimesheetWindow/> */}
+      <ProjectWindow/>
     </MainLayout>
   );
 };

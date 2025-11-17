@@ -5,3 +5,6 @@ export * from './layout';
 
 export * from './navigation';
 export * from './auth';
+
+export * from './project';
+export * from './table';
