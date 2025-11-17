@@ -6,9 +6,11 @@ import { ListItem } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import type { IDrawerListProps } from '../../../interfaces/component';
 import INavItemProps from '../../../interfaces/navigation/INavItemProps';
+import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
 
 export default function DrawerList({ items }: IDrawerListProps) {
   const theme = useTheme();
+  const { selectedButton, setSelectedButton } = useWindowNavigation();
 
   return items.map((group: INavItemProps[], groupIndex: number) => (
     <List key={`group-${groupIndex}`}>
@@ -18,9 +20,11 @@ export default function DrawerList({ items }: IDrawerListProps) {
         return (
           <ListItem key={buttonId} disablePadding sx={{ paddingY: 1 }}>
             <CustomListItemButton
+              onClick={() => setSelectedButton(item.text)}
               sx={{
                 '&:hover': { backgroundColor: theme.palette.primary.light,color: theme.palette.secondary.light },
                 color: theme.palette.secondary.dark,
+                backgroundColor: selectedButton === item.text ? theme.palette.primary.light : 'transparent',
               }}
             >
               <CustomListItemIcon>{item.icon}</CustomListItemIcon>
