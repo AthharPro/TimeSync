@@ -3,12 +3,12 @@ import { Navigate } from 'react-router-dom';
 import { IProtectedRouteProps } from '../interfaces/navigation/IProtectedRouteProps';
 import { useAuth } from '../contexts/AuthContext';
 
-const ProtectedRoute: React.FC<IProtectedRouteProps> = ({ 
-  isAllowed, 
-  children, 
-  redirectPath = "/",
+const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
+  isAllowed,
+  children,
+  redirectPath = '/',
   requireAuth = false,
-  allowedRoles = []
+  allowedRoles = [],
 }) => {
   const { authState, checkAuth } = useAuth();
   const { user } = authState;
@@ -23,8 +23,8 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
         setIsCheckingAuth(true);
         try {
           await checkAuth();
-        } catch {
-          // Auth check failed, user will be redirected to login
+        } catch (error) {
+          console.error('Auth check failed:', error);
         } finally {
           setHasCheckedAuth(true);
           setIsCheckingAuth(false);
@@ -35,19 +35,13 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
     };
 
     performAuthCheck();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requireAuth, hasCheckedAuth, isCheckingAuth]);
-
+  }, [requireAuth, hasCheckedAuth, isCheckingAuth, checkAuth]);
 
   if (requireAuth) {
-
-
     if (!isAuthenticated) {
- 
       return <Navigate to={redirectPath} replace />;
     }
 
-   
     if (allowedRoles.length > 0 && user) {
       const hasPermission = allowedRoles.includes(user.role);
       if (!hasPermission) {
@@ -57,10 +51,7 @@ const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
   }
 
   if (isAllowed !== undefined) {
- 
-    
     if (!isAllowed) {
-
       return <Navigate to={redirectPath} replace />;
     }
   }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AdminPage from '../pages/AdminPage';
+import LandingPage from '../pages/LandingPage';
 
 const AppRoute: React.FC = () => {
 
@@ -8,7 +9,7 @@ const AppRoute: React.FC = () => {
     <Routes>
       <Route
         path="/"
-        element={<AdminPage />}
+        element={<LandingPage />}
       />
       <Route
         path="/admin"
