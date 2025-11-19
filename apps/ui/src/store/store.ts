@@ -1,0 +1,19 @@
+import { configureStore, combineReducers, UnknownAction } from "@reduxjs/toolkit";
+import myTimesheets from "./slices/myTimesheetSlice";
+
+const appReducer = combineReducers({
+    myTimesheet: myTimesheets,
+});
+
+const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
+    return appReducer(state, action);
+};
+
+export const store = configureStore({
+    reducer: rootReducer    
+});
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+
+export default store;
