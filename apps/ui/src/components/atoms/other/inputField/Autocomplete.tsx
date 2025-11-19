@@ -4,8 +4,6 @@ import {
 } from '@mui/material';
 import { AutocompleteTextProps } from '../../../../interfaces';
 
-
-
 const AutocompleteText = <T,>({
   value,
   onChange,
