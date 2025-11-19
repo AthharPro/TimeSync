@@ -10,6 +10,7 @@ const AutocompleteText = <T,>({
   options,
   variant = 'standard',
 }: AutocompleteTextProps<T>) => {
+  
   return (
     <Autocomplete<T, false, true, false>
       size="small"
