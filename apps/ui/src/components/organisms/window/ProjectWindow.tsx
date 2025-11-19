@@ -13,10 +13,13 @@ import ProjectManagerCell from '../../molecules/project/ProjectManagerCell';
 import TeamMembersCell from '../../molecules/project/TeamMembersCell';
 import DateRangeCell from '../../molecules/project/DateRangeCell';
 import ProjectActionButtons from '../../molecules/project/ProjectActionButtons';
+import TeamViewModal from '../../organisms/project/TeamViewModal';
 
 function ProjectWindow() {
   const [projects] = useState<IProject[]>(dummyProjects);
   const [isLoading] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
 
   const handleEdit = (project: IProject) => {
     console.log('Edit project:', project);
@@ -29,8 +32,13 @@ function ProjectWindow() {
   };
 
   const handleViewTeam = (project: IProject) => {
-    console.log('View team for project:', project);
-    // TODO: Implement view team functionality
+    setSelectedProject(project);
+    setIsTeamModalOpen(true);
+  };
+
+  const handleCloseTeamModal = () => {
+    setIsTeamModalOpen(false);
+    setSelectedProject(null);
   };
 
   const handleAddProject = () => {
@@ -114,29 +122,40 @@ function ProjectWindow() {
   );
 
   return (
-    <WindowLayout
-      title="Projects"
-      buttons={
-        <>
-          <Button variant="outlined">Filter</Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddProject}
-          >
-            Add Project
-          </Button>
-        </>
-      }
-    >
-      <TableTemplate
-        columns={columns}
-        data={projects}
-        isLoading={isLoading}
-        emptyMessage="No projects found"
-        keyExtractor={(row) => row.id}
-      />
-    </WindowLayout>
+    <>
+      <WindowLayout
+        title="Projects"
+        buttons={
+          <>
+            <Button variant="outlined">Filter</Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddProject}
+            >
+              Add Project
+            </Button>
+          </>
+        }
+      >
+        <TableTemplate
+          columns={columns}
+          data={projects}
+          isLoading={isLoading}
+          emptyMessage="No projects found"
+          keyExtractor={(row) => row.id}
+        />
+      </WindowLayout>
+
+      {/* Team View Modal */}
+      {selectedProject && (
+        <TeamViewModal
+          open={isTeamModalOpen}
+          onClose={handleCloseTeamModal}
+          project={selectedProject}
+        />
+      )}
+    </>
   );
 }
 

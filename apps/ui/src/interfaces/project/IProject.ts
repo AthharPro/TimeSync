@@ -5,7 +5,9 @@ export interface ITeamMember {
   id: string;
   name: string;
   role: string;
+  email?: string;
   avatar?: string;
+  allocation: number; // Percentage allocation (0-100)
 }
 
 export interface IProjectManager {
@@ -13,6 +15,7 @@ export interface IProjectManager {
   name: string;
   email: string;
   avatar?: string;
+  allocation: number; // Percentage allocation (0-100)
 }
 
 export interface IProject {

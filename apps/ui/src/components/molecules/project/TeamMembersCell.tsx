@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Button, AvatarGroup, Avatar, Tooltip } from '@mui/material';
+import { Box, AvatarGroup, Avatar, Tooltip } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
 import { ITeamMember } from '../../../interfaces/project/IProject';
+import { BaseBtn } from '../../atoms';
 
 interface ITeamMembersCellProps {
   teamMembers: ITeamMember[];
@@ -23,14 +24,14 @@ const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
           </Tooltip>
         ))}
       </AvatarGroup> */}
-      <Button
+      <BaseBtn
         size="small"
         variant="outlined"
         startIcon={<GroupIcon />}
         onClick={onViewTeam}
       >
         View Team
-      </Button>
+      </BaseBtn>
     </Box>
   );
 };
