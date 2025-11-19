@@ -1,9 +1,9 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import BaseButton from '../../atoms/other/button/BaseBtn';
-import { NavItemSectionProps } from '../../../interfaces/landing';
+import { INavItemSectionProps } from '../../../interfaces/landing';
 
-const NavItemSection: React.FC<NavItemSectionProps> = ({
+const NavItemSection: React.FC<INavItemSectionProps> = ({
   items,
   onNavigate,
   display = { xs: 'none', sm: 'block' },

@@ -4,9 +4,9 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import AppIcon from '../../atoms/landing/AppIcon';
-import { FeatureCardProps } from '../../../interfaces/landing';
+import { IFeatureCardProps } from '../../../interfaces/landing';
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => {
+const FeatureCard: React.FC<IFeatureCardProps> = ({ icon, title, description }) => {
   const theme = useTheme();
 
   const Icon = icon;

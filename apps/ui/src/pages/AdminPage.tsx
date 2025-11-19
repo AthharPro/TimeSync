@@ -19,10 +19,11 @@ import ReviewTimesheetWindow from '../components/organisms/window/ReviewTimeshee
 
 
 const AdminPage = () => {
+  const { selectedButton, setSelectedButton } = useWindowNavigation();
 
   useEffect(() => {
     setSelectedButton("Dashboard");
-  }, []);
+  }, [setSelectedButton]);
 
     const items = [
     [
@@ -36,8 +37,6 @@ const AdminPage = () => {
       { text: 'Review Timesheets', icon: <RateReviewIcon /> },
     ]
   ];
-
-    const { selectedButton, setSelectedButton } = useWindowNavigation();
 
   return (
     <MainLayout items={items}>
