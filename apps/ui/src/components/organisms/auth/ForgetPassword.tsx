@@ -33,7 +33,7 @@ const ForgetPassword: React.FC = () => {
         // Handle password reset email submission logic here
         setMessage('If an account with that email exists, a password reset link has been sent.');
       
-      } catch (err: any) {
+      } catch {
         // Handle error during password reset email submission
         setError('An error occurred while sending the password reset email. Please try again later.');
        

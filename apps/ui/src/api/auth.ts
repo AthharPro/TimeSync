@@ -1,5 +1,5 @@
 import API  from "../config/apiClient";
-import { ISetPasswordData, ILoginData, IChangePwdFirstLogin } from "../interfaces/auth";
+import { ILoginData, IChangePwdFirstLogin } from "../interfaces/auth";
 
 export const login = async (data: ILoginData) => {
   return await API.post("/auth/login", data);
