@@ -1,6 +1,6 @@
 import { TextField } from '@mui/material';
 import React from 'react';
-import { IBaseTextFieldProps } from '../../../../interfaces/component';
+import { IBaseTextFieldProps } from '../../../../interfaces';
 
 const BaseTextField = React.forwardRef<HTMLDivElement, IBaseTextFieldProps>(({
   variant = 'outlined',
