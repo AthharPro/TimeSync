@@ -9,7 +9,7 @@ import DatePickerField from '../../atoms/other/inputField/DatePickerField';
 import { BaseTextField } from '../../atoms';
 import HoursField from '../../atoms/other/inputField/HoursField';
 import Dropdown from '../../atoms/other/inputField/Dropdown';
-import { ITimesheetTableEntry } from 'apps/ui/src/interfaces/component/organism/ITable';
+import { ITimesheetTableEntry } from '../../../interfaces/component/organism/ITable';
 
 const MyTimesheetTable = () => {
   const { newTimesheets, updateTimesheet } = useMyTimesheet();

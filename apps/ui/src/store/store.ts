@@ -1,11 +1,11 @@
-import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { configureStore, combineReducers, UnknownAction } from "@reduxjs/toolkit";
 import myTimesheets from "./slices/myTimesheetSlice";
 
 const appReducer = combineReducers({
     myTimesheet: myTimesheets,
 });
 
-const rootReducer = (state: any, action: any) => {
+const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
     return appReducer(state, action);
 };
 

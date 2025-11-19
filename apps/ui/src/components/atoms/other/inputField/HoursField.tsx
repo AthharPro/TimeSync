@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import BaseTextField from './BaseTextField';
-import { IHoursFieldProps } from 'apps/ui/src/interfaces';
+import { IHoursFieldProps } from '../../../../interfaces';
 
 
 const HoursField: React.FC<IHoursFieldProps> = ({ value = 0, onChange, ...rest }) => {

@@ -2,7 +2,7 @@ import {
   Autocomplete,
   TextField,
 } from '@mui/material';
-import { AutocompleteTextProps } from 'apps/ui/src/interfaces';
+import { AutocompleteTextProps } from '../../../../interfaces';
 
 
 

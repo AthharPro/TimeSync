@@ -1,5 +1,5 @@
 import { Select, MenuItem, SelectChangeEvent } from '@mui/material';
-import { IDropdownProps } from 'apps/ui/src/interfaces';
+import { IDropdownProps } from '../../../../interfaces';
 
 const Dropdown = <T extends string | number>({
   value,
