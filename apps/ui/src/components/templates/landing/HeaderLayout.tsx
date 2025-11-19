@@ -2,9 +2,9 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
-import { HeaderLayoutProps } from '../../../interfaces/landing/ILanding';  
+import { IHeaderLayoutProps } from '../../../interfaces/landing/ILanding';  
 
-const HeaderLayout: React.FC<HeaderLayoutProps> = ({
+const HeaderLayout: React.FC<IHeaderLayoutProps> = ({
   logo,
   navItems,
   signInButton,

@@ -2,9 +2,9 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import FeatureCard from './FeatureCard';
 import { useTheme } from '@mui/material/styles';
-import {  ScrollingCardsProps } from '../../../interfaces/landing';
+import {  IScrollingCardsProps } from '../../../interfaces/landing';
 
-const ScrollingCard: React.FC<ScrollingCardsProps> = ({ 
+const ScrollingCard: React.FC<IScrollingCardsProps> = ({ 
   items, 
   animationDuration = 30 
 }) => {

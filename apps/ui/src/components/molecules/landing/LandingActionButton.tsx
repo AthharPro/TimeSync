@@ -3,9 +3,9 @@ import Stack from '@mui/material/Stack';
 import BaseButton from '../../atoms/other/button/BaseBtn';
 import { useTheme } from '@mui/material/styles';
 import { ArrowForward } from '@mui/icons-material';
-import { LandingActionButtonsProps } from '../../../interfaces/landing';
+import { ILandingActionButtonsProps } from '../../../interfaces/landing';
 
-const LandingActionButton: React.FC<LandingActionButtonsProps> = ({ onGetStarted, onExplore,containbtn ,outlinebtn}) => {
+const LandingActionButton: React.FC<ILandingActionButtonsProps> = ({ onGetStarted, onExplore,containbtn ,outlinebtn}) => {
   const theme = useTheme();
   return (
     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>

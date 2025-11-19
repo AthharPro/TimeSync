@@ -7,17 +7,17 @@ export interface IAppIconProps {
   marginBottom?: number
 }
 
-export interface BrandLogoProps {
+export interface IBrandLogoProps {
   src: string;
   alt?: string;
   title?: string;
 }
 
-export interface FeatureListItemProps {
+export interface IFeatureListItemProps {
   text: string
 }
 
-export interface SectionContainerProps extends React.PropsWithChildren {
+export interface ISectionContainerProps extends React.PropsWithChildren {
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
   component?: React.ElementType;
 }
@@ -27,17 +27,17 @@ export interface ISectionTitleProps {
   subtitle?: string;
 }
 
-export interface FeatureCardProps {
+export interface IFeatureCardProps {
   icon: SvgIconComponent;
   title: string;
   description: string;
 }
 
-export interface FeatureListProps {
+export interface IFeatureListProps {
   features: string[];
 }
 
-export interface HeaderDrawerProps {
+export interface IHeaderDrawerProps {
   open: boolean;
   onClose: () => void;
   navItems: { label: string; target: string }[];
@@ -45,14 +45,14 @@ export interface HeaderDrawerProps {
   navigate: (path: string) => void;
 }
 
-export interface LandingActionButtonsProps {
+export interface ILandingActionButtonsProps {
   onGetStarted: () => void;
   onExplore: () => void;
   containbtn?: string;
   outlinebtn?: string;
 }
 
-export interface NavItemSectionProps {
+export interface INavItemSectionProps {
   items: { label: string; target: string }[];
   onNavigate: (id: string) => void;
   display?: React.CSSProperties['display'];
@@ -60,19 +60,19 @@ export interface NavItemSectionProps {
   alignItems?: string;
 }
 
-export interface RoleCardProps {
+export interface IRoleCardProps {
   icon: SvgIconComponent;
   title: string;
   description: string;
   features: string[];
 }
 
-export interface ScrollingCardsProps {
-  items: FeatureCardProps[];
+export interface IScrollingCardsProps {
+  items: IFeatureCardProps[];
   animationDuration?: number;
 }
 
- export  interface HeaderLayoutProps {
+ export  interface IHeaderLayoutProps {
   logo: React.ReactNode;
   navItems: React.ReactNode;
   signInButton: React.ReactNode;
@@ -81,7 +81,7 @@ export interface ScrollingCardsProps {
   drawer?: React.ReactNode;
 }
 
-export interface HeroSectionLayoutProps {
+export interface IHeroSectionLayoutProps {
   id?: string;
   title: React.ReactNode;
   description?: React.ReactNode;

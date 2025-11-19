@@ -5,9 +5,9 @@ import Box from '@mui/material/Box';
 import BaseButton from '../../atoms/other/button/BaseBtn';
 import NavItemSection from './NavItemSection';
 import { useTheme } from '@mui/material/styles';
-import { HeaderDrawerProps } from '../../../interfaces/landing';
+import { IHeaderDrawerProps } from '../../../interfaces/landing';
 
-const HeaderDrawer: React.FC<HeaderDrawerProps> = ({
+const HeaderDrawer: React.FC<IHeaderDrawerProps> = ({
   open,
   onClose,
   navItems,
