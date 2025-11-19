@@ -4,9 +4,9 @@ import SectionContainer from '../../atoms/landing/SectionContainer';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import { HeroSectionLayoutProps } from '../../../interfaces/landing/ILanding';
+import { IHeroSectionLayoutProps } from '../../../interfaces/landing/ILanding';
 
-const HeroSectionLayout: React.FC<HeroSectionLayoutProps> = ({
+const HeroSectionLayout: React.FC<IHeroSectionLayoutProps> = ({
   id = 'home',
   title,
   description,

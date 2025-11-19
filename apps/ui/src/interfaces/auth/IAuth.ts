@@ -41,4 +41,9 @@ export interface IPasswordResetData {
   email: string;
 }
 
+export interface IChangePwdFirstLogin {
+  newPassword: string;
+  confirmPassword: string;
+}
+
 
