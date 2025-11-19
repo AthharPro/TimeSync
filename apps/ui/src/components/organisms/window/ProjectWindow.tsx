@@ -2,9 +2,9 @@ import { useState, useMemo } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
 import { Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import TableTemplate from '../../templates/table/TableTemplate';
+import DataTable from '../../templates/other/DataTable';
 import { IProject } from '../../../interfaces/project/IProject';
-import { ITableColumn } from '../../../interfaces/table/ITable';
+import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
 import { dummyProjects } from '../../../data/dummyProjects';
 import CostCenterBadge from '../../atoms/project/CostCenterBadge';
 import ProjectTypeChip from '../../atoms/project/ProjectTypeChip';
@@ -46,42 +46,42 @@ function ProjectWindow() {
     // TODO: Implement add project functionality
   };
 
-  const columns: ITableColumn<IProject>[] = useMemo(
+  const columns: DataTableColumn<IProject>[] = useMemo(
     () => [
       {
-        id: 'projectName',
+        key: 'projectName',
         label: 'Project Name',
-        minWidth: 200,
+        width: 200,
         render: (row) => row.projectName,
       },
       {
-        id: 'costCenter',
+        key: 'costCenter',
         label: 'Cost Center',
-        minWidth: 100,
+        width: 100,
         render: (row) => <CostCenterBadge costCenter={row.costCenter} />,
       },
       {
-        id: 'clientName',
+        key: 'clientName',
         label: 'Client Name',
-        minWidth: 120,
+        width: 120,
         render: (row) => row.clientName,
       },
       {
-        id: 'projectType',
+        key: 'projectType',
         label: 'Project Type',
-        minWidth: 100,
+        width: 80,
         render: (row) => <ProjectTypeChip type={row.projectType} />,
       },
       {
-        id: 'projectManager',
+        key: 'projectManager',
         label: 'Project Manager',
-        minWidth: 200,
+        width: 150,
         render: (row) => <ProjectManagerCell manager={row.projectManager} />,
       },
       {
-        id: 'teamMembers',
+        key: 'teamMembers',
         label: 'Team Members',
-        minWidth: 150,
+        width: 100,
         render: (row) => (
           <TeamMembersCell
             teamMembers={row.teamMembers}
@@ -90,25 +90,23 @@ function ProjectWindow() {
         ),
       },
       {
-        id: 'dateRange',
+        key: 'dateRange',
         label: 'Start & End Date',
-        minWidth: 120,
+        width: 120,
         render: (row) => (
           <DateRangeCell startDate={row.startDate} endDate={row.endDate} />
         ),
       },
       {
-        id: 'billable',
+        key: 'billable',
         label: 'Billable Type',
-        minWidth: 50,
-        align: 'center',
+        width: 80,
         render: (row) => <BillableChip billable={row.billable} />,
       },
       {
-        id: 'actions',
+        key: 'actions',
         label: 'Actions',
-        minWidth: 80,
-        align: 'center',
+        width: 80,
         render: (row) => (
           <ProjectActionButtons
             project={row}
@@ -138,12 +136,10 @@ function ProjectWindow() {
           </>
         }
       >
-        <TableTemplate
+        <DataTable
           columns={columns}
-          data={projects}
-          isLoading={isLoading}
-          emptyMessage="No projects found"
-          keyExtractor={(row) => row.id}
+          rows={projects}
+          getRowKey={(row) => row.id}
         />
       </WindowLayout>
 

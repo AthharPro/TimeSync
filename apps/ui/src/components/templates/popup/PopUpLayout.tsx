@@ -30,7 +30,8 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
         sx: {
           borderRadius: 2,
           minHeight: '300px',
-          width: '700px',
+          width: '680px',
+          backgroundColor: (theme) => theme.palette.background.default,
         },
       }}
     >
