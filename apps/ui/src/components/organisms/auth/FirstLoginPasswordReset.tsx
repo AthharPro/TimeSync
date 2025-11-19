@@ -6,12 +6,9 @@ import BaseBtn from '../../atoms/other/button/BaseBtn';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import FirstLoginPasswordRestSchema  from '../../../validations/auth/FirstLoginPasswordRestSchema';
-import { useNavigate } from 'react-router-dom';
 import { ISetPasswordData } from '../../../interfaces/auth/IAuth';
 
 const FirstLoginPasswordReset: React.FC = () => {
-  const navigate = useNavigate();
-
   const {
     register,
     handleSubmit,
@@ -22,7 +19,7 @@ const FirstLoginPasswordReset: React.FC = () => {
   });
   
   const onSubmit = async (data: ISetPasswordData) => {
-    
+    // Handle password reset submission logic here
   };
   return (
     <AuthFormLayout title="Set Password" icon={WebSiteLogo}>

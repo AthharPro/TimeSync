@@ -12,12 +12,6 @@ export interface ITwoColumnLayoutProps {
   rightContent?: ReactNode;
 }
 
-export interface ILoginData {
-  email: string;
-  password: string;
-}
-
-
 export interface ICreateAccountData {
   firstName: string;
   lastName: string;
@@ -29,10 +23,6 @@ export interface ICreateAccountData {
 export interface ISetPasswordData {
   newPassword: string;
   confirmPassword: string;
-}
-
-export interface IPasswordResetData {
-  email: string;
 }
 
 export interface IAuthFormContainer {
@@ -47,20 +37,8 @@ export interface ILoginData {
   password: string;
 }
 
-export interface ISetPasswordData {
-  newPassword: string;
-  confirmPassword: string;
-}
-
 export interface IPasswordResetData {
   email: string;
 }
 
-export interface ICreateAccountData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  contactNumber: string;
-  designation: string;
-}
 

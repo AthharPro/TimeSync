@@ -45,6 +45,9 @@ const PasswordChange: React.FC = () => {
       }
 
       try {
+        // Handle token verification logic here
+        // On success, set user info and verificationCodeId
+        
        
       } catch (err: any) {
         
