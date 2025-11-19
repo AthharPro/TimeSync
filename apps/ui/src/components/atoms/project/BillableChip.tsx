@@ -1,5 +1,5 @@
 import React from 'react';
-import { Chip } from '@mui/material';
+import { Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
@@ -9,13 +9,14 @@ interface IBillableChipProps {
 
 const BillableChip: React.FC<IBillableChipProps> = ({ billable }) => {
   return (
-    <Chip
-      label={billable ? 'Yes' : 'No'}
-      color={billable ? 'success' : 'default'}
-      size="small"
-      icon={billable ? <CheckCircleIcon /> : <CancelIcon />}
-      variant={billable ? 'filled' : 'outlined'}
-    />
+    <Typography
+      variant="body2"
+      sx={{
+        fontWeight: 500,
+      }}
+    >
+      {billable ? 'Billable' : 'Non-Billable'}
+    </Typography>
   );
 };
 

@@ -9,13 +9,13 @@ interface IProjectManagerCellProps {
 const ProjectManagerCell: React.FC<IProjectManagerCellProps> = ({ manager }) => {
   return (
     <Box display="flex" alignItems="center" gap={1.5}>
-      <Avatar 
+      {/* <Avatar 
         alt={manager.name} 
         src={manager.avatar}
         sx={{ width: 32, height: 32 }}
       >
         {manager.name.charAt(0)}
-      </Avatar>
+      </Avatar> */}
       <Box>
         <Typography variant="body2" fontWeight={500}>
           {manager.name}

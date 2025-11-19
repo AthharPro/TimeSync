@@ -14,7 +14,7 @@ const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
 }) => {
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" gap={1}>
-      <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: 14 } }}>
+      {/* <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: 14 } }}>
         {teamMembers.map((member) => (
           <Tooltip key={member.id} title={member.name}>
             <Avatar alt={member.name} src={member.avatar}>
@@ -22,7 +22,7 @@ const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
             </Avatar>
           </Tooltip>
         ))}
-      </AvatarGroup>
+      </AvatarGroup> */}
       <Button
         size="small"
         variant="outlined"

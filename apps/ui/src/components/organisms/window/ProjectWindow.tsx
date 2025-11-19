@@ -73,7 +73,7 @@ function ProjectWindow() {
       {
         id: 'teamMembers',
         label: 'Team Members',
-        minWidth: 180,
+        minWidth: 150,
         render: (row) => (
           <TeamMembersCell
             teamMembers={row.teamMembers}
@@ -91,7 +91,7 @@ function ProjectWindow() {
       },
       {
         id: 'billable',
-        label: 'Billable',
+        label: 'Billable Type',
         minWidth: 50,
         align: 'center',
         render: (row) => <BillableChip billable={row.billable} />,
