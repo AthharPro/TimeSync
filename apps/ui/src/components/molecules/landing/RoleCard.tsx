@@ -5,9 +5,9 @@ import AppIcon from '../../atoms/landing/AppIcon'
 import Box from '@mui/material/Box'
 import FeatureList from './FeatureList'
 import { useTheme } from '@mui/material/styles';
-import { RoleCardProps } from '../../../interfaces/landing';
+import { IRoleCardProps } from '../../../interfaces/landing';
 
-const RoleCard: React.FC<RoleCardProps> = ({ icon, title, description, features }) => {
+const RoleCard: React.FC<IRoleCardProps> = ({ icon, title, description, features }) => {
   const theme = useTheme();
   return (
     <Paper

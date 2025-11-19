@@ -3,12 +3,12 @@ import Box from '@mui/material/Box';
 import { AccessTime, Assessment, Group, Dashboard } from '@mui/icons-material';
 import SectionTitle from '../../atoms/landing/SectionTitle';
 import ScrollingCard from '../../molecules/landing/ScrollingCard';
-import { FeatureCardProps } from '../../../interfaces/landing';
+import { IFeatureCardProps } from '../../../interfaces/landing';
 import { useTheme } from '@mui/material/styles';
 import SectionContainer from '../../atoms/landing/SectionContainer';
 
 const Feature: React.FC = () => {
-  const features: FeatureCardProps[] = [
+  const features: IFeatureCardProps[] = [
     {
       icon: AccessTime,
       title: 'Time Tracking',
