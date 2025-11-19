@@ -4,5 +4,4 @@ export * from './IMainLayoutProps';
 export * from './IPopupLayoutProps';
 export * from './ISecondaryLayoutProps';
 export * from './ITableWindowLayoutProps';
-export * from './ITwoColumnLayoutProps';
 export * from './ITableProps';
