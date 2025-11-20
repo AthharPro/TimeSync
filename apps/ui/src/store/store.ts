@@ -1,8 +1,10 @@
 import { configureStore, combineReducers, UnknownAction } from "@reduxjs/toolkit";
 import myTimesheets from "./slices/myTimesheetSlice";
+import account from "./slices/AccountSlice";
 
 const appReducer = combineReducers({
     myTimesheet: myTimesheets,
+    account: account,
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
