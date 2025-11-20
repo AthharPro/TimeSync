@@ -26,3 +26,14 @@ export interface IMyTimesheetTableEntry {
   status: DailyTimesheetStatus;
   isChecked?: boolean;
 }
+
+export interface IAccountTableEntry {
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+  contactNumber?: string;
+  createdOn?: string;
+  status: 'Active' | 'Inactive' | boolean;
+  action: React.ReactNode;
+}
