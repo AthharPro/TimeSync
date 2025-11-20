@@ -2,13 +2,7 @@ import React from 'react';
 import { Box, IconButton, Tooltip } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { IProject } from '../../../interfaces/project/IProject';
-
-interface IProjectActionButtonsProps {
-  project: IProject;
-  onEdit?: (project: IProject) => void;
-  onDelete?: (projectId: string) => void;
-}
+import { IProjectActionButtonsProps } from '../../../interfaces/project/IProjectCells';
 
 const ProjectActionButtons: React.FC<IProjectActionButtonsProps> = ({
   project,

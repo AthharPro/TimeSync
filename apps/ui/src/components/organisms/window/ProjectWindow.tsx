@@ -1,19 +1,18 @@
 import { useState, useMemo } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
-import { Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined';
 import DataTable from '../../templates/other/DataTable';
 import { IProject } from '../../../interfaces/project/IProject';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
 import { dummyProjects } from '../../../data/dummyProjects';
-import CostCenterBadge from '../../atoms/project/CostCenterBadge';
-import ProjectTypeChip from '../../atoms/project/ProjectTypeChip';
-import BillableChip from '../../atoms/project/BillableChip';
 import ProjectManagerCell from '../../molecules/project/ProjectManagerCell';
 import TeamMembersCell from '../../molecules/project/TeamMembersCell';
 import DateRangeCell from '../../molecules/project/DateRangeCell';
 import ProjectActionButtons from '../../molecules/project/ProjectActionButtons';
-import TeamViewModal from '../../organisms/project/TeamViewModal';
+import TeamViewModal from '../popup/ProjectTeamViewPopUp';
+import { BaseBtn } from '../../atoms';
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 
 function ProjectWindow() {
   const [projects] = useState<IProject[]>(dummyProjects);
@@ -46,6 +45,11 @@ function ProjectWindow() {
     // TODO: Implement add project functionality
   };
 
+  const handleFilter = () => {
+    console.log('Open filter');
+    // TODO: Implement filter functionality
+  };
+
   const columns: DataTableColumn<IProject>[] = useMemo(
     () => [
       {
@@ -58,7 +62,7 @@ function ProjectWindow() {
         key: 'costCenter',
         label: 'Cost Center',
         width: 100,
-        render: (row) => <CostCenterBadge costCenter={row.costCenter} />,
+        render: (row) => row.costCenter ,
       },
       {
         key: 'clientName',
@@ -70,7 +74,7 @@ function ProjectWindow() {
         key: 'projectType',
         label: 'Project Type',
         width: 80,
-        render: (row) => <ProjectTypeChip type={row.projectType} />,
+        render: (row) => row.projectType,
       },
       {
         key: 'projectManager',
@@ -101,7 +105,7 @@ function ProjectWindow() {
         key: 'billable',
         label: 'Billable Type',
         width: 80,
-        render: (row) => <BillableChip billable={row.billable} />,
+        render: (row) => row.billable ? 'Billable' : 'Non-Billable',
       },
       {
         key: 'actions',
@@ -125,14 +129,20 @@ function ProjectWindow() {
         title="Projects"
         buttons={
           <>
-            <Button variant="outlined">Filter</Button>
-            <Button
-              variant="contained"
+            <BaseBtn
+              variant="outlined"
+              startIcon={<FilterAltOutlinedIcon />}
+              onClick={handleFilter}
+            >
+              Filter
+            </BaseBtn>
+            <BaseBtn
+              // variant="contained"
               startIcon={<AddIcon />}
               onClick={handleAddProject}
             >
-              Add Project
-            </Button>
+              Project
+            </BaseBtn>
           </>
         }
       >

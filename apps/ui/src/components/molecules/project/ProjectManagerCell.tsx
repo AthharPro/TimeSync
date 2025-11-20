@@ -1,10 +1,6 @@
 import React from 'react';
 import { Box, Avatar, Typography } from '@mui/material';
-import { IProjectManager } from '../../../interfaces/project/IProject';
-
-interface IProjectManagerCellProps {
-  manager: IProjectManager;
-}
+import { IProjectManagerCellProps } from '../../../interfaces/project/IProjectCells';
 
 const ProjectManagerCell: React.FC<IProjectManagerCellProps> = ({ manager }) => {
   return (

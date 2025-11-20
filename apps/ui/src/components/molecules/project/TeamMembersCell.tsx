@@ -1,13 +1,8 @@
 import React from 'react';
 import { Box, AvatarGroup, Avatar, Tooltip } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
-import { ITeamMember } from '../../../interfaces/project/IProject';
+import { ITeamMembersCellProps } from '../../../interfaces/project/IProjectCells';
 import { BaseBtn } from '../../atoms';
-
-interface ITeamMembersCellProps {
-  teamMembers: ITeamMember[];
-  onViewTeam?: () => void;
-}
 
 const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
   teamMembers,

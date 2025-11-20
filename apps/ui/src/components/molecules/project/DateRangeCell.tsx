@@ -1,11 +1,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { format } from 'date-fns';
-
-interface IDateRangeCellProps {
-  startDate: Date;
-  endDate: Date | null;
-}
+import { IDateRangeCellProps } from '../../../interfaces/project/IProjectCells';
 
 const DateRangeCell: React.FC<IDateRangeCellProps> = ({ startDate, endDate }) => {
   return (
