@@ -5,7 +5,7 @@ import AddIcon from '@mui/icons-material/Add';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 function AccountWindow() {
   const handleClick = () => {
-
+    // TODO: Implement create account functionality
   };
 
   const button = (

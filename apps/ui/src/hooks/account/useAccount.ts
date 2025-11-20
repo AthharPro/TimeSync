@@ -3,13 +3,14 @@ import { IUseAccountReturn } from '../../interfaces/hook';
 import { useCallback } from 'react';
 import { IAccountTableEntry } from '../../interfaces';
 import { setAccountData ,updateAccountById} from '../../store/slices/AccountSlice';
+import { RootState } from '../../store/store';
 
 export const useAccount = (): IUseAccountReturn => {
     const dispatch = useDispatch();
-    const newAccountDetails = useSelector((state: any) => state.account.accountData);
+    const newAccountDetails = useSelector((state: RootState) => state.account.accountData);
     
     // Placeholder states 
-    const fetchAccountDetails: any[] = [];
+    const fetchAccountDetails: IAccountTableEntry[] = [];
     const isLoading = false;
     const error: string | null = null;
 

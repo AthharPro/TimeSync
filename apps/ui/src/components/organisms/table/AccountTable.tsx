@@ -48,11 +48,7 @@ const AccountTable = ({
       key: 'status',
       render: (row) => (
         <StatusChip
-          status={
-            row.status === 'Active' || (row as any).status === true
-              ? 'Active'
-              : 'Inactive'
-          }
+          status={row.status === 'Active' ? 'Active' : 'Inactive'}
         />
       ),
     },
