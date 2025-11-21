@@ -19,8 +19,8 @@ const theme = createTheme({
       primary: '#2C2C2C',
       secondary: '#9A9A9A',
     },
-    error: { main: '#FF7081' },
-    success: { main: '#CCFFCC' },
+    error: { main: '#ec1d35ff' },
+    success: { main: '#10d110ff' },
   },
   typography: {
     fontFamily: fonts.primary,
