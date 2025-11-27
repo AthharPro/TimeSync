@@ -106,9 +106,11 @@ const CalendarSection: React.FC<ICalendarSectionProps> = ({ events = [], onDateS
               const event = getEventForDate(day);
               const isCurrentMonth = day.getMonth() === currentDate.getMonth();
               const isTodayDate = isToday(day);
-              const isCurrentWeek = isSameWeek(day, today, { weekStartsOn: 0 });
               const isSelectedDate = selectedDate && isSameDay(day, selectedDate);
               const isSelectedWeek = selectedDate && isSameWeek(day, selectedDate, { weekStartsOn: 0 });
+              
+              // Only show week highlighting for selected week, not today's week
+              const showWeekHighlight = isSelectedWeek && !isTodayDate && !isSelectedDate;
 
               return (
                 <Box
@@ -125,7 +127,7 @@ const CalendarSection: React.FC<ICalendarSectionProps> = ({ events = [], onDateS
                       ? 'primary.main' 
                       : isSelectedDate
                       ? 'secondary.main'
-                      : (isSelectedWeek || isCurrentWeek) && isCurrentMonth
+                      : showWeekHighlight && isCurrentMonth
                       ? 'primary.lighter'
                       : 'transparent',
                     color: isTodayDate || isSelectedDate
@@ -133,11 +135,11 @@ const CalendarSection: React.FC<ICalendarSectionProps> = ({ events = [], onDateS
                       : isCurrentMonth 
                       ? 'text.primary' 
                       : 'text.disabled',
-                    fontWeight: isTodayDate || isSelectedDate ? 600 : (isSelectedWeek || isCurrentWeek) ? 500 : 400,
+                    fontWeight: isTodayDate || isSelectedDate ? 600 : showWeekHighlight ? 500 : 400,
                     cursor: isCurrentMonth ? 'pointer' : 'default',
                     transition: 'all 0.2s',
-                    border: (isSelectedWeek || isCurrentWeek) && isCurrentMonth ? '1px solid' : 'none',
-                    borderColor: isSelectedDate ? 'secondary.dark' : (isSelectedWeek || isCurrentWeek) && isCurrentMonth ? 'primary.light' : 'transparent',
+                    border: showWeekHighlight && isCurrentMonth ? '1px solid' : 'none',
+                    borderColor: isSelectedDate ? 'secondary.dark' : showWeekHighlight && isCurrentMonth ? 'primary.light' : 'transparent',
                     '&:hover': {
                       backgroundColor: isTodayDate 
                         ? 'primary.dark' 

@@ -21,6 +21,7 @@ const StatCard: React.FC<IStatCard> = ({
       sx={{
         height: '100%',
         transition: 'transform 0.2s, box-shadow 0.2s',
+        padding: 1
         
       }}
     >
@@ -56,13 +57,13 @@ const StatCard: React.FC<IStatCard> = ({
             sx={{
               backgroundColor: `${color}.01`,
               borderRadius: 0,
-              p: 1,
+              
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: `${color}.main`,
               '& svg': {
-                fontSize: '6rem', // Increased icon size
+                fontSize: '2.5rem', // Increased icon size
               },
             }}
           >
