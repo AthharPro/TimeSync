@@ -1,10 +1,10 @@
 import React from 'react';
 import { Card, CardContent, Typography, Box, Divider } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { IHoursChartData } from '../../../interfaces/dashboard/IDashboard';
+import { ITimesheetSubmissionData } from '../../../interfaces/dashboard/IDashboard';
 
 interface IHoursChartSectionProps {
-  data: IHoursChartData[];
+  data: ITimesheetSubmissionData[];
 }
 
 const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data }) => {
@@ -12,10 +12,10 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data }) => {
     <Card elevation={2} sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" fontWeight={600} gutterBottom>
-          Weekly Hours Overview
+          Weekly Timesheet Submitted Users
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Time logged over the last 7 days
+          Number of users who submitted timesheets this week
         </Typography>
         <Divider sx={{ my: 2 }} />
         
@@ -42,10 +42,10 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data }) => {
                   borderRadius: 8,
                   fontSize: 12
                 }}
-                formatter={(value: number) => [`${value} hours`, 'Logged']}
+                formatter={(value: number) => [`${value} users`, 'Submitted']}
               />
               <Bar 
-                dataKey="hours" 
+                dataKey="submissions" 
                 fill="#1976d2" 
                 radius={[8, 8, 0, 0]}
                 maxBarSize={50}
@@ -59,26 +59,26 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data }) => {
         <Box display="flex" justifyContent="space-around">
           <Box textAlign="center">
             <Typography variant="h5" fontWeight={600} color="primary">
-              {data.reduce((acc, curr) => acc + curr.hours, 0)}h
+              {data.reduce((acc, curr) => acc + curr.submissions, 0)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Total Hours
+              Total Submitted
             </Typography>
           </Box>
           <Box textAlign="center">
             <Typography variant="h5" fontWeight={600} color="success.main">
-              {(data.reduce((acc, curr) => acc + curr.hours, 0) / data.length).toFixed(1)}h
+              {(data.reduce((acc, curr) => acc + curr.submissions, 0) / data.length).toFixed(1)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Daily Average
             </Typography>
           </Box>
           <Box textAlign="center">
-            <Typography variant="h5" fontWeight={600} color="warning.main">
-              {Math.max(...data.map(d => d.hours))}h
+            <Typography variant="h5" fontWeight={600} color="error.main">
+              {48 - data.reduce((acc, curr) => acc + curr.submissions, 0)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Peak Day
+              Not Submitted
             </Typography>
           </Box>
         </Box>

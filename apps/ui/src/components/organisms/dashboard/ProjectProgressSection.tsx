@@ -12,10 +12,10 @@ const ProjectProgressSection: React.FC<IProjectProgressSectionProps> = ({ projec
     <Card elevation={2} sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" fontWeight={600} gutterBottom>
-          Project Progress
+          Project Status
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Track ongoing project status
+          Track project timelines and deadlines
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Box sx={{ maxHeight: 400, overflowY: 'auto' }}>

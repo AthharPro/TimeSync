@@ -8,6 +8,8 @@ interface ITimesheetPieChartSectionProps {
 }
 
 const TimesheetPieChartSection: React.FC<ITimesheetPieChartSectionProps> = ({ data }) => {
+  const totalCount = data.reduce((sum, item) => sum + item.count, 0);
+
   return (
     <Card elevation={2} sx={{ height: '100%' }}>
       <CardContent>
@@ -15,7 +17,7 @@ const TimesheetPieChartSection: React.FC<ITimesheetPieChartSectionProps> = ({ da
           Timesheet Submissions
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Monthly completion by team
+          Status breakdown
         </Typography>
         <Divider sx={{ my: 2 }} />
 
@@ -23,18 +25,18 @@ const TimesheetPieChartSection: React.FC<ITimesheetPieChartSectionProps> = ({ da
           <PieChart>
             <Pie
               data={data}
-              dataKey="submitted"
-              nameKey="team"
+              dataKey="count"
+              nameKey="status"
               cx="50%"
               cy="50%"
               outerRadius={80}
-              label={(entry: any) => `${entry.team}: ${entry.submitted}%`}
+              label={(entry: any) => `${entry.status}: ${entry.count}`}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>
-            <Tooltip formatter={(value) => `${value}%`} />
+            <Tooltip />
             <Legend />
           </PieChart>
         </ResponsiveContainer>
@@ -58,10 +60,10 @@ const TimesheetPieChartSection: React.FC<ITimesheetPieChartSectionProps> = ({ da
                     backgroundColor: item.color,
                   }}
                 />
-                <Typography variant="body2">{item.team}</Typography>
+                <Typography variant="body2">{item.status}</Typography>
               </Box>
               <Typography variant="body2" fontWeight={600}>
-                {item.submitted}%
+                {item.count} ({Math.round((item.count / totalCount) * 100)}%)
               </Typography>
             </Box>
           ))}

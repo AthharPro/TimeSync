@@ -1,4 +1,4 @@
-import { IStatCard, IProjectProgress, IRecentActivity, ITeamMemberStatus, ITimesheetSubmission } from '../interfaces/dashboard/IDashboard';
+import { IStatCard, IProjectProgress, IRecentActivity, ITeamMemberStatus, ITimesheetSubmission, ITimesheetSubmissionData } from '../interfaces/dashboard/IDashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -8,35 +8,28 @@ export const dashboardStats: IStatCard[] = [
   {
     title: 'Active Projects',
     value: 12,
-    change: 8.5,
-    changeLabel: 'vs last month',
+    change: 20,
+    changeLabel: 'Total Projects',
     icon: <AssignmentIcon />,
     color: 'primary',
   },
   {
-    title: 'Team Members',
-    value: 48,
-    change: 12.3,
-    changeLabel: 'new this month',
+    title: 'Super Admins',
+    value: 3,
+    change: 12,
+    changeLabel: 'Admin Users',
     icon: <PeopleIcon />,
     color: 'info',
   },
   {
-    title: 'Hours This Week',
-    value: '324',
-    change: 5.8,
-    changeLabel: 'vs last week',
+    title: 'Users Not Submitted Timesheets',
+    value: '24',
+    change: 108,
+    changeLabel: 'Users Submitted Timesheets',
     icon: <AccessTimeIcon />,
     color: 'warning',
   },
-  {
-    title: 'Tasks Completed This Month',
-    value: 156,
-    change: 23.4,
-    changeLabel: 'this month',
-    icon: <CheckCircleIcon />,
-    color: 'success',
-  },
+  
 ];
 
 export const calendarEvents = [
@@ -68,50 +61,56 @@ export const calendarEvents = [
 ];
 
 export const weeklyHoursData = [
+  { day: 'Sun', hours: 1 },
   { day: 'Mon', hours: 8 },
   { day: 'Tue', hours: 7.5 },
   { day: 'Wed', hours: 8 },
   { day: 'Thu', hours: 6 },
   { day: 'Fri', hours: 7 },
   { day: 'Sat', hours: 3 },
-  { day: 'Sun', hours: 1 },
+  
+];
+
+export const weeklyTimesheetSubmissions: ITimesheetSubmissionData[] = [
+  { day: 'Sun', submissions: 8 },
+  { day: 'Mon', submissions: 42 },
+  { day: 'Tue', submissions: 38 },
+  { day: 'Wed', submissions: 45 },
+  { day: 'Thu', submissions: 41 },
+  { day: 'Fri', submissions: 39 },
+  { day: 'Sat', submissions: 12 },
 ];
 
 export const projectProgress: IProjectProgress[] = [
   {
     id: '1',
     projectName: 'E-Commerce Platform Redesign',
-    progress: 75,
-    daysLeft: 15,
-    status: 'On Track',
+    startDate: new Date(2024, 10, 1), // Nov 1, 2024
+    endDate: new Date(2025, 11, 15), // Dec 15, 2024
   },
   {
     id: '2',
     projectName: 'Mobile Banking App',
-    progress: 45,
-    daysLeft: 8,
-    status: 'At Risk',
+    startDate: new Date(2024, 10, 20), // Nov 20, 2024
+    endDate: new Date(2026, 11, 25), // Dec 25, 2024
   },
   {
     id: '3',
     projectName: 'AI Analytics Dashboard',
-    progress: 90,
-    daysLeft: 5,
-    status: 'On Track',
+    startDate: new Date(2024, 10, 15), // Nov 15, 2024
+    endDate: new Date(2024, 11, 10), // Dec 10, 2024
   },
   {
     id: '4',
     projectName: 'CRM System Integration',
-    progress: 30,
-    daysLeft: 2,
-    status: 'Delayed',
+    startDate: new Date(2024, 10, 25), // Nov 25, 2024
+    endDate: new Date(2025, 12, 5), // Jan 5, 2025
   },
   {
     id: '5',
     projectName: 'Healthcare Portal',
-    progress: 60,
-    daysLeft: 20,
-    status: 'On Track',
+    startDate: new Date(2024, 10, 10), // Nov 10, 2024
+    endDate: new Date(2026, 11, 30), // Dec 30, 2024
   },
 ];
 
@@ -192,7 +191,7 @@ export const teamStatus: ITeamMemberStatus[] = [
 ];
 
 export const timesheetSubmissions: ITimesheetSubmission[] = [
-  { team: 'Development', submitted: 85, color: '#1976d2' },
-  { team: 'HR', submitted: 92, color: '#2e7d32' },
-  { team: 'Finance', submitted: 78, color: '#ed6c02' },
+  { status: 'Submitted', count: 125, color: '#1976d2' },
+  { status: 'Pending', count: 45, color: '#ed6c02' },
+  { status: 'Approved', count: 98, color: '#2e7d32' },
 ];

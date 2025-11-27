@@ -10,9 +10,8 @@ export interface IStatCard {
 export interface IProjectProgress {
   id: string;
   projectName: string;
-  progress: number; // 0-100
-  daysLeft: number;
-  status: 'On Track' | 'At Risk' | 'Delayed';
+  startDate: Date;
+  endDate: Date;
 }
 
 export interface IRecentActivity {
@@ -44,9 +43,14 @@ export interface IHoursChartData {
   hours: number;
 }
 
+export interface ITimesheetSubmissionData {
+  day: string;
+  submissions: number; // number of users who submitted timesheets
+}
+
 export interface ITimesheetSubmission {
-  team: string;
-  submitted: number; // percentage 0-100
+  status: string;
+  count: number;
   color: string;
   [key: string]: any; // Index signature for recharts compatibility
 }

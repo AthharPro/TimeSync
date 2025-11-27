@@ -21,10 +21,7 @@ const StatCard: React.FC<IStatCard> = ({
       sx={{
         height: '100%',
         transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: 4,
-        },
+        
       }}
     >
       <CardContent>
@@ -38,32 +35,35 @@ const StatCard: React.FC<IStatCard> = ({
             </Typography>
             {change !== undefined && (
               <Box display="flex" alignItems="center" gap={0.5}>
-                {isPositive && <TrendingUpIcon fontSize="small" color="success" />}
-                {isNegative && <TrendingDownIcon fontSize="small" color="error" />}
-                <Typography
-                  variant="caption"
-                  color={isPositive ? 'success.main' : isNegative ? 'error.main' : 'text.secondary'}
-                  fontWeight={500}
-                >
-                  {isPositive ? '+' : ''}{change}%
-                </Typography>
                 {changeLabel && (
                   <Typography variant="caption" color="text.secondary">
                     {changeLabel}
                   </Typography>
                 )}
+                <Typography
+                  variant="caption"
+                  color={ 'text.secondary' }
+                  fontWeight={700}
+                  fontSize={12}
+                >
+                  {change}
+                </Typography>
+                
               </Box>
             )}
           </Box>
           <Box
             sx={{
-              backgroundColor: `${color}.50`,
-              borderRadius: 2,
-              p: 1.5,
+              backgroundColor: `${color}.01`,
+              borderRadius: 0,
+              p: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: `${color}.main`,
+              '& svg': {
+                fontSize: '6rem', // Increased icon size
+              },
             }}
           >
             {icon}

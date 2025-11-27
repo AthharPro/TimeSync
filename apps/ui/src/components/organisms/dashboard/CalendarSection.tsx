@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Box, Divider, IconButton } from '@mui/material';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfWeek, endOfWeek, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfWeek, endOfWeek, addMonths, subMonths, isSameWeek } from 'date-fns';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { ICalendarEvent } from '../../../interfaces/dashboard/IDashboard';
 
 interface ICalendarSectionProps {
   events?: ICalendarEvent[];
+  onDateSelect?: (date: Date) => void;
 }
 
-const CalendarSection: React.FC<ICalendarSectionProps> = ({ events = [] }) => {
+const CalendarSection: React.FC<ICalendarSectionProps> = ({ events = [], onDateSelect }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const today = new Date();
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -30,6 +33,14 @@ const CalendarSection: React.FC<ICalendarSectionProps> = ({ events = [] }) => {
 
   const handleToday = () => {
     setCurrentDate(new Date());
+    setSelectedDate(null);
+  };
+
+  const handleDateClick = (date: Date) => {
+    setSelectedDate(date);
+    if (onDateSelect) {
+      onDateSelect(date);
+    }
   };
 
   const getEventForDate = (date: Date) => {
@@ -95,74 +106,59 @@ const CalendarSection: React.FC<ICalendarSectionProps> = ({ events = [] }) => {
               const event = getEventForDate(day);
               const isCurrentMonth = day.getMonth() === currentDate.getMonth();
               const isTodayDate = isToday(day);
+              const isCurrentWeek = isSameWeek(day, today, { weekStartsOn: 0 });
+              const isSelectedDate = selectedDate && isSameDay(day, selectedDate);
+              const isSelectedWeek = selectedDate && isSameWeek(day, selectedDate, { weekStartsOn: 0 });
 
               return (
                 <Box
                   key={idx}
+                  onClick={() => isCurrentMonth && handleDateClick(day)}
                   sx={{
                     aspectRatio: '1',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative',
-                    borderRadius: 0.5,
-                    backgroundColor: isTodayDate ? 'primary.main' : 'transparent',
-                    color: isTodayDate ? 'white' : isCurrentMonth ? 'text.primary' : 'text.disabled',
-                    fontWeight: isTodayDate ? 600 : 400,
-                    cursor: event ? 'pointer' : 'default',
+                    borderRadius: 10,
+                    backgroundColor: isTodayDate 
+                      ? 'primary.main' 
+                      : isSelectedDate
+                      ? 'secondary.main'
+                      : (isSelectedWeek || isCurrentWeek) && isCurrentMonth
+                      ? 'primary.lighter'
+                      : 'transparent',
+                    color: isTodayDate || isSelectedDate
+                      ? 'white' 
+                      : isCurrentMonth 
+                      ? 'text.primary' 
+                      : 'text.disabled',
+                    fontWeight: isTodayDate || isSelectedDate ? 600 : (isSelectedWeek || isCurrentWeek) ? 500 : 400,
+                    cursor: isCurrentMonth ? 'pointer' : 'default',
                     transition: 'all 0.2s',
+                    border: (isSelectedWeek || isCurrentWeek) && isCurrentMonth ? '1px solid' : 'none',
+                    borderColor: isSelectedDate ? 'secondary.dark' : (isSelectedWeek || isCurrentWeek) && isCurrentMonth ? 'primary.light' : 'transparent',
                     '&:hover': {
-                      backgroundColor: isTodayDate ? 'primary.dark' : event ? 'action.hover' : 'transparent',
+                      backgroundColor: isTodayDate 
+                        ? 'primary.dark' 
+                        : isSelectedDate
+                        ? 'secondary.dark'
+                        : isCurrentMonth
+                        ? 'action.hover'
+                        : 'transparent',
                     },
                   }}
                 >
                   <Typography variant="caption" fontSize="0.7rem">
                     {format(day, 'd')}
                   </Typography>
-                  {event && !isTodayDate && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        bottom: 1,
-                        width: 4,
-                        height: 4,
-                        borderRadius: '50%',
-                        backgroundColor: getEventColor(event.type),
-                      }}
-                    />
-                  )}
                 </Box>
               );
             })}
           </Box>
 
           {/* Legend */}
-          {events.length > 0 && (
-            <Box mt={1.5}>
-              <Divider sx={{ mb: 0.5 }} />
-              <Typography variant="caption" fontSize="0.65rem" color="text.secondary" fontWeight={600}>
-                Upcoming Events
-              </Typography>
-              <Box mt={0.5}>
-                {events.slice(0, 2).map((event, idx) => (
-                  <Box key={idx} display="flex" alignItems="center" gap={0.5} mb={0.3}>
-                    <Box
-                      sx={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: '50%',
-                        backgroundColor: getEventColor(event.type),
-                        flexShrink: 0,
-                      }}
-                    />
-                    <Typography variant="caption" fontSize="0.65rem" noWrap>
-                      {format(event.date, 'MMM d')} - {event.title}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          )}
+          
         </Box>
       </CardContent>
     </Card>
