@@ -8,5 +8,6 @@ export * from './popup';
 export * from './hook';
 export * from './redux';
 export * from './landing';
+export * from './dashboard';
 
 
