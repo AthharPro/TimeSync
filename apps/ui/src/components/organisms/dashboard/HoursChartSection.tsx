@@ -75,7 +75,7 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data }) => {
           </Box>
           <Box textAlign="center">
             <Typography variant="h5" fontWeight={600} color="error.main">
-              {48 - data.reduce((acc, curr) => acc + curr.submissions, 0)}
+              {data.reduce((acc, curr) => curr.submissions, 0)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Not Submitted

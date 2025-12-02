@@ -3,7 +3,7 @@ import WindowLayout from '../../templates/other/WindowLayout';
 import { Box, Divider } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { BaseBtn } from '../../atoms';
-import StatCard from '../../atoms/dashboard/StatCard';
+import StatCard from '../../molecules/dashboard/StatCard';
 import ProjectProgressSection from '../dashboard/ProjectProgressSection';
 import RecentActivitySection from '../dashboard/RecentActivitySection';
 import CalendarSection from '../dashboard/CalendarSection';
@@ -51,15 +51,7 @@ function DashboardWindow() {
   return (
     <WindowLayout
       title="Dashboard"
-      buttons={
-        <BaseBtn
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={handleRefresh}
-        >
-          Refresh
-        </BaseBtn>
-      }
+      
     >
       <Box sx={{ flexGrow: 1 }}>
         {/* Main Content Layout */}
