@@ -4,4 +4,5 @@ export * from './navigation';
 export * from './auth';
 export * from './redux';
 export * from './landing';
+export * from './dashboard';
 export * from './hook';
