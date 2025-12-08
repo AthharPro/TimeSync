@@ -29,17 +29,3 @@ export const createMyTimesheet = async (
 
   return await timesheet.save();
 };
-
-export const updateTimesheet = async (
-  params: Partial<ITimesheetDocument> & { _id: string }
-): Promise<ITimesheetDocument | null> => {
-  const timesheet = await Timesheet.findById(params._id);
-  appAssert(timesheet, NOT_FOUND, 'Timesheet not found');
-  // Update only the fields that are present in params
-  Object.assign(timesheet, params);
-
-  const result = await timesheet.save();
-  appAssert(result, INTERNAL_SERVER_ERROR, 'Timesheet update failed');
-
-  return result;
-};

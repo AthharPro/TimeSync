@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { createMyTimesheetHandler,updateTimesheetHandler } from '../controllers';
+import { createMyTimesheetHandler } from '../controllers';
 
 const timesheetRoutes = Router();
 
 timesheetRoutes.post('/', createMyTimesheetHandler);
-timesheetRoutes.patch('/:id', updateTimesheetHandler);
 
 export { timesheetRoutes };
