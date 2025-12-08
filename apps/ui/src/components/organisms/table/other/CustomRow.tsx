@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { CustomRowProps } from 'apps/ui/src/interfaces/component/organism';
+import { CustomRowProps } from '@tms/ui/interfaces';
 
 const CustomRow: React.FC<CustomRowProps> = ({ text }) => {
   return (

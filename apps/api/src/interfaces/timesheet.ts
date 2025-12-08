@@ -1,4 +1,4 @@
-import mongoose, { Document, mongo } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 
 export interface ITimesheet extends Document {
   userId: mongoose.Types.ObjectId;
@@ -14,6 +14,6 @@ export interface ITimesheet extends Document {
   __v?: number;
 }
 
-export interface ITimesheetDocument extends mongoose.Document, ITimesheet {}
+export type ITimesheetDocument = mongoose.Document & ITimesheet;
 
-export interface ITimesheetModel extends mongoose.Model<ITimesheetDocument> {}
+export type ITimesheetModel = mongoose.Model<ITimesheetDocument>;

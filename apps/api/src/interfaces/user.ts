@@ -35,9 +35,9 @@ export interface IUser extends Document {
   >;
 }
 
-export interface IUserDocument extends mongoose.Document, IUser {}
+export type IUserDocument = mongoose.Document & IUser;
 
-export interface IUserModel extends mongoose.Model<IUserDocument> {}
+export type IUserModel = mongoose.Model<IUserDocument>;
 
 export interface CreateUserParams {
   email: string;

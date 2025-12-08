@@ -7,7 +7,7 @@ import { Request, Response } from "express";
 
 export const createTaskHandler = catchErrors(async (req: Request, res: Response) => {
   const parsed = createTaskSchema.parse(req.body);
-  let {projectId,taskName} = parsed;
+  const {projectId,taskName} = parsed;
 
   const params= {
     projectId, 

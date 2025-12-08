@@ -1,6 +1,6 @@
 import React from 'react';
 import { Popover, Box, Typography, TextField } from '@mui/material';
-import { DescriptionPopoverProps } from 'apps/ui/src/interfaces/component/organism';
+import { DescriptionPopoverProps } from '@tms/ui/interfaces';
 
 const DescriptionPopover: React.FC<DescriptionPopoverProps> = ({
   anchorEl,

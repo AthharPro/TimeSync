@@ -8,6 +8,6 @@ export interface ITask extends Document {
   __v?: number;
 }
 
-export interface ITaskDocument extends mongoose.Document, ITask {}
+export type ITaskDocument = mongoose.Document & ITask;
 
-export interface ITaskModel extends mongoose.Model<ITaskDocument> {}
+export type ITaskModel = mongoose.Model<ITaskDocument>;

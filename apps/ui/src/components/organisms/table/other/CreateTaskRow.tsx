@@ -2,7 +2,7 @@ import React from 'react';
 import { Box } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { BaseBtn } from '../../../atoms';
-import { CreateTaskRowProps } from 'apps/ui/src/interfaces/component/organism/ITable';
+import { CreateTaskRowProps } from '@tms/ui/interfaces';
 
 const CreateTaskRow: React.FC<CreateTaskRowProps> = ({ onCreateTask }) => {
   return (

@@ -1,4 +1,4 @@
-import { CREATED, OK } from '../constants';
+import { CREATED } from '../constants';
 import { registerSchema } from '../schemas';
 import { catchErrors } from '../utils';
 import { createUser } from '../services';

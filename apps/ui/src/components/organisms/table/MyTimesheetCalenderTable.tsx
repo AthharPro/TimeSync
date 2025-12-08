@@ -17,24 +17,15 @@ const MyTimesheetCalenderTable = () => {
 
   const weekDays = currentWeekDays;
 
-  const availableProjects = [
-    'Project Alpha',
-    'Project Beta',
-    'Project Gamma',
-    'Project Delta',
-  ];
-
-  const availableTasks = [
-    'Development',
-    'Testing',
-    'Code Review',
-    'Documentation',
-    'Bug Fixing',
-    'Meeting',
-  ];
-
   // Group calendar data by project
   const groupedData = useMemo(() => {
+    const availableProjects = [
+      'Project Alpha',
+      'Project Beta',
+      'Project Gamma',
+      'Project Delta',
+    ];
+
     const projectMap = new Map<string, IMyTimesheetCalendarEntry[]>();
     
     // Initialize all available projects with empty arrays
@@ -47,7 +38,10 @@ const MyTimesheetCalenderTable = () => {
       if (!projectMap.has(entry.project)) {
         projectMap.set(entry.project, []);
       }
-      projectMap.get(entry.project)!.push(entry);
+      const projectTasks = projectMap.get(entry.project);
+      if (projectTasks) {
+        projectTasks.push(entry);
+      }
     });
 
     // Convert to flat array with project rows, task rows, and create task rows
@@ -82,7 +76,16 @@ const MyTimesheetCalenderTable = () => {
     });
 
     return rows;
-  }, [myCalendarViewData, availableProjects]);
+  }, [myCalendarViewData]);
+
+  const availableTasks = [
+    'Development',
+    'Testing',
+    'Code Review',
+    'Documentation',
+    'Bug Fixing',
+    'Meeting',
+  ];
 
   const handleCreateTask = (project: string) => {
     console.log('Creating new task for project:', project);

@@ -7,7 +7,7 @@ import { Request, Response } from "express";
 export const createMyTimesheetHandler = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const parsed = createTimesheetSchema.parse(req.body);
-  let {date,projectId,taskId,billable,description,hours} = parsed;
+  const {date,projectId,taskId,billable,description,hours} = parsed;
 
   // Pass as strings; conversion to ObjectId happens in the service
   const params= {
@@ -27,10 +27,10 @@ export const createMyTimesheetHandler = catchErrors(async (req: Request, res: Re
 export const updateTimesheetHandler = catchErrors(async (req: Request, res: Response) => {
   const timesheetId = req.params.id;
   const parsed = updateTimesheetSchema.parse(req.body);
-  let {projectId,taskId,billable,description,hours} = parsed;
+  const {projectId,taskId,billable,description,hours} = parsed;
 
   // Build params object with only provided fields (conversion to ObjectId happens in service)
-  const params: any = {
+  const params: Record<string, unknown> = {
     _id: timesheetId,
   };
   

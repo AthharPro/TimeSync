@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import { BillableType } from '@tms/shared';
 import AutocompleteText from '../../../atoms/other/inputField/Autocomplete';
 import Dropdown from '../../../atoms/other/inputField/Dropdown';
-import { TaskRowProps } from 'apps/ui/src/interfaces/component/organism';
+import { TaskRowProps } from '@tms/ui/interfaces';
 
 const TaskRow: React.FC<TaskRowProps> = ({
   task,

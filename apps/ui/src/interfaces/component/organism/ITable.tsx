@@ -19,7 +19,7 @@ export interface TimesheetCellProps {
   onHoursChange: (value: number) => void;
   onDescriptionChange?: (value: string) => void;
   date?: Date;
-  row?: any;
+  row?: Record<string, unknown>;
 }
 
 export interface CreateTaskRowProps {

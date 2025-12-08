@@ -5,7 +5,6 @@ import {
   updateMyTimesheetById,
   goToPreviousWeek as previousWeekAction,
   goToNextWeek as nextWeekAction,
-  addCalendarViewRow,
   addEmptyCalendarRow,
   updateCalendarRow,
   deleteCalendarRow
@@ -56,10 +55,6 @@ export const useMyTimesheet = (): IUseMyTimesheetReturn => {
   // Update a timesheet entry by ID
   const updateTimesheet = useCallback((id: string, updates: Partial<IMyTimesheetTableEntry>) => {
     dispatch(updateMyTimesheetById({ id, updates }));
-  }, [dispatch]);
-
-  const addCalendarViewData = useCallback((timesheet: IMyTimesheetTableEntry) => {
-    dispatch(addCalendarViewRow(timesheet));
   }, [dispatch]);
 
   const createEmptyCalendarRow = useCallback((project?: string, task?: string, billableType?: BillableType) => {
