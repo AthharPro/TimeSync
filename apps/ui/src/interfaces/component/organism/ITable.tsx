@@ -1,4 +1,5 @@
 import { BillableType } from "@tms/shared";
+import { ITimesheetRow } from "../../layout";
 
 export interface ITimesheetTableEntry {
   id: string; 
@@ -19,7 +20,7 @@ export interface TimesheetCellProps {
   onHoursChange: (value: number) => void;
   onDescriptionChange?: (value: string) => void;
   date?: Date;
-  row?: Record<string, unknown>;
+  row?: ITimesheetRow;
 }
 
 export interface CreateTaskRowProps {

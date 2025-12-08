@@ -4,7 +4,7 @@ import { useTheme } from '@mui/material/styles';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import HoursField from '../../../atoms/other/inputField/HoursField';
 import DescriptionPopover from '../../popover/DescriptionPopover';
-import { TimesheetCellProps } from 'apps/ui/src/interfaces/component/organism';
+import { TimesheetCellProps } from './../../../../interfaces/component/organism';
 
 
 const TimesheetCell: React.FC<TimesheetCellProps> = ({

@@ -282,14 +282,16 @@ const MyTimesheetCalenderTable = () => {
           );
         } else {
           return (
-            <TaskRow 
-              task={row.task || ''} 
-              billableType={row.billableType || BillableType.Billable} 
-              rowId={row.id} 
-              availableTasks={availableTasks} 
-              onTaskChange={(rowId:any, task:any) => handleTaskChange(rowId, task)} 
-              onBillableTypeChange={(rowId:any, type:any) => handleBillableTypeChange(rowId, type)} 
-            />
+<TaskRow
+  task={row.task || ''}
+  billableType={row.billableType || BillableType.Billable}
+  rowId={row.id}
+  availableTasks={availableTasks}
+  onTaskChange={(rowId: string, newTask: string | null) => handleTaskChange(rowId, newTask)}
+  onBillableTypeChange={(rowId: string, type: BillableType) => handleBillableTypeChange(rowId, type)}
+/>
+
+
           );
         }
       },
@@ -313,7 +315,7 @@ const MyTimesheetCalenderTable = () => {
               onHoursChange={(value: number) => handleHoursChange(row.id, day.date, value)}
               onDescriptionChange={(value: string) => handleDescriptionChange(row.id, day.date, value)}
               date={day.date}
-             row={row as unknown as Record<string, unknown>}
+              row={row}
             />
           );
         },

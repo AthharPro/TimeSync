@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, IconButton } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { WeekNavigatorProps } from 'apps/ui/src/interfaces';
+import { WeekNavigatorProps } from './../../../../interfaces';
 
 const WeekNavigator: React.FC<WeekNavigatorProps> = ({
   weekDays,
