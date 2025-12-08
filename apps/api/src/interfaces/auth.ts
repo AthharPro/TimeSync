@@ -1,13 +1,21 @@
-export interface IAuthResult {
-  user: unknown;
-  accessToken: string;
-  refreshToken: string;
+import { SignOptions } from 'jsonwebtoken';
+
+export interface IAccessTokenPayload {
+  userId: string; 
+  role: string; 
+}
+
+export interface IRefreshTokenPayload {
+  userId: string; 
+}
+
+export interface ITokenOptions extends SignOptions {
+  secret: string;
 }
 
 export interface ILoginParams {
   email: string;
   password: string;
-  userAgent?: string;
 }
 
 export interface IRegisterParams {
@@ -20,27 +28,6 @@ export interface IRegisterParams {
   role: string;
 }
 
-export interface IPasswordResetParams {
-  email: string;
-}
-
-export interface IPasswordChangeParams {
-  currentPassword: string;
-  newPassword: string;
-}
-
-export interface ITokenPayload {
-  userId: string;
-  sessionId: string;
-  iat?: number;
-  exp?: number;
-}
-
-export interface IRefreshTokenParams {
-  refreshToken: string;
-}
-
-// Service interfaces
 export interface LoginParams {
   email: string;
   password: string;

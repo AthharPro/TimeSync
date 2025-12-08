@@ -54,7 +54,7 @@ const HoursField: React.FC<IHoursFieldProps> = ({ value = 0, onChange, ...rest }
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleBlur();
+      // Only trigger blur, do not call handleBlur directly to avoid double firing
       inputRef.current?.blur();
       return;
     }
@@ -95,7 +95,7 @@ const HoursField: React.FC<IHoursFieldProps> = ({ value = 0, onChange, ...rest }
       inputRef={inputRef}
       placeholder="00:00"
       sx={{
-        width: '100%',
+        width: '44px',
         '& .MuiInput-underline:before': {
           borderBottom: 'none',
         },
@@ -104,6 +104,10 @@ const HoursField: React.FC<IHoursFieldProps> = ({ value = 0, onChange, ...rest }
         },
         '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
           borderBottom: 'none',
+        },
+        '& .MuiInputBase-input': {
+          padding: '4px 2px',
+          textAlign: 'center',
         },
         ...rest.sx,
       }}

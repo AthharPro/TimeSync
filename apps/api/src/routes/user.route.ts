@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import { registerHandler } from '../controllers/user.controller';
+import { UserRole } from '@tms/shared';
 
 const router = Router();
 
-// TODO: Implement user routes
+router.post("/admin", registerHandler(UserRole.Admin));
 
-export default router;
+export  {router as userRoutes};

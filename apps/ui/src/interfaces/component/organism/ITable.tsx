@@ -1,4 +1,5 @@
 import { BillableType } from "@tms/shared";
+import { ITimesheetRow } from "../../layout";
 
 export interface ITimesheetTableEntry {
   id: string; 
@@ -10,4 +11,54 @@ export interface ITimesheetTableEntry {
   billableType: BillableType;
   status: string;
   isChecked?: boolean; 
+}
+
+export interface TimesheetCellProps {
+  hours: number;
+  description?: string;
+  isTodayColumn?: boolean;
+  onHoursChange: (value: number) => void;
+  onDescriptionChange?: (value: string) => void;
+  date?: Date;
+  row?: ITimesheetRow;
+}
+
+export interface CreateTaskRowProps {
+  onCreateTask: () => void;
+}
+
+export interface TaskRowProps {
+  task: string;
+  billableType: BillableType;
+  rowId: string;
+  availableTasks: string[];
+  onTaskChange: (rowId: string, newTask: string | null) => void;
+  onBillableTypeChange: (rowId: string, billableType: BillableType) => void;
+}
+
+export interface CustomRowProps {
+  text: string;
+}
+
+export interface IAccountTableRow {
+  id?: string;
+  employee_id?: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  team?: string;
+  status: 'Active' | 'Inactive' | string;
+  contactNumber: string;
+  designation?: string;
+  role?: string;
+  createdAt?: string;
+}
+
+export interface IAccountTableProps {
+  rows: IAccountTableRow[];
+  onEditRow?: (row: IAccountTableRow) => void;
+  onDelete?: (id: string) => void;
+  disableEdit?: boolean;
+  showDelete?: boolean;
+  disableDelete?: boolean;
 }

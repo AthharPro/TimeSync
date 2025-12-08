@@ -8,38 +8,21 @@ const authenticate = (requiredRoles?: UserRole[]): RequestHandler => {
   return (req, res, next) => {
     const accessToken = req.cookies?.accessToken as string | undefined;
 
-    appAssert(
-      accessToken,
-      UNAUTHORIZED,
-      "Not authorized"
-    );
+    appAssert(accessToken,UNAUTHORIZED,"Not authorized");
 
     const { error, payload } = verifyToken(accessToken);
 
-    appAssert(
-      payload,
-      UNAUTHORIZED,
-      error === "jwt expired" ? "Token expired" : "Invalid token"
-    );
+    appAssert(payload,UNAUTHORIZED,error === "jwt expired" ? "Token expired" : "Invalid token");
 
-    appAssert(
-      payload.userId && payload.sessionId && payload.role,
-      UNAUTHORIZED,
-      "Invalid token payload"
-    );
+    appAssert(payload.userId && payload.role,UNAUTHORIZED,"Invalid token payload");
 
     req.userId = payload.userId;
     req.userRole = payload.role;
-    req.sessionId = payload.sessionId;
 
     const userRole = payload.role as UserRole;
 
     if (requiredRoles && !requiredRoles.includes(userRole)) {
-      appAssert(
-        false,
-        FORBIDDEN,
-        "Access denied: insufficient permissions"
-      );
+      appAssert(false,FORBIDDEN,"Access denied: insufficient permissions");
     }
     next();
   };
