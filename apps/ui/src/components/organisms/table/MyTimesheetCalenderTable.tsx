@@ -287,8 +287,8 @@ const MyTimesheetCalenderTable = () => {
               billableType={row.billableType || BillableType.Billable} 
               rowId={row.id} 
               availableTasks={availableTasks} 
-              onTaskChange={(rowId, task) => handleTaskChange(rowId, task)} 
-              onBillableTypeChange={(rowId, type) => handleBillableTypeChange(rowId, type)} 
+              onTaskChange={(rowId:any, task:any) => handleTaskChange(rowId, task)} 
+              onBillableTypeChange={(rowId:any, type:any) => handleBillableTypeChange(rowId, type)} 
             />
           );
         }
@@ -297,7 +297,7 @@ const MyTimesheetCalenderTable = () => {
     },
     ...weekDays.map((day) => ({
         key: day.date.toDateString(),
-        label: day.viewDate,
+        label: day.date.getDate().toString(),
         render: (row: ITimesheetRow) => {
           // Don't show timesheet cells for project rows or create task rows
           if (row.isProjectRow || row.isCreateTaskRow) {
@@ -313,7 +313,7 @@ const MyTimesheetCalenderTable = () => {
               onHoursChange={(value: number) => handleHoursChange(row.id, day.date, value)}
               onDescriptionChange={(value: string) => handleDescriptionChange(row.id, day.date, value)}
               date={day.date}
-              row={row}
+             row={row as unknown as Record<string, unknown>}
             />
           );
         },

@@ -1,13 +1,6 @@
+import { WeekDay } from "../component";
 import { IMyTimesheetCalendarEntry, IMyTimesheetTableEntry } from "../layout/ITableProps";
 import { BillableType } from "@tms/shared";
-
-export interface WeekDay {
-  date: Date;
-  dayName: string;
-  dayNumber: number;
-  monthName: string;
-  viewDate: string;
-}
 
 export interface IUseMyTimesheetReturn {
   // States
