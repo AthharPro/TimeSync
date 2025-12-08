@@ -9,6 +9,7 @@ export interface AutocompleteTextProps<T> {
   onChange: (event: React.SyntheticEvent, newValue: T | null) => void;
   options: T[];
   variant?: TextFieldVariants;
+  placeholder?: string;
 }
 
 export interface DatePickerFieldProps {

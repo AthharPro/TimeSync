@@ -1,2 +1,2 @@
 export * from './IInputField'
-export * from './IStatusChipProps'
+export * from './IButtons'

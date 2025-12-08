@@ -22,8 +22,8 @@ export default function DrawerList({ items }: IDrawerListProps) {
             <CustomListItemButton
               onClick={() => setSelectedButton(item.text)}
               sx={{
-                '&:hover': { backgroundColor: theme.palette.primary.light,color: theme.palette.secondary.light },
-                color: theme.palette.secondary.dark,
+                '&:hover': { backgroundColor: theme.palette.secondary.dark,color: theme.palette.text.secondary },
+                      color: theme.palette.text.secondary,
                 backgroundColor: selectedButton === item.text ? theme.palette.primary.light : 'transparent',
               }}
             >

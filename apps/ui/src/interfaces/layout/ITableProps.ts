@@ -13,6 +13,7 @@ export interface DataTableProps<T> {
   rows: T[];
   getRowKey: (row: T) => string | number;
   onRowClick?: (row: T) => void;
+  enableHover?: boolean;
 }
 
 export interface IMyTimesheetTableEntry {
@@ -25,6 +26,31 @@ export interface IMyTimesheetTableEntry {
   billableType: BillableType;
   status: DailyTimesheetStatus;
   isChecked?: boolean;
+}
+
+export interface IMyTimesheetCalendarEntry {
+  id: string; 
+  project: string;
+  task: string;
+  billableType: BillableType;
+  myTimesheetEntriesIds: string[];
+}
+
+export interface IProjectTaskGroup {
+  id: string;
+  project: string;
+  tasks: IMyTimesheetCalendarEntry[];
+  isProjectRow: boolean;
+}
+
+export interface ITimesheetRow {
+  id: string;
+  project?: string;
+  task?: string;
+  billableType?: BillableType;
+  myTimesheetEntriesIds?: string[];
+  isProjectRow: boolean;
+  isCreateTaskRow?: boolean;
 }
 
 export interface IAccountTableEntry {

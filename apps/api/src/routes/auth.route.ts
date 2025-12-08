@@ -18,4 +18,4 @@ authRoutes.get("/logout", logoutHandler);
 
 
 
-export default authRoutes;
+export {authRoutes};

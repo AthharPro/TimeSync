@@ -8,7 +8,7 @@ export default function CustomAppBar() {
     <AppBar
       position="fixed"
       sx={{
-        backgroundColor: theme.palette.background.default,
+        backgroundColor: theme.palette.background.paper,
         boxShadow: 'none',
         border: 'none',
         height: '64px',

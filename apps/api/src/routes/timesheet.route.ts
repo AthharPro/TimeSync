@@ -1,7 +1,8 @@
 import { Router } from 'express';
+import { createMyTimesheetHandler } from '../controllers';
 
-const router = Router();
+const timesheetRoutes = Router();
 
-// TODO: Implement timesheet routes
+timesheetRoutes.post('/', createMyTimesheetHandler);
 
-export default router;
+export { timesheetRoutes };

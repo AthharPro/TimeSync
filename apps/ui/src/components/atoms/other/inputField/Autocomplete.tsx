@@ -9,8 +9,9 @@ const AutocompleteText = <T,>({
   onChange,
   options,
   variant = 'standard',
+  placeholder,
 }: AutocompleteTextProps<T>) => {
-  
+
   return (
     <Autocomplete<T, false, true, false>
       size="small"
@@ -24,6 +25,7 @@ const AutocompleteText = <T,>({
         <TextField
           {...params}
           variant={variant}
+          placeholder={placeholder}
           sx={{
             ...(variant === 'standard' && {
               '& .MuiInput-underline:before': {
