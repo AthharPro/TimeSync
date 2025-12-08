@@ -30,7 +30,7 @@ const WindowLayout: React.FC<WindowLayoutProps> = ({ title, buttons, children })
             }}
           >
             {title && (
-              <Typography variant="h6" component="h2">
+              <Typography variant="h6" component="h2" color='primary'>
                 {title}
               </Typography>
             )}

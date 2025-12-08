@@ -22,7 +22,7 @@ export default function MainLayout({ children, items }: IMainLayoutProps) {
         sx={{
           flexGrow: 1,
           marginTop: '60px',
-          backgroundColor: theme.palette.background.paper,
+          backgroundColor: theme.palette.background.default,
           overflow: 'auto',
         }}
       >

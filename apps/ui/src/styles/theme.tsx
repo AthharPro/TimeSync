@@ -6,17 +6,17 @@ const fonts = {
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#013282',
+      main: '#17204F',
     },
     secondary: {
-      main: grey[300],
+      main: '#374EBE',
     },
     background: {
-      default: '#ffffff',
-      paper: '#EBEFF4',
+      default: '#E8EAF6',
+      paper: '#F5F6FC',
     },
     text: {
-      primary: '#2C2C2C',
+      primary: '#090D1F',
       secondary: '#9A9A9A',
     },
     error: { main: '#FF7081' },

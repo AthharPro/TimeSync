@@ -7,7 +7,6 @@ declare module "express-serve-static-core" {
   interface Request {
     userId: UserDocument["_id"];
     userRole: UserRole|string;
-    sessionId: SessionDocument["_id"];
   }
 }
 

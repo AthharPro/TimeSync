@@ -99,7 +99,8 @@ const MyTimesheetTable = () => {
       label: '',
       renderHeader: () => (
         <Checkbox
-          size="small"
+          size='small'
+          sx={{ paddingTop: 0, paddingBottom: 0 }}
           checked={isAllSelected}
           indeterminate={isIndeterminate}
           onChange={handleSelectAll}
@@ -149,6 +150,7 @@ const MyTimesheetTable = () => {
       render: (row) => (
         <AutocompleteText
           value={row.project}
+          placeholder="Enter Project"
           onChange={(event, newValue) =>
             handleProjectChange(row.id, newValue)
           }
@@ -163,6 +165,7 @@ const MyTimesheetTable = () => {
       render: (row) => (
         <AutocompleteText
           value={row.task}
+          placeholder="Enter Task"
           onChange={(event, newValue) => handleTaskChange(row.id, newValue)}
           options={availableTasks}
         />
@@ -175,6 +178,7 @@ const MyTimesheetTable = () => {
       render: (row) => (
         <BaseTextField
           value={row.description}
+          placeholder="Enter description"
           onChange={(e) => handleDescriptionChange(row.id, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           variant="standard"

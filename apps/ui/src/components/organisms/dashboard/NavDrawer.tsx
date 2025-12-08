@@ -87,7 +87,7 @@ export default function NavDrawer({
       </DrawerHeader>
       <Divider
         sx={{
-          backgroundColor: theme.palette.secondary.light,
+          backgroundColor: theme.palette.text.secondary,
           marginX: 1,
           marginY: 0,
           padding: 0,

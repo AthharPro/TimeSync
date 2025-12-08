@@ -37,30 +37,7 @@ export interface IUser extends Document {
 
 export interface IUserDocument extends mongoose.Document, IUser {}
 
-export interface IUserModel extends mongoose.Model<IUserDocument> {
-  findAllByRole(role: UserRole): Promise<IUserDocument[]>;
-  findAllByRoles(roles: UserRole[]): Promise<IUserDocument[]>;
-  findAllActive(): Promise<IUserDocument[]>;
-  findAllIncludingInactive(roles: UserRole[]): Promise<IUserDocument[]>;
-}
-
-export interface ISession extends Document {
-  userId: mongoose.Types.ObjectId;
-  userAgent: string;
-  createdAt: Date;
-  expiresAt: Date;
-}
-
-export interface ISessionDocument extends mongoose.Document, ISession {}
-
-export interface IVerificationCode extends Document {
-  userId: mongoose.Types.ObjectId;
-  type: string;
-  expiresAt: Date;
-  createdAt: Date;
-}
-
-export interface IVerificationCodeDocument extends mongoose.Document, IVerificationCode {}
+export interface IUserModel extends mongoose.Model<IUserDocument> {}
 
 export interface CreateUserParams {
   email: string;
@@ -69,10 +46,4 @@ export interface CreateUserParams {
   lastName: string;
   contactNumber: string;
   role: UserRole;
-  userAgent?: string;
-}
-
-export interface ChangePasswordParams {
-  userId: string;
-  newPassword: string;
 }
