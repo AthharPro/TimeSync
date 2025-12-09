@@ -1,12 +1,16 @@
 import { Router } from "express";
-import { loginHandler, logoutHandler } from "../controllers/auth.controller";
+import { loginHandler, logoutHandler,getCurrentUser,refreshHandler } from "../controllers/auth.controller";
+import authenticate from "../middleware/authenticate";
+import { UserRole } from "@tms/shared";
 
 const authRoutes=Router();
 
+const allRoles: UserRole[] = Object.values(UserRole);
+
 authRoutes.post("/login",loginHandler);
-// authRoutes.get("/refresh", refreshHandler); // TODO: Implement refreshHandler
+authRoutes.get("/refresh", refreshHandler);
 authRoutes.get("/logout", logoutHandler);
-// authRoutes.get("/me", authenticate([UserRole.SuperAdmin,UserRole.Admin,UserRole.Emp,UserRole.Supervisor,UserRole.SupervisorAdmin]),getCurrentUser); // TODO: Implement getCurrentUser
+authRoutes.get("/me", getCurrentUser); 
 // authRoutes.post("/change-password", authenticate([UserRole.SuperAdmin,UserRole.Admin,UserRole.Emp,UserRole.Supervisor,UserRole.SupervisorAdmin]),changePasswordHandler); // TODO: Implement changePasswordHandler
 // authRoutes.post('/password/forgot',sendPasswordResetHandler); // TODO: Implement sendPasswordResetHandler
 // authRoutes.post('/password/reset',resetPasswordHandler); // TODO: Implement resetPasswordHandler

@@ -1,64 +1,51 @@
-import axios from 'axios';
+import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL, 
-  withCredentials: true, 
-  headers: {
-    'Content-Type': 'application/json',
-  },
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: false,  
 });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
 
-apiClient.interceptors.request.use(
-  (config) => {
-    return config; 
-  },
-  (error) => {
-    return Promise.reject(error);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
+api.interceptors.response.use(
+  (res) => res,
 
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config || {};
+  async (err) => {
+    const original = err.config;
 
-   
-    const urlPath = (originalRequest.url || '').toString();
-    const isAuthEndpoint = /\/auth\/(login|refresh|password|me)/.test(urlPath);
+    if (err.response?.status === 401 && !original._retry) {
+      original._retry = true;
 
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
-      originalRequest._retry = true;
       try {
-        
-        await apiClient.get('/auth/refresh');
+        const refreshRes = await axios.get(API_BASE_URL+"/auth/refresh", {
+          withCredentials: true,
+        });
 
-      
-        return apiClient(originalRequest);
-      } catch (refreshError) {
+        const newAccessToken = refreshRes.data.accessToken;
 
-        console.error('Session refresh failed:', refreshError);
-        try {
-       
-          await apiClient.get('/auth/logout');
-        } catch {
-          // Ignore logout errors during session cleanup
-        }
-      
-        if (typeof window !== 'undefined') {
-          window.location.assign('/');
-        }
-        return Promise.reject(refreshError);
+        useAuth().updateAccessToken(newAccessToken);
+
+        return api(original);
+      } catch {
+        await axios.get("/auth/logout", { withCredentials: true }).catch(() => {
+          
+        });
+        window.location.href = "/login";
       }
     }
-    return Promise.reject(error);
+
+    return Promise.reject(err);
   }
 );
 
-export default apiClient;
-export const getApiBaseURL = () => apiClient.defaults.baseURL || window.location.origin;
+export default api;

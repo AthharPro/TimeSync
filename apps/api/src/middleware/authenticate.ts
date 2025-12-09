@@ -7,6 +7,7 @@ import { UserRole } from "@tms/shared";
 const authenticate = (requiredRoles?: UserRole[]): RequestHandler => {
   return (req, res, next) => {
     const accessToken = req.cookies?.accessToken as string | undefined;
+    console.log("Access Token from cookies:", accessToken);
 
     appAssert(accessToken,UNAUTHORIZED,"Not authorized");
 

@@ -1,61 +1,58 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { IProtectedRouteProps } from '../interfaces/navigation/IProtectedRouteProps';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { UserRole } from "@tms/shared";
+import axios from "axios";
 
-const ProtectedRoute: React.FC<IProtectedRouteProps> = ({
-  isAllowed,
-  children,
-  redirectPath = '/',
-  requireAuth = false,
-  allowedRoles = [],
-}) => {
-  const { authState, checkAuth } = useAuth();
-  const { user } = authState;
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: UserRole[];
+}
 
-  const isAuthenticated = !!user;
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
+
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
+  const { accessToken, user, updateUser, updateAccessToken } = useAuth();
+  const [loading, setLoading] = useState(true);
+
+  const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,  
+});
 
   useEffect(() => {
-    const performAuthCheck = async () => {
-      if (requireAuth && !hasCheckedAuth && !isCheckingAuth) {
-        setIsCheckingAuth(true);
-        try {
-          await checkAuth();
-        } catch (error) {
-          console.error('Auth check failed:', error);
-        } finally {
-          setHasCheckedAuth(true);
-          setIsCheckingAuth(false);
-        }
-      } else if (!requireAuth && !hasCheckedAuth) {
-        setHasCheckedAuth(true);
+    const loadUserIfNeeded = async () => {
+
+      if (accessToken && user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await api.get("/auth/me");
+        updateUser(res.data.user);
+        if (res.data.accessToken) updateAccessToken(res.data.accessToken);
+      } catch {
+        updateUser(null);
+      } finally {
+        setLoading(false);
       }
     };
 
-    performAuthCheck();
-  }, [requireAuth, hasCheckedAuth, isCheckingAuth, checkAuth]);
+    loadUserIfNeeded();
+  }, [accessToken, user, updateUser, updateAccessToken]);
 
-  if (requireAuth) {
-    if (!isAuthenticated) {
-      return <Navigate to={redirectPath} replace />;
-    }
+  if (loading) return <div>Loading...</div>;
 
-    if (allowedRoles.length > 0 && user) {
-      const hasPermission = allowedRoles.includes(user.role);
-      if (!hasPermission) {
-        return <Navigate to="/" replace />;
-      }
-    }
+  if (!accessToken || !user) return <Navigate to="/login" replace />;
+
+  if (allowedRoles && !allowedRoles.includes(user.role as UserRole)) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
-  if (isAllowed !== undefined) {
-    if (!isAllowed) {
-      return <Navigate to={redirectPath} replace />;
-    }
-  }
-  return children;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
