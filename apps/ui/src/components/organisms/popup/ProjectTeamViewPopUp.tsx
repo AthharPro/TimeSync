@@ -15,6 +15,7 @@ const TeamViewModal: React.FC<ITeamViewModalProps> = ({ open, onClose, project }
       title={`Team Members - ${project.projectName}`}
       subtitle={`View all team members and project manager`}
       maxWidth="lg"
+      size='md'
     >
       <Box>
         

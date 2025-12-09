@@ -7,6 +7,7 @@ export interface IPopupLayoutProps {
   subtitle?: string;
   children: ReactNode;
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
   actions?: ReactNode;
 }

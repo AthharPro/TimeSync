@@ -18,9 +18,26 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
   subtitle,
   children,
   maxWidth = 'md',
+  size = 'md',
   showCloseButton = true,
   actions,
 }) => {
+  // Define width based on size prop
+  const getWidth = () => {
+    switch (size) {
+      case 'sm':
+        return '400px';
+      case 'md':
+        return '680px';
+      case 'lg':
+        return '900px';
+      case 'xl':
+        return '1200px';
+      default:
+        return '680px';
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -30,7 +47,7 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
         sx: {
           borderRadius: 2,
           minHeight: '300px',
-          width: '680px',
+          width: getWidth(),
           backgroundColor: (theme) => theme.palette.background.default,
         },
       }}
