@@ -38,7 +38,7 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         await axios.get("/auth/logout", { withCredentials: true }).catch(() => {
-          
+          console.error("Logout failed during token refresh.");
         });
         window.location.href = "/login";
       }
