@@ -1,7 +1,8 @@
-import { catchErrors } from '../utils';
-import { OK } from '../constants';
+import { appAssert, catchErrors } from '../utils';
+import { OK, UNAUTHORIZED } from '../constants';
 import { loginSchema} from './../schemas';
-import { loginUser } from '../services';
+import { loginUser ,getAccessToken,getUserFromRefreshToken} from '../services';
+
 
 export const loginHandler = catchErrors(async (req, res) => {
   const request = loginSchema.parse({
@@ -33,3 +34,34 @@ export const logoutHandler = catchErrors(async (req, res) => {
   });
 });
 
+export const getCurrentUser = catchErrors(async (req, res) => {
+
+    const refreshToken = req.cookies.refreshToken as string | undefined;
+    console.log("Refresh Token from cookies:", refreshToken);
+  appAssert(refreshToken, UNAUTHORIZED, 'Missing refresh token');
+ 
+  const { newAccessToken, user } = await getUserFromRefreshToken(refreshToken);
+
+console.log("User fetched from refresh token:", user, "New Access Token:", newAccessToken);
+
+  return res.status(OK).json({
+    message: 'Current user fetched successfully',
+    accessToken: newAccessToken,
+    user
+  });
+});
+
+export const refreshHandler = catchErrors(async (req, res) => {
+
+    const refreshToken = req.cookies.refreshToken as string | undefined;
+    console.log("Refresh Token from cookies:", refreshToken);
+  appAssert(refreshToken, UNAUTHORIZED, 'Missing refresh token');
+ 
+  const { newAccessToken } = await getAccessToken(refreshToken);
+
+
+  return res.status(OK).json({
+    message: 'Access token refreshed successfully',
+    accessToken: newAccessToken
+  });
+});
