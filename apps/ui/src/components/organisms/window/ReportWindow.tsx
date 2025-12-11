@@ -2,7 +2,7 @@ import WindowLayout from '../../templates/other/WindowLayout';
 import { BaseBtn } from '../../atoms';
 import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded';
 import ReportLayout from '../../templates/report/ReportLayout';
-import { IReportWindowProps } from 'apps/ui/src/interfaces/report/IReport';
+import { IReportWindowProps } from '../../../interfaces/report/IReport';
 import { ReportFilter } from '../report/ReportFilter';
 import ReportPreviewLayout from '../../templates/report/ReportPreviewLayout';
 import { Button } from '@mui/material';
