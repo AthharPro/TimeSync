@@ -8,3 +8,4 @@ export * from './dashboard';
 export * from './hook';
 export * from './report';
 export * from './user';
+export * from './team';
