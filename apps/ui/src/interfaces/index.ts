@@ -6,3 +6,5 @@ export * from './redux';
 export * from './landing';
 export * from './dashboard';
 export * from './hook';
+export * from './report';
+export * from './user';
