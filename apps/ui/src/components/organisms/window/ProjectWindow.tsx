@@ -10,7 +10,7 @@ import ProjectManagerCell from '../../molecules/project/ProjectManagerCell';
 import TeamMembersCell from '../../molecules/project/TeamMembersCell';
 import DateRangeCell from '../../molecules/project/DateRangeCell';
 import ProjectActionButtons from '../../molecules/project/ProjectActionButtons';
-import TeamViewModal from '../popup/ProjectTeamViewPopUp';
+import ProjectTeamViewPopUp from '../popup/ProjectTeamViewPopUp';
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 
@@ -155,7 +155,7 @@ function ProjectWindow() {
 
       {/* Team View Modal */}
       {selectedProject && (
-        <TeamViewModal
+        <ProjectTeamViewPopUp
           open={isTeamModalOpen}
           onClose={handleCloseTeamModal}
           project={selectedProject}
