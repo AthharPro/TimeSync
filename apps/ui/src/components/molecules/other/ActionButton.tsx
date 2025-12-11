@@ -3,8 +3,14 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-
-export default function ActionButton() {
+import { ActionButtonProps } from '../../../interfaces/other/IActionButton';
+export default function ActionButton({
+  onEdit,
+  onDelete,
+  disableEdit = false,
+  showDelete = true,
+  disableDelete = false,
+}: ActionButtonProps) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -17,12 +23,12 @@ export default function ActionButton() {
   };
 
   const handleEdit = () => {
-    console.log("Edit clicked");
+    if (onEdit) onEdit();
     handleClose();
   };
 
   const handleDelete = () => {
-    console.log("Delete clicked");
+    if (onDelete) onDelete();
     handleClose();
   };
 
@@ -33,8 +39,14 @@ export default function ActionButton() {
       </IconButton>
 
       <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
-        <MenuItem onClick={handleEdit}>Edit</MenuItem>
-        <MenuItem onClick={handleDelete}>Delete</MenuItem>
+        <MenuItem onClick={handleEdit} disabled={disableEdit}>
+          Edit
+        </MenuItem>
+        {showDelete && (
+          <MenuItem onClick={handleDelete} disabled={disableDelete}>
+            Delete
+          </MenuItem>
+        )}
       </Menu>
     </div>
   );

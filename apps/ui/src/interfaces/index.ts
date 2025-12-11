@@ -9,3 +9,4 @@ export * from './hook';
 export * from './report';
 export * from './user';
 export * from './team';
+export * from './other';
