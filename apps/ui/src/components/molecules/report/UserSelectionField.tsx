@@ -40,7 +40,7 @@ const UserSelectionField: React.FC<UserSelectionFieldProps> = ({
         <EmployeeSelect
           employees={employees}
           selectedIds={selectedEmployeeIds}
-          onChange={onEmployeeChange}
+          onChange={onEmployeeChange || (() => {})}
           disabled={disabled}
         />
         {renderHelperText(
@@ -57,7 +57,7 @@ const UserSelectionField: React.FC<UserSelectionFieldProps> = ({
         <ProjectTeamSelect
           items={teams}
           selectedId={selectedTeamId}
-          onChange={onTeamChange}
+          onChange={onTeamChange || (() => {})}
           disabled={disabled || isLoadingTeams}
           label="Teams"
           placeholder="Search teams..."
@@ -76,7 +76,7 @@ const UserSelectionField: React.FC<UserSelectionFieldProps> = ({
         <ProjectTeamSelect
           items={projects}
           selectedId={selectedProjectId}
-          onChange={onProjectChange}
+          onChange={onProjectChange || (() => {})}
           disabled={disabled || isLoadingProjects}
           label="Projects"
           placeholder="Search projects..."
@@ -95,7 +95,7 @@ const UserSelectionField: React.FC<UserSelectionFieldProps> = ({
       <EmployeeSelect
         employees={employees}
         selectedIds={selectedEmployeeIds}
-        onChange={onEmployeeChange}
+        onChange={onEmployeeChange || (() => {})}
         disabled={disabled}
       />
       {renderHelperText(
