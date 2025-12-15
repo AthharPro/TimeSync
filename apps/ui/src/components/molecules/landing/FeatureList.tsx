@@ -7,9 +7,11 @@ const FeatureList: React.FC<IFeatureListProps> = ({ features }) => {
   return (
     <Box
       sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+        display: 'flex',
+        flexDirection: 'column',
         gap: 1.5,
+        alignItems: 'flex-start',
+        paddingLeft: '27%',
       }}
    >
       {features.map((text, idx) => (
