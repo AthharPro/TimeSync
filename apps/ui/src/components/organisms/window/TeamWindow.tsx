@@ -9,10 +9,20 @@ import { useMemo, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { dummyTeams } from '../../../data/dummyTeams';
 import ActionButton from '../../molecules/other/ActionButton';
-
+import CreateTeamPopUp from '../../organisms/popup/CreateTeamPopUp';
 function TeamWindow() {
   const [teams] = useState<ITeam[]>(dummyTeams as ITeam[]);
   const [viewTeam, setViewTeam] = useState<ITeam | null>(null);
+  const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
+
+  const handleClosePopup = () => {
+    setIsCreatePopupOpen(false);
+  };
+
+  const handleOpenPopup = () => {
+    setIsCreatePopupOpen(true);
+  };
+
   const handleFilter = () => {
     // TODO: Implement filter functionality
   };
@@ -30,7 +40,7 @@ function TeamWindow() {
       >
         Filter
       </BaseBtn>
-      <BaseBtn startIcon={<AddIcon />} onClick={handleAddProject}>
+      <BaseBtn startIcon={<AddIcon />} onClick={handleOpenPopup}>
         Team
       </BaseBtn>
     </>
@@ -104,9 +114,16 @@ function TeamWindow() {
     [theme]
   );
   return (
-    <WindowLayout title="Team" buttons={button}>
-      <DataTable columns={columns} rows={teams} getRowKey={(row) => row.id} />
-    </WindowLayout>
+    <>
+      <WindowLayout title="Team" buttons={button}>
+        <DataTable columns={columns} rows={teams} getRowKey={(row) => row.id} />
+      </WindowLayout>
+      <CreateTeamPopUp
+        open={isCreatePopupOpen}
+        onClose={handleClosePopup}
+      />
+    </>
+    
   );
 }
 

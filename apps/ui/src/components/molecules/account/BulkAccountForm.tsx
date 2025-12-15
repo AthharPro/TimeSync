@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Box, Typography, Divider } from '@mui/material';
 import BaseBtn from '../../atoms/other/button/BaseBtn';
+import HelperText from '../../atoms/other/text/HelperText';
 import { IBulkAccountFormProps } from '../../../interfaces/component/IBulkAccountForm';
 import * as XLSX from 'xlsx';
 
@@ -67,9 +68,9 @@ const BulkAccountForm: React.FC<IBulkAccountFormProps> = ({
         gap: 2,
       }}
     >
-      <Typography variant="body2" color="text.secondary">
+      <HelperText variant="body2" align="left" sx={{ py: 0 }}>
         Upload an Excel file (.xlsx) with columns: Email, First Name, Last Name, Designation, Contact Number
-      </Typography>
+      </HelperText>
 
       <Box>
         <input

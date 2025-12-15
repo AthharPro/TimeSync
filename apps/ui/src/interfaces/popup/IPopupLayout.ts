@@ -5,8 +5,10 @@ export interface IPopupLayoutProps {
   onClose: () => void;
   title: string;
   subtitle?: string;
+  onBack?: () => void;
   children: ReactNode;
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
   actions?: ReactNode;
+  paperHeight?: string | number;
 }

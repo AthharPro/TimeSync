@@ -9,17 +9,20 @@ import {
   Box,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded';
 import { IPopupLayoutProps } from '../../../interfaces/popup/IPopupLayout';
 
 const PopUpLayout: React.FC<IPopupLayoutProps> = ({
   open,
   onClose,
+  onBack,
   title,
   subtitle,
   children,
   maxWidth = 'md',
   showCloseButton = true,
   actions,
+  paperHeight,
 }) => {
   // Calculate fixed width based on maxWidth prop to prevent resizing
   const getWidthStyles = () => {
@@ -42,6 +45,9 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
         sx: {
           borderRadius: 2,
           minHeight: '300px',
+          height: paperHeight,
+          display: 'flex',
+          flexDirection: 'column',
           ...getWidthStyles(),
           backgroundColor: (theme) => theme.palette.background.default,
         },
@@ -49,15 +55,28 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box>
-            <Typography variant="h5" fontWeight={600}>
-              {title}
-            </Typography>
-            {subtitle && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {subtitle}
-              </Typography>
+          <Box display="flex" alignItems="center" gap={1}>
+            {onBack && (
+              <IconButton
+                aria-label="back"
+                onClick={onBack}
+                sx={{
+                  color: (theme) => theme.palette.text.primary,
+                }}
+              >
+                <ArrowBackIosNewRoundedIcon fontSize="small" />
+              </IconButton>
             )}
+            <Box>
+              <Typography variant="h5" fontWeight={600}>
+                {title}
+              </Typography>
+              {subtitle && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {subtitle}
+                </Typography>
+              )}
+            </Box>
           </Box>
           {showCloseButton && (
             <IconButton
@@ -72,12 +91,13 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
           )}
         </Box>
       </DialogTitle>
-      <DialogContent 
-        dividers 
-        sx={{ 
+      <DialogContent
+        dividers
+        sx={{
           py: 3,
           maxHeight: '70vh',
           overflowY: 'auto',
+          flex: 1,
           '&::-webkit-scrollbar': {
             width: '8px',
           },

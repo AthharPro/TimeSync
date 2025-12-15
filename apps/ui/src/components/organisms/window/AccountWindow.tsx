@@ -4,7 +4,7 @@ import AccountTable from '../table/AccountTable';
 import { BaseBtn } from '../../atoms';
 import AddIcon from '@mui/icons-material/Add';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
-import CreateAccountPopup from '../popup/CreateAccountPopup';
+import CreateAccountPopUp from '../../organisms/popup/CreateAccountPopUp';
 import { UserRole } from '@tms/shared';
 
 function AccountWindow() {
@@ -34,7 +34,7 @@ function AccountWindow() {
       <WindowLayout title="Accounts" buttons={button}>
         <AccountTable rows={[]} />
       </WindowLayout>
-      <CreateAccountPopup
+      <CreateAccountPopUp
         open={isCreatePopupOpen}
         role={UserRole.Emp}
         onClose={handleClosePopup}

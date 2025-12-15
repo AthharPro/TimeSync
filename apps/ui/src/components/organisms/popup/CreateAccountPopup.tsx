@@ -14,7 +14,7 @@ import { CreateAccountPopupProps } from '../../../interfaces/popup';
 import { registerUser } from '../../../api/auth';
 import { CreateAccountForm, BulkAccountForm } from '../../molecules/account';
 
-function CreateAccountPopup({
+function CreateAccountPopUp({
   open,
   role,
   onClose,
@@ -167,4 +167,4 @@ function CreateAccountPopup({
     </PopupLayout>
   );
 }
-export default CreateAccountPopup;
+export default CreateAccountPopUp;
