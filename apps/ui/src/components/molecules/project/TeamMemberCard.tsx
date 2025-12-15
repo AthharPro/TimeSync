@@ -19,10 +19,6 @@ const TeamMemberCard: React.FC<ITeamMemberCardProps> = ({
         height: '100%',
         width: 300,
         transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: 4,
-        },
         border: isManager ? '2px solid' : 'none',
         borderColor: isManager ? 'primary.main' : 'transparent',
       }}

@@ -48,7 +48,7 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
           borderRadius: 2,
           minHeight: '300px',
           width: getWidth(),
-          backgroundColor: (theme) => theme.palette.background.default,
+          backgroundColor: 'white',
         },
       }}
     >

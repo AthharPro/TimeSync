@@ -3,10 +3,14 @@ import { AppBar, Toolbar, Divider, Box, Button } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useTheme } from '@mui/material';
 import ProfilePopover from '../popover/ProfilePopover';
+import ProfilePopup from '../popup/ProfilePopup';
+// import { useAuth } from '../../../contexts/AuthContext';
 
 export default function CustomAppBar() {
   const theme = useTheme();
+  // const { authState } = useAuth();
   const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
+  const [profilePopupOpen, setProfilePopupOpen] = React.useState(false);
 
   const hanldeClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -17,11 +21,16 @@ export default function CustomAppBar() {
   };
 
   const handleProfileClick = () => {
-    console.log('Profile clicked');
+    setProfilePopupOpen(true);
+  };
+
+  const handleProfilePopupClose = () => {
+    setProfilePopupOpen(false);
   };
 
   const handleLogoutClick = () => {
     console.log('Logout clicked');
+    // TODO: Implement logout functionality
   };
 
   const open = Boolean(anchorEl);
@@ -73,6 +82,8 @@ export default function CustomAppBar() {
         onProfileClick={handleProfileClick}
         onLogoutClick={handleLogoutClick}
       />
+
+      <ProfilePopup open={profilePopupOpen} onClose={handleProfilePopupClose} />
     </>
   );
 }
