@@ -42,7 +42,7 @@ const AdminPage = () => {
     <MainLayout items={items}>
       {selectedButton === "Dashboard" && <DashboardWindow/>}
       {selectedButton === "Projects" && <ProjectWindow/>}
-      {selectedButton === "Reports" && <ReportWindow/>}
+      {selectedButton === "Reports" && <ReportWindow onReset={() => undefined}/>}
       {selectedButton === "Accounts" && <AccountWindow/>}
       {selectedButton === "Teams" && <TeamWindow/>}
       {selectedButton === "My Timesheets" && <MyTimesheetWindow />}

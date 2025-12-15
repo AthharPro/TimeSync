@@ -15,11 +15,23 @@ const DatePickerField = ({
   size = 'small',
   sx = {},
 }: DatePickerFieldProps) => {
+  const handleDateChange = (newValue: unknown) => {
+    // Convert Dayjs or other PickerValue types to Date
+    if (newValue instanceof Date) {
+      onChange(newValue);
+    } else if (newValue && typeof newValue === 'object' && 'toDate' in newValue) {
+      // Handle Dayjs objects
+      onChange((newValue as any).toDate());
+    } else {
+      onChange(null);
+    }
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <DatePicker
         value={value}
-        onChange={onChange}
+        onChange={handleDateChange}
         open={open}
         onOpen={onOpen}
         onClose={onClose}
