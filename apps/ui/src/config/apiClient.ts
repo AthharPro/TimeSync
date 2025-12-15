@@ -39,7 +39,7 @@ const transformMongoResponse = (data: any): any => {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  withCredentials: true,  
 });
 
 // ✨ 1. Add access token to all requests

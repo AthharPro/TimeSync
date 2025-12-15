@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
 import AddIcon from '@mui/icons-material/Add';
-import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined';
 import DataTable from '../../templates/other/DataTable';
 import { IProject } from '../../../interfaces/project/IProject';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
@@ -9,11 +8,10 @@ import { dummyProjects } from '../../../data/dummyProjects';
 import ProjectManagerCell from '../../molecules/project/ProjectManagerCell';
 import TeamMembersCell from '../../molecules/project/TeamMembersCell';
 import DateRangeCell from '../../molecules/project/DateRangeCell';
-import ProjectActionButtons from '../../molecules/project/ProjectActionButtons';
-import TeamViewModal from '../popup/ProjectTeamViewPopUp';
+import ProjectTeamViewPopUp from '../popup/ProjectTeamViewPopUp';
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
-
+import ActionButton from '../../molecules/other/ActionButton';
 function ProjectWindow() {
   const [projects] = useState<IProject[]>(dummyProjects);
   const [isLoading] = useState(false);
@@ -107,18 +105,11 @@ function ProjectWindow() {
         width: 80,
         render: (row) => row.billable ? 'Billable' : 'Non-Billable',
       },
-      {
-        key: 'actions',
-        label: 'Actions',
-        width: 80,
-        render: (row) => (
-          <ProjectActionButtons
-            project={row}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ),
-      },
+       {
+              label: '',
+              key: 'actions',
+              render: () => <ActionButton />,
+            },
     ],
     []
   );
@@ -155,7 +146,7 @@ function ProjectWindow() {
 
       {/* Team View Modal */}
       {selectedProject && (
-        <TeamViewModal
+        <ProjectTeamViewPopUp
           open={isTeamModalOpen}
           onClose={handleCloseTeamModal}
           project={selectedProject}
