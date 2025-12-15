@@ -30,3 +30,8 @@ export const createUser = async (data: CreateUserParams) => {
     user: user.omitPassword(),
   };
 };
+
+export const getAllUsers = async () => {
+  const users = await UserModel.find({}).select('-password');
+  return users;
+};

@@ -1,13 +1,14 @@
-import { IAccountTableEntry } from "../layout";
+import { IAccountTableRow } from "../component/organism/ITable";
 
 export interface IUseAccountReturn{
 //states
-fetchAccountDetails: IAccountTableEntry[];
-newAccountDetails: IAccountTableEntry[];
+fetchAccountDetails: IAccountTableRow[];
+newAccountDetails: IAccountTableRow[];
 isLoading: boolean;
 error: string | null;
 
 //actions
-addNewAccountDetails: (account: IAccountTableEntry) => void;
-updateAccountDetails: (id: string, updates: Partial<IAccountTableEntry>) => void;
+addNewAccountDetails: (account: IAccountTableRow) => void;
+updateAccountDetails: (id: string, updates: Partial<IAccountTableRow>) => void;
+loadAccounts: () => Promise<void>;
 } 

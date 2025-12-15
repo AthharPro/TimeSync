@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { createHandler, listHandler, listMyProjectsHandler } from '../controllers/project.controller';
+import authenticate from '../middleware/authenticate';
 
-const router = Router();
+const projectRoutes = Router();
 
-// TODO: Implement project routes
+projectRoutes.post("/",authenticate(),createHandler);
+projectRoutes.get("/",authenticate,listHandler);
+projectRoutes.get("/my-projects", authenticate(),listMyProjectsHandler);
 
-export default router;
+export  {projectRoutes};

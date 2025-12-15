@@ -29,6 +29,7 @@ function AccountWindow() {
       <BaseBtn startIcon={<AddIcon />} onClick={handleClick}>Create</BaseBtn>
     </>
   );
+  
   return (
     <>
       <WindowLayout title="Accounts" buttons={button}>

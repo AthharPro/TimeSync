@@ -15,11 +15,9 @@ const RoleCard: React.FC<IRoleCardProps> = ({ icon, title, description, features
       sx={{
         p: 3,
         textAlign: 'center',
-        transition: 'transform 0.2s ease-in-out',
-        '&:hover': { transform: 'translateY(-4px)' },
         bgcolor: theme.palette.background.default,
         width: { xs: '100%', sm: 320 },
-        minHeight: { xs: 0, sm: 300 },
+        minHeight: { xs: 0, sm: 330 },
         display: 'flex',
         flexDirection: 'column',
       }}

@@ -12,21 +12,21 @@ const HeaderLayout: React.FC<IHeaderLayoutProps> = ({
   onMenuClick,
   drawer,
 }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>{logo}</Box>
-    {isMobile ? (
-      <>
-        <IconButton onClick={onMenuClick}>
-          <MenuIcon />
-        </IconButton>
-        {drawer}
-      </>
-    ) : (
-      <>
-        {navItems}
-        {signInButton}
-      </>
-    )}
+  <Box sx={{ display: 'flex', alignItems: 'center', py: 2 }}>
+    <Box sx={{ flex: 1 }}>{!isMobile && navItems}</Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'center', flex: 1 }}>{logo}</Box>
+    <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+      {isMobile ? (
+        <>
+          <IconButton onClick={onMenuClick}>
+            <MenuIcon />
+          </IconButton>
+          {drawer}
+        </>
+      ) : (
+        signInButton
+      )}
+    </Box>
   </Box>
 );
 
