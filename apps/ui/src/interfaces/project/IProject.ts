@@ -18,6 +18,15 @@ export interface IProjectManager {
   allocation: number; // Percentage allocation (0-100)
 }
 
+export interface MyProject {
+  _id: string;
+  projectName: string;
+}
+
+export interface MyProjectsState {
+  projects: MyProject[];
+}
+
 export interface IProject {
   id: string;
   projectName: string;

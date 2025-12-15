@@ -11,8 +11,6 @@ interface ProtectedRouteProps {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
-
-
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { accessToken, user, updateUser, updateAccessToken } = useAuth();
   const [loading, setLoading] = useState(true);

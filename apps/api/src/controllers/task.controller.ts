@@ -1,7 +1,7 @@
 import { catchErrors } from "../utils";
-import { CREATED } from "../constants";
+import { CREATED, OK } from "../constants";
 import { createTaskSchema } from "../schemas";
-import { createTask } from "../services";
+import { createTask, getTasksByProject } from "../services";
 import { Request, Response } from "express";
 
 
@@ -16,4 +16,10 @@ export const createTaskHandler = catchErrors(async (req: Request, res: Response)
   
   const result = await createTask(params);
   return res.status(CREATED).json(result);
+});
+
+export const getTasksByProjectHandler = catchErrors(async (req: Request, res: Response) => {
+  const { projectId } = req.params;
+  const tasks = await getTasksByProject(projectId);
+  return res.status(OK).json(tasks);
 });
