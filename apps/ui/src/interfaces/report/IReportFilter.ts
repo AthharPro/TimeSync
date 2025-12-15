@@ -1,5 +1,5 @@
 import dayjs, { Dayjs } from 'dayjs';
-import { Employee } from '../user/IUser';
+import { IEmployee } from '../user/IUser';
 
 export interface QuickDateButtonsProps {
   onDateRangeSelect: (start: Dayjs, end: Dayjs) => void;
@@ -93,7 +93,7 @@ export interface ProjectTeamSelectProps {
 export interface UserSelectionFieldProps {
   filterType: UserFilterType;
   // Individual selection props
-  employees?: Employee[];
+  employees?: IEmployee[];
   selectedEmployeeIds?: string[];
   onEmployeeChange?: (ids: string[]) => void;
   // Team selection props
@@ -109,4 +109,8 @@ export interface UserSelectionFieldProps {
   // Common props
   disabled?: boolean;
   showHelperText?: boolean;
+}
+
+export interface IReportFilterProps {
+  resetTrigger?: number;
 }

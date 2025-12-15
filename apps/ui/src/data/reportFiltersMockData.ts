@@ -1,14 +1,14 @@
-import { Employee } from '../interfaces/user/IUser';
+import { IEmployee } from '../interfaces/user/IUser';
 
 // optional: export a lightweight type for your simple mocks
 export type SimpleItem = { id: string; name: string };
 
 // raw simple mocks (easy to author)
-export const mockEmployees: Employee[] = [
-  { _id: 'emp1', firstName: 'Chamara', lastName: 'Perera', email: 'chamara@example.com' },
-  { _id: 'emp2', firstName: 'Rashmitha', lastName: 'Dilshan', email: 'rashmitha@example.com' },
-  { _id: 'emp3', firstName: 'Kasuni', lastName: 'Sandamali', email: 'kasuni@example.com' },
-  { _id: 'emp4', firstName: 'Tharindu', lastName: 'Prabath', email: 'tharindu@example.com' },
+export const mockEmployees: IEmployee[] = [
+  { _id: 'emp1', id: 'emp1', name: 'Chamara Perera', firstName: 'Chamara', lastName: 'Perera', email: 'chamara@example.com' },
+  { _id: 'emp2', id: 'emp2', name: 'Rashmitha Dilshan', firstName: 'Rashmitha', lastName: 'Dilshan', email: 'rashmitha@example.com' },
+  { _id: 'emp3', id: 'emp3', name: 'Kasuni Sandamali', firstName: 'Kasuni', lastName: 'Sandamali', email: 'kasuni@example.com' },
+  { _id: 'emp4', id: 'emp4', name: 'Tharindu Prabath', firstName: 'Tharindu', lastName: 'Prabath', email: 'tharindu@example.com' },
 ];
 
 export const mockTeamsRaw: SimpleItem[] = [
