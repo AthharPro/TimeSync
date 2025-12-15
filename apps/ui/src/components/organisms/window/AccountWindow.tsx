@@ -1,11 +1,26 @@
+import { useState } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
 import AccountTable from '../table/AccountTable';
 import { BaseBtn } from '../../atoms';
 import AddIcon from '@mui/icons-material/Add';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
+import CreateAccountPopup from '../popup/CreateAccountPopup';
+import { UserRole } from '@tms/shared';
+
 function AccountWindow() {
+  const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
+
   const handleClick = () => {
-    // TODO: Implement create account functionality
+    setIsCreatePopupOpen(true);
+  };
+
+  const handleClosePopup = () => {
+    setIsCreatePopupOpen(false);
+  };
+
+  const handleCreateSuccess = () => {
+    // TODO: Refresh account table data
+    console.log('Account created successfully');
   };
 
   const button = (
@@ -15,9 +30,17 @@ function AccountWindow() {
     </>
   );
   return (
-    <WindowLayout title="Accounts" buttons={button}>
-      <AccountTable rows={[]} />
-    </WindowLayout>
+    <>
+      <WindowLayout title="Accounts" buttons={button}>
+        <AccountTable rows={[]} />
+      </WindowLayout>
+      <CreateAccountPopup
+        open={isCreatePopupOpen}
+        role={UserRole.Emp}
+        onClose={handleClosePopup}
+        onSuccess={handleCreateSuccess}
+      />
+    </>
   );
 }
 

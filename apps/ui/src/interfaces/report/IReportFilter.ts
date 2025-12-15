@@ -110,3 +110,7 @@ export interface UserSelectionFieldProps {
   disabled?: boolean;
   showHelperText?: boolean;
 }
+
+export interface IReportFilterProps {
+  resetTrigger?: number;
+}

@@ -4,7 +4,6 @@ import FilterColumn from '../../atoms/report/FilterColumn';
 import DateRangePicker from '../../molecules/report/DateRangePicker';
 import UserFilterTypeSelector from '../../molecules/report/UserFilterTypeSelector';
 import dayjs, { Dayjs } from 'dayjs';
-import { useReportFilters } from '../../../hooks/report/useReportFilters';
 import UserSelectionField from '../../molecules/report/UserSelectionField';
 import {
   mockEmployees,
@@ -12,19 +11,19 @@ import {
   mockProjects,
 } from '../../../data/reportFiltersMockData';
 import { useState, useEffect, useRef } from 'react';
+import { ReportFilter } from '../../../interfaces/report/IReportFilter';
 
 interface IReportFilterFormProps {
   resetTrigger?: number;
+  currentFilter: ReportFilter;
+  updateFilter: (filter: ReportFilter) => void;
 }
 
-export const ReportFilterForm = ({ resetTrigger }: IReportFilterFormProps) => {
+export const ReportFilterForm = ({ resetTrigger, currentFilter, updateFilter }: IReportFilterFormProps) => {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [filterType, setFilterType] = useState<'individual' | 'team' | 'project' | ''>('');
-
-  const { currentFilter, handleFilterChange: updateFilter } =
-    useReportFilters();
   
   const prevResetTriggerRef = useRef(resetTrigger);
 

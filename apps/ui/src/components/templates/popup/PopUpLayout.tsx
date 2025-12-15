@@ -21,16 +21,28 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
   showCloseButton = true,
   actions,
 }) => {
+  // Calculate fixed width based on maxWidth prop to prevent resizing
+  const getWidthStyles = () => {
+    if (maxWidth === 'lg' || maxWidth === 'xl') {
+      return { width: 'auto' };
+    } else if (maxWidth === 'xs') {
+      return { width: '444px', minWidth: '444px', maxWidth: '444px' };
+    } else {
+      return { width: '680px', minWidth: '680px', maxWidth: '680px' };
+    }
+  };
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth={maxWidth}
+      fullWidth={maxWidth === 'lg' || maxWidth === 'xl'}
       PaperProps={{
         sx: {
           borderRadius: 2,
           minHeight: '300px',
-          width: '680px',
+          ...getWidthStyles(),
           backgroundColor: (theme) => theme.palette.background.default,
         },
       }}
