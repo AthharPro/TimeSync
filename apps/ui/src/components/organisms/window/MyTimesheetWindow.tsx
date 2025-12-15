@@ -16,7 +16,7 @@ import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 
 function MyTimesheetWindow() {
-  const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow } = useMyTimesheet();
+  const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets } = useMyTimesheet();
 
     const [view, setView] = useState('table');
 
@@ -40,6 +40,55 @@ function MyTimesheetWindow() {
     }
   };
 
+  const handleSubmitClick = async () => {
+    try {
+      if (view === 'table') {
+        // Table view: submit selected timesheets
+        const selectedCount = newTimesheets.filter((ts) => ts.isChecked).length;
+        
+        if (selectedCount === 0) {
+          alert('Please select at least one timesheet to submit');
+          return;
+        }
+
+        // Confirm submission (validation happens in the hook)
+        const confirmed = window.confirm(
+          `Submit selected timesheets?\n\nNote: Timesheets with 0 hours or missing project/task/description will be skipped.`
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        // Submit selected timesheets
+        const result = await submitTimesheets();
+        
+        alert(`Successfully submitted ${result.updated} timesheet${result.updated > 1 ? 's' : ''}`);
+      } else {
+        // Calendar view: submit all timesheets in current week
+        const weekStart = currentWeekDays[0];
+        const weekEnd = currentWeekDays[currentWeekDays.length - 1];
+        
+        // Confirm submission (validation happens in the hook)
+        const confirmed = window.confirm(
+          `Submit all timesheets for the week of ${weekStart.monthName} ${weekStart.dayNumber} - ${weekEnd.monthName} ${weekEnd.dayNumber}?\n\nNote: Timesheets with 0 hours or missing project/task/description will be skipped.`
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        // Submit current week timesheets
+        const result = await submitCurrentWeekTimesheets();
+        
+        alert(`Successfully submitted ${result.updated} timesheet${result.updated > 1 ? 's' : ''} for the current week`);
+      }
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      alert(`Failed to submit timesheets: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   const handleChange = () => {
     setView((prev) => (prev === 'table' ? 'calendar' : 'table'));
   };
@@ -54,9 +103,7 @@ function MyTimesheetWindow() {
         />
       )}
       <BaseBtn variant='outlined' startIcon={<FilterAltOutlinedIcon/>}>Filter</BaseBtn>
-      <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>}>Submit</BaseBtn>
-      <BaseBtn variant='outlined' startIcon={<SaveOutlinedIcon/>}>Save As Draft</BaseBtn>
-      <BaseBtn variant='outlined' startIcon={<DeleteForeverOutlinedIcon/>}>Clear</BaseBtn>
+      <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>} onClick={handleSubmitClick}>Submit</BaseBtn>
       <BaseBtn variant="contained" color="primary" startIcon={<AddOutlinedIcon/>} onClick={handleCreateClick}>Create</BaseBtn>
       <ToggleButtonGroup
         color="primary"

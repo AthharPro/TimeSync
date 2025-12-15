@@ -1,45 +1,92 @@
 import axios from "axios";
-import { useAuth } from "../contexts/AuthContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
+// 🔐 In-memory access token (no hooks!)
+let ACCESS_TOKEN: string | null = null;
+
+// ⭐ Called from AuthContext to sync token
+export const setAccessToken = (token: string | null) => {
+  ACCESS_TOKEN = token;
+};
+
+// Helper function to transform MongoDB _id to id
+const transformMongoResponse = (data: any): any => {
+  if (Array.isArray(data)) {
+    return data.map(transformMongoResponse);
+  }
+  
+  if (data && typeof data === 'object') {
+    const transformed: any = {};
+    
+    for (const key in data) {
+      if (key === '_id' && !data.id) {
+        // Map _id to id if id doesn't exist
+        transformed.id = data._id;
+        transformed._id = data._id; // Keep original too
+      } else if (typeof data[key] === 'object' && data[key] !== null) {
+        transformed[key] = transformMongoResponse(data[key]);
+      } else {
+        transformed[key] = data[key];
+      }
+    }
+    
+    return transformed;
+  }
+  
+  return data;
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: false,  
+  withCredentials: true,
 });
 
+// ✨ 1. Add access token to all requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (ACCESS_TOKEN) {
+    config.headers.Authorization = `Bearer ${ACCESS_TOKEN}`;
   }
   return config;
 });
 
+// ✨ 2. Handle refresh token logic and transform MongoDB responses
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // Transform _id to id in response data
+    if (res.data) {
+      res.data = transformMongoResponse(res.data);
+    }
+    return res;
+  },
 
   async (err) => {
     const original = err.config;
 
+    // Token expired → try refresh
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true;
 
       try {
-        const refreshRes = await axios.get(API_BASE_URL+"/auth/refresh", {
+        const refreshRes = await axios.get(`${API_BASE_URL}/auth/refresh`, {
           withCredentials: true,
         });
 
         const newAccessToken = refreshRes.data.accessToken;
 
-        useAuth().updateAccessToken(newAccessToken);
+        // ⭐ Update in-memory token
+        setAccessToken(newAccessToken);
 
+        // Retry original request with new token
         return api(original);
-      } catch {
-        await axios.get("/auth/logout", { withCredentials: true }).catch(() => {
-          console.error("Logout failed during token refresh.");
+      } catch (refreshErr) {
+        console.error("Refresh token failed", refreshErr);
+
+        // Logout if refresh also fails
+        await axios.get(`${API_BASE_URL}/auth/logout`, {
+          withCredentials: true,
         });
+
         window.location.href = "/login";
       }
     }

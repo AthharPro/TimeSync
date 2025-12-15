@@ -1,370 +1,490 @@
 import DataTable from '../../templates/other/DataTable';
 import { DataTableColumn } from '../../../interfaces';
 import { BillableType } from '@tms/shared';
-import { IMyTimesheetCalendarEntry, ITimesheetRow } from '../../../interfaces/layout/ITableProps';
-import {DailyTimesheetStatus} from '@tms/shared';
+import {
+  IMyTimesheetCalendarEntry,
+  ITimesheetRow,
+  IMyTimesheetTableEntry,
+} from '../../../interfaces/layout/ITableProps';
+import { DailyTimesheetStatus } from '@tms/shared';
 import TaskRow from './other/TaskRow';
 import CreateTaskRow from './other/CreateTaskRow';
 import TimesheetCell from './other/TimesheetCell';
 import { useMyTimesheet } from '../../../hooks/timesheet/useMyTimesheet';
-import { useMemo } from 'react';
+import { useMyProjects } from '../../../hooks/project/useMyProject';
+import { useTasks } from '../../../hooks/task/useTasks';
+import { useEffect, useMemo, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../store/store';
 import { IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CustomRow from './other/CustomRow';
 
-const MyTimesheetCalenderTable = () => {
-  const {  currentWeekDays , myCalendarViewData, newTimesheets, updateTimesheet, addNewTimesheet, updateCalendar, createEmptyCalendarRow, deleteCalendar  } = useMyTimesheet();
+interface ExtendedTimesheetRow extends ITimesheetRow {
+  projectId?: string; // We'll add this for internal use
+}
+
+// Optimized debounced update that delays both Redux and backend updates
+const createDebouncedUpdate = (
+  updateFn: (id: string, updates: Partial<IMyTimesheetTableEntry>) => void,
+  syncFn: (id: string, updates: Partial<IMyTimesheetTableEntry>) => Promise<void>,
+  delay = 900
+) => {
+  const timers = new Map<string, NodeJS.Timeout>();
+  
+  return (id: string, updates: Partial<IMyTimesheetTableEntry>) => {
+    // Clear existing timer for this ID
+    if (timers.has(id)) {
+      const timer = timers.get(id);
+      if (timer) clearTimeout(timer);
+    }
+    
+    // Debounce both Redux update and backend sync
+    const timer = setTimeout(() => {
+      // Update Redux state
+      updateFn(id, updates);
+      // Sync to backend
+      syncFn(id, updates);
+      timers.delete(id);
+    }, delay);
+    
+    timers.set(id, timer);
+  };
+};
+
+const MyTimesheetCalendarTable = () => {
+  const {
+    currentWeekDays,
+    currentWeekStart,
+    myCalendarViewData,
+    newTimesheets,
+    updateTimesheet,
+    syncUpdateTimesheet,
+    addNewTimesheet,
+    updateCalendar,
+    createEmptyCalendarRow,
+    deleteCalendar,
+    loadTimesheets,
+  } = useMyTimesheet();
 
   const weekDays = currentWeekDays;
+  
+  // Create debounced update function (900ms delay)
+  const debouncedUpdateRef = useRef(createDebouncedUpdate(updateTimesheet, syncUpdateTimesheet, 900));
 
-  // Group calendar data by project
-  const groupedData = useMemo(() => {
-    const availableProjects = [
-      'Project Alpha',
-      'Project Beta',
-      'Project Gamma',
-      'Project Delta',
-    ];
+  const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
+    useMyProjects();
 
-    const projectMap = new Map<string, IMyTimesheetCalendarEntry[]>();
-    
-    // Initialize all available projects with empty arrays
-    availableProjects.forEach(project => {
-      projectMap.set(project, []);
-    });
-    
-    // Add existing tasks to their respective projects
-    myCalendarViewData.forEach(entry => {
-      if (!projectMap.has(entry.project)) {
-        projectMap.set(entry.project, []);
-      }
-      const projectTasks = projectMap.get(entry.project);
-      if (projectTasks) {
-        projectTasks.push(entry);
-      }
-    });
+  const { loadTasks, createTask } = useTasks();
+  
+  // Get all tasks from Redux store
+  const tasksByProject = useSelector((state: RootState) => state.tasks.tasksByProject);
+  const allTasks = useMemo(() => {
+    return Object.values(tasksByProject).flat();
+  }, [tasksByProject]);
 
-    // Convert to flat array with project rows, task rows, and create task rows
-    const rows: ITimesheetRow[] = [];
-    projectMap.forEach((tasks, project) => {
-      // Add project header row
-      rows.push({
-        id: `project-${project}`,
-        project,
-        isProjectRow: true
+  useEffect(() => {
+    loadMyProjects();
+  }, [loadMyProjects]);
+
+  // Load timesheets for the current week
+  useEffect(() => {
+    if (currentWeekDays.length > 0) {
+      const startDate = currentWeekDays[0].date;
+      const endDate = currentWeekDays[currentWeekDays.length - 1].date;
+      
+      console.log('MyTimesheetCalendarTable - Loading timesheets for week:', {
+        startDate,
+        endDate,
       });
       
-      // Add task rows (if any)
-      tasks.forEach(task => {
+      loadTimesheets(startDate, endDate);
+    }
+  }, [currentWeekStart, loadTimesheets]); // Use currentWeekStart instead of currentWeekDays to avoid infinite loop
+
+  // Load tasks for all projects that appear in calendar view
+  useEffect(() => {
+    const projectIds = new Set<string>();
+    myCalendarViewData.forEach((entry) => {
+      const matchingProject = myProjects.find((p) => p.projectName === entry.project);
+      if (matchingProject) {
+        projectIds.add(matchingProject._id);
+      }
+    });
+    
+    projectIds.forEach(projectId => {
+      loadTasks(projectId);
+    });
+  }, [myCalendarViewData, myProjects, loadTasks]);
+
+  // Group by project._id
+  const groupedData = useMemo<ExtendedTimesheetRow[]>(() => {
+    // Map from project _id to project object for easy lookup
+    const projectMap = new Map<string, { name: string; tasks: IMyTimesheetCalendarEntry[] }>();
+
+    // Initialize all known projects
+    myProjects.forEach((proj) => {
+      projectMap.set(proj._id, { name: proj.projectName, tasks: [] });
+    });
+
+    // Populate tasks from calendar data
+    myCalendarViewData.forEach((entry) => {
+      // Find which project this entry belongs to by matching project ID or name
+      const matchingProject = myProjects.find((p) => p._id === entry.project || p.projectName === entry.project);
+
+      if (matchingProject) {
+        const key = matchingProject._id;
+        if (!projectMap.has(key)) {
+          projectMap.set(key, { name: matchingProject.projectName, tasks: [] });
+        }
+        
+        // Map task ID to task name for display
+        const task = allTasks.find(t => t._id === entry.task);
+        const taskName = task ? task.taskName : entry.task;
+        
+        projectMap.get(key)!.tasks.push({
+          ...entry,
+          project: matchingProject.projectName, // Use project name for display
+          task: taskName, // Use task name for display
+        });
+      }
+    });
+
+    const rows: ExtendedTimesheetRow[] = [];
+
+    projectMap.forEach((data, projectId) => {
+      const projectName = data.name;
+
+      // Project header row
+      rows.push({
+        id: `project-${projectId}`,
+        project: projectName,
+        projectId,
+        isProjectRow: true,
+      });
+
+      // Task rows
+      data.tasks.forEach((task) => {
         rows.push({
           id: task.id,
           project: task.project,
+          projectId,
           task: task.task,
           billableType: task.billableType,
           myTimesheetEntriesIds: task.myTimesheetEntriesIds,
-          isProjectRow: false
+          isProjectRow: false,
         });
       });
 
-      // Add "Create Task" row after all tasks for this project
+      // Create task row
       rows.push({
-        id: `create-task-${project}`,
-        project,
+        id: `create-task-${projectId}`,
+        project: projectName,
+        projectId,
         isProjectRow: false,
-        isCreateTaskRow: true
+        isCreateTaskRow: true,
       });
     });
 
     return rows;
-  }, [myCalendarViewData]);
+  }, [myCalendarViewData, myProjects, allTasks]);
 
-  const availableTasks = [
-    'Development',
-    'Testing',
-    'Code Review',
-    'Documentation',
-    'Bug Fixing',
-    'Meeting',
-  ];
+  const handleCreateTask = (projectId: string) => {
+    const project = myProjects.find((p) => p._id === projectId);
+    if (!project) return;
 
-  const handleCreateTask = (project: string) => {
-    console.log('Creating new task for project:', project);
-    createEmptyCalendarRow(project, '', BillableType.Billable);
+    createEmptyCalendarRow(project.projectName, '', BillableType.Billable);
+    // Note: createEmptyCalendarRow likely expects projectName, not _id
+    // Adjust if your hook supports _id in the future
   };
 
   const handleDeleteTask = (rowId: string) => {
-    console.log('Deleting task row:', rowId);
     deleteCalendar(rowId);
   };
 
-  const handleTaskChange = (calendarRowId: string, newTask: string | null) => {
-    if (newTask === null) return;
-    
-    console.log('handleTaskChange:', { calendarRowId, newTask });
-    
-    // Find the calendar row - use fresh reference from state
-    const calendarRow = myCalendarViewData.find(row => row.id === calendarRowId);
-    if (!calendarRow) {
-      console.log('Calendar row not found:', calendarRowId);
+  const handleTaskChange = async (calendarRowId: string, newTaskName: string | null) => {
+    if (newTaskName === null) return;
+
+    const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
+    if (!calendarRow) return;
+
+    // Find the project for this calendar row
+    const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
+    if (!matchingProject) return;
+
+    // Check if there's already a calendar row with the same project and task
+    const duplicate = myCalendarViewData.find(row => 
+      row.id !== calendarRowId && // Not the same row
+      (row.project === calendarRow.project || row.project === matchingProject.projectName) && // Same project
+      row.task === newTaskName // Same task
+    );
+
+    if (duplicate) {
+      alert('A timesheet entry with this project and task already exists. Please use the existing entry or select a different task.');
       return;
     }
 
-    console.log('Calendar row found:', calendarRow);
+    // Get tasks for this project
+    const projectTasks = tasksByProject[matchingProject._id] || [];
+    
+    // Find the task ID from task name
+    const selectedTask = projectTasks.find(task => task.taskName === newTaskName);
+    const taskId = selectedTask ? selectedTask._id : newTaskName;
 
-    // Check if row has timesheet entries
     if (calendarRow.myTimesheetEntriesIds.length > 0) {
-      // Update all timesheet entries in this calendar row
-      console.log('Updating timesheet entries:', calendarRow.myTimesheetEntriesIds);
-      calendarRow.myTimesheetEntriesIds.forEach(timesheetId => {
-        const timesheet = newTimesheets.find(t => t.id === timesheetId);
+      calendarRow.myTimesheetEntriesIds.forEach((timesheetId) => {
+        const timesheet = newTimesheets.find((t) => t.id === timesheetId);
         if (timesheet) {
-          console.log('Updating timesheet task from', timesheet.task, 'to', newTask);
-          updateTimesheet(timesheetId, { task: newTask });
+          // Update UI with task name
+          updateTimesheet(timesheetId, { task: newTaskName });
+          // Sync task ID to backend
+          if (selectedTask) {
+            debouncedUpdateRef.current(timesheetId, { task: taskId });
+          }
         }
       });
     } else {
-      // Empty row - update calendar row metadata directly
-      console.log('Updating empty calendar row metadata');
-      updateCalendar(calendarRow.id, calendarRow.project, newTask, calendarRow.billableType);
+      updateCalendar(calendarRow.id, calendarRow.project, newTaskName, calendarRow.billableType);
     }
   };
 
-  const handleBillableTypeChange = (calendarRowId: string, newBillableType: BillableType) => {
-    console.log('handleBillableTypeChange:', { calendarRowId, newBillableType });
-    
-    // Find the calendar row - use fresh reference from state
-    const calendarRow = myCalendarViewData.find(row => row.id === calendarRowId);
-    if (!calendarRow) {
-      console.log('Calendar row not found:', calendarRowId);
-      return;
+  const handleCreateNewTask = async (projectId: string, taskName: string) => {
+    if (!taskName.trim()) return;
+
+    try {
+      console.log('Creating new task:', taskName, 'for project:', projectId);
+      const newTask: any = await createTask({ projectId, taskName });
+      return newTask;
+    } catch (error) {
+      console.error('Failed to create task:', error);
     }
+  };
 
-    console.log('Calendar row found:', calendarRow);
+  const getAvailableTasksForProject = (projectId: string): string[] => {
+    const projectTasks = tasksByProject[projectId] || [];
+    return projectTasks.map(task => task.taskName);
+  };
 
-    // Check if row has timesheet entries
+  const handleBillableTypeChange = (calendarRowId: string, newBillableType: BillableType) => {
+    const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
+    if (!calendarRow) return;
+
     if (calendarRow.myTimesheetEntriesIds.length > 0) {
-      // Update all timesheet entries in this calendar row
-      console.log('Updating timesheet entries:', calendarRow.myTimesheetEntriesIds);
-      calendarRow.myTimesheetEntriesIds.forEach(timesheetId => {
-        const timesheet = newTimesheets.find(t => t.id === timesheetId);
+      calendarRow.myTimesheetEntriesIds.forEach((timesheetId) => {
+        const timesheet = newTimesheets.find((t) => t.id === timesheetId);
         if (timesheet) {
-          console.log('Updating timesheet billableType from', timesheet.billableType, 'to', newBillableType);
           updateTimesheet(timesheetId, { billableType: newBillableType });
         }
       });
     } else {
-      // Empty row - update calendar row metadata directly
-      console.log('Updating empty calendar row metadata');
-      updateCalendar(calendarRow.id, calendarRow.project, calendarRow.task, newBillableType);
+      updateCalendar(
+        calendarRow.id,
+        calendarRow.project,
+        calendarRow.task ?? '',
+        newBillableType
+      );
     }
   };
 
   const handleHoursChange = (calendarRowId: string, date: Date, value: number) => {
-    console.log('handleHoursChange:', { calendarRowId, date, value });
-    
-    // Find the calendar row - only process task rows
-    const calendarRow = myCalendarViewData.find(row => row.id === calendarRowId);
-    if (!calendarRow) return;
+    const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
+    if (!calendarRow || !calendarRow.task) return;
 
-    // Search ALL timesheets for matching project+task+date (not just ones in calendar row)
-    // This prevents duplicates when state hasn't updated yet
-    const existingTimesheet = newTimesheets.find(ts => {
+    // Find the matching project to get project ID
+    const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
+    if (!matchingProject) return;
+
+    // Get the task ID (calendarRow.task might be either task ID or task name)
+    const projectTasks = tasksByProject[matchingProject._id] || [];
+    const taskObj = projectTasks.find(t => t.taskName === calendarRow.task || t._id === calendarRow.task);
+    const taskId = taskObj ? taskObj._id : calendarRow.task;
+
+    const existingTimesheet = newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
-      return ts.project === calendarRow.project && 
-             ts.task === calendarRow.task && 
-             ts.billableType === calendarRow.billableType &&
-             tsDate.toDateString() === date.toDateString();
+      return (
+        (ts.project === calendarRow.project || ts.project === matchingProject._id) &&
+        ts.task === taskId &&
+        ts.billableType === calendarRow.billableType &&
+        tsDate.toDateString() === date.toDateString()
+      );
     });
 
     if (existingTimesheet) {
-      // Update existing timesheet
-      console.log('Updating existing timesheet:', existingTimesheet.id);
-      updateTimesheet(existingTimesheet.id, { hours: value });
+      // Update with debounce (updates Redux immediately and syncs to backend after delay)
+      debouncedUpdateRef.current(existingTimesheet.id, { hours: value });
     } else if (value !== 0) {
-      // Only create new timesheet if hours is not 00:00 (value is not 0)
-      console.log('Creating new timesheet for date:', date.toDateString(), 'with hours:', value);
-      const newTimesheet = {
+      addNewTimesheet({
         id: crypto.randomUUID(),
         date: date.toISOString(),
         project: calendarRow.project,
-        task: calendarRow.task,
+        task: taskId,
         description: '',
         hours: value,
         billableType: calendarRow.billableType,
         status: DailyTimesheetStatus.Default,
         isChecked: false,
-      };
-      addNewTimesheet(newTimesheet);
-    } else {
-      console.log('Skipping timesheet creation: hours is 0 (00:00)');
+      });
     }
   };
 
   const handleDescriptionChange = (calendarRowId: string, date: Date, value: string) => {
-    console.log('handleDescriptionChange:', { calendarRowId, date: date.toDateString(), value, valueLength: value.length });
-    
-    // Find the calendar row
-    const calendarRow = myCalendarViewData.find(row => row.id === calendarRowId);
-    if (!calendarRow) {
-      console.log('handleDescriptionChange - Calendar row not found:', calendarRowId);
-      return;
-    }
+    const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
+    if (!calendarRow || !calendarRow.task) return;
 
-    // Search ALL timesheets for matching project+task+date (not just ones in calendar row)
-    // This prevents duplicates when state hasn't updated yet
-    const existingTimesheet = newTimesheets.find(ts => {
+    // Find the matching project to get project ID
+    const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
+    if (!matchingProject) return;
+
+    // Get the task ID (calendarRow.task might be either task ID or task name)
+    const projectTasks = tasksByProject[matchingProject._id] || [];
+    const taskObj = projectTasks.find(t => t.taskName === calendarRow.task || t._id === calendarRow.task);
+    const taskId = taskObj ? taskObj._id : calendarRow.task;
+
+    const existingTimesheet = newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
-      return ts.project === calendarRow.project && 
-             ts.task === calendarRow.task && 
-             ts.billableType === calendarRow.billableType &&
-             tsDate.toDateString() === date.toDateString();
+      return (
+        (ts.project === calendarRow.project || ts.project === matchingProject._id) &&
+        ts.task === taskId &&
+        ts.billableType === calendarRow.billableType &&
+        tsDate.toDateString() === date.toDateString()
+      );
     });
 
     if (existingTimesheet) {
-      // Update existing timesheet
-      console.log('handleDescriptionChange - Updating existing timesheet description:', existingTimesheet.id, 'from', `"${existingTimesheet.description}"`, 'to', `"${value}"`);
-      updateTimesheet(existingTimesheet.id, { description: value });
+      // Update with debounce (updates Redux immediately and syncs to backend after delay)
+      debouncedUpdateRef.current(existingTimesheet.id, { description: value });
     } else {
-      // Create new timesheet entry for this date
-      console.log('handleDescriptionChange - Creating new timesheet for description on date:', date.toDateString());
-      const newTimesheet = {
+      addNewTimesheet({
         id: crypto.randomUUID(),
         date: date.toISOString(),
         project: calendarRow.project,
-        task: calendarRow.task,
+        task: taskId,
         description: value,
         hours: 0,
         billableType: calendarRow.billableType,
         status: DailyTimesheetStatus.Default,
         isChecked: false,
-      };
-      addNewTimesheet(newTimesheet);
-      console.log('handleDescriptionChange - Created new timesheet with ID:', newTimesheet.id);
+      });
     }
   };
 
-  const getTimesheetForDate = (row: ITimesheetRow, date: Date) => {
-    // Only get timesheet for task rows, not project rows
-    if (row.isProjectRow || !row.project || !row.task) return undefined;
-    
-    // Search ALL timesheets for matching project+task+date
-    const timesheet = newTimesheets.find(ts => {
+  const getTimesheetForDate = (row: ExtendedTimesheetRow, date: Date) => {
+    if (row.isProjectRow || row.isCreateTaskRow || !row.task || !row.billableType) {
+      return undefined;
+    }
+
+    // Get the task ID from the task name (row.task is the display name)
+    const projectTasks = row.projectId ? (tasksByProject[row.projectId] || []) : [];
+    const taskObj = projectTasks.find(t => t.taskName === row.task);
+    const taskId = taskObj ? taskObj._id : row.task;
+
+    return newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
-      return ts.project === row.project && 
-             ts.task === row.task && 
-             ts.billableType === row.billableType &&
-             tsDate.toDateString() === date.toDateString();
+      return (
+        (ts.project === row.project || ts.project === row.projectId) &&
+        ts.task === taskId &&
+        ts.billableType === row.billableType &&
+        tsDate.toDateString() === date.toDateString()
+      );
     });
-    
-    if (timesheet) {
-      console.log('getTimesheetForDate - Found timesheet:', timesheet.id, 'hours:', timesheet.hours, 'description:', timesheet.description);
-    }
-    
-    return timesheet;
   };
 
-  const columns: DataTableColumn<ITimesheetRow>[] = [
+  const columns: DataTableColumn<ExtendedTimesheetRow>[] = [
     {
       key: 'project-task',
       label: 'Project/Task',
+      width: '35%',
       render: (row) => {
         if (row.isProjectRow) {
+          return <CustomRow text={row.project || ''} />;
+        }
+        if (row.isCreateTaskRow) {
           return (
-            <CustomRow 
-              text={row.project || ''} 
+            <CreateTaskRow
+              onCreateTask={() => row.projectId && handleCreateTask(row.projectId)}
             />
-          );
-        } else if (row.isCreateTaskRow) {
-          return (
-            <CreateTaskRow 
-              onCreateTask={() => handleCreateTask(row.project || '')}
-            />
-          );
-        } else {
-          return (
-<TaskRow
-  task={row.task || ''}
-  billableType={row.billableType || BillableType.Billable}
-  rowId={row.id}
-  availableTasks={availableTasks}
-  onTaskChange={(rowId: string, newTask: string | null) => handleTaskChange(rowId, newTask)}
-  onBillableTypeChange={(rowId: string, type: BillableType) => handleBillableTypeChange(rowId, type)}
-/>
-
-
           );
         }
+        
+        const availableTasksForRow = row.projectId ? getAvailableTasksForProject(row.projectId) : [];
+        
+        return (
+          <TaskRow
+            task={row.task || ''}
+            billableType={row.billableType ?? BillableType.Billable}
+            rowId={row.id}
+            projectId={row.projectId || ''}
+            availableTasks={availableTasksForRow}
+            onTaskChange={handleTaskChange}
+            onBillableTypeChange={handleBillableTypeChange}
+            onCreateNewTask={handleCreateNewTask}
+          />
+        );
       },
-      width: '35%',
     },
     ...weekDays.map((day) => ({
-        key: day.date.toDateString(),
-        label: day.date.getDate().toString(),
-        render: (row: ITimesheetRow) => {
-          // Don't show timesheet cells for project rows or create task rows
-          if (row.isProjectRow || row.isCreateTaskRow) {
-            return null;
-          }
-          
-          const timesheetForDate = getTimesheetForDate(row, day.date);
-          return (
-            <TimesheetCell 
-              hours={timesheetForDate?.hours || 0} 
-              description={timesheetForDate?.description || ''}
-              isTodayColumn={day.date.toDateString() === new Date().toDateString()}
-              onHoursChange={(value: number) => handleHoursChange(row.id, day.date, value)}
-              onDescriptionChange={(value: string) => handleDescriptionChange(row.id, day.date, value)}
-              date={day.date}
-              row={row}
-            />
-          );
-        },
-        width: '9%',
-      })),
+      key: day.date.toDateString(),
+      label: `${day.dayName}, ${day.monthName} ${day.dayNumber}`,
+      width: '9%',
+      render: (row: ExtendedTimesheetRow) => {
+        if (row.isProjectRow || row.isCreateTaskRow) return null;
+
+        const timesheet = getTimesheetForDate(row, day.date);
+
+        return (
+          <TimesheetCell
+            hours={timesheet?.hours || 0}
+            description={timesheet?.description || ''}
+            isTodayColumn={day.date.toDateString() === new Date().toDateString()}
+            onHoursChange={(value) => handleHoursChange(row.id, day.date, value)}
+            onDescriptionChange={(value) =>
+              handleDescriptionChange(row.id, day.date, value)
+            }
+            date={day.date}
+            row={row}
+          />
+        );
+      },
+    })),
     {
       key: 'actions',
       label: '',
-      render: (row: ITimesheetRow) => {
-        // Only show delete button for task rows (not project or create task rows)
-        if (row.isProjectRow || row.isCreateTaskRow) {
-          return null;
-        }
-        
+      width: '50px',
+      render: (row: ExtendedTimesheetRow) => {
+        if (row.isProjectRow || row.isCreateTaskRow) return null;
+
         return (
-          <IconButton 
-            size="small" 
+          <IconButton
+            size="small"
             onClick={(e) => {
               e.stopPropagation();
               handleDeleteTask(row.id);
             }}
-            sx={{ 
+            sx={{
               color: '#666',
               '&:hover': {
                 color: '#d32f2f',
-                backgroundColor: 'rgba(211, 47, 47, 0.04)'
-              }
+                backgroundColor: 'rgba(211, 47, 47, 0.04)',
+              },
             }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>
         );
       },
-      width: '50px',
-    }
+    },
   ];
 
-  const handleRowClick = (row: ITimesheetRow) => {
-    console.log('Clicked row:', row);
-  };
+  if (projectsLoading) return <div>Loading projects...</div>;
+  if (projectsError) return <div>Error loading projects</div>;
 
   return (
     <DataTable
       columns={columns}
       rows={groupedData}
       getRowKey={(row) => row.id}
-      onRowClick={handleRowClick}
     />
   );
 };
 
-export default MyTimesheetCalenderTable;
+export default MyTimesheetCalendarTable;

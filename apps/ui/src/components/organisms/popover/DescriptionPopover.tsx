@@ -34,13 +34,14 @@ const DescriptionPopover: React.FC<DescriptionPopoverProps> = ({
           Description
         </Typography>
         <TextField
+          key={`description-${description}`}
           autoFocus
           fullWidth
           multiline
           rows={3}
           size="small"
           placeholder="Enter description..."
-          value={description}
+          defaultValue={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
           variant="outlined"
           onKeyDown={handleKeyDown}
