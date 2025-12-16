@@ -4,13 +4,10 @@ import  { Dayjs } from 'dayjs';
 import { useReportFilters } from '../../../hooks/report/useReportFilters';
 import { ReportFilterForm } from './ReportFilterForm';
 import { useEffect, useRef } from 'react';
-
-interface IReportFilterProps {
-  resetTrigger?: number;
-}
+import { IReportFilterProps } from '../../../interfaces/report/IReportFilter';
 
 export const ReportFilter = ({ resetTrigger }: IReportFilterProps) => {
-    const {
+  const {
     currentFilter,
     handleFilterChange: updateFilter,
     resetFilters,
@@ -23,7 +20,7 @@ export const ReportFilter = ({ resetTrigger }: IReportFilterProps) => {
       resetFilters();
       prevResetTriggerRef.current = resetTrigger;
     }
-  }, [resetTrigger]);
+  }, [resetTrigger, resetFilters]);
 
   const handleDateRangeSelect = (start: Dayjs, end: Dayjs) => {
     updateFilter({
@@ -38,7 +35,13 @@ export const ReportFilter = ({ resetTrigger }: IReportFilterProps) => {
       title="Filters"
       noBorder
       action={<QuickDateButtons onDateRangeSelect={handleDateRangeSelect} />}
-      children={<ReportFilterForm resetTrigger={resetTrigger} />}
+      children={
+        <ReportFilterForm 
+          resetTrigger={resetTrigger}
+          currentFilter={currentFilter}
+          updateFilter={updateFilter}
+        />
+      }
     ></ReportFilterLayout>
   );
 };

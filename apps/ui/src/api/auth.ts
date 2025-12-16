@@ -1,5 +1,6 @@
 import API  from "../config/apiClient";
 import { ILoginData, IChangePwdFirstLogin } from "../interfaces/auth";
+import { UserRole } from "@tms/shared";
 
 export const login = async (data: ILoginData) => {
   return await API.post("/auth/login", data);
@@ -66,6 +67,25 @@ export const resetPassword = async (data: {
     return await API.post("/auth/password/reset", data);
   } catch (error) {
     console.error("Password reset failed:", error);
+    throw error;
+  }
+};
+
+export const registerUser = async (
+  data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    designation: string;
+    contactNumber: string;
+  },
+  role: UserRole
+) => {
+  try {
+    const endpoint = role === UserRole.Admin ? '/api/user/admin' : '/api/user/employee';
+    return await API.post(endpoint, data);
+  } catch (error) {
+    console.error("User registration failed:", error);
     throw error;
   }
 };
