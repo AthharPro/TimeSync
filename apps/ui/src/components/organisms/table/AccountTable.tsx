@@ -5,15 +5,37 @@ import { ContactNumberFormat } from '../../../utils';
 import StatusChip from '../../atoms/other/Icon/StatusChip';
 import ActionButton from '../../molecules/other/ActionButton';
 import { IAccountTableProps } from '../../../interfaces/component/organism/ITable';
+import { UserRole } from '@tms/shared';
 
 const AccountTable = ({ 
   rows, 
   onEditRow, 
   onDelete,
+  onRowClick,
   disableEdit = false,
   showDelete = true,
   disableDelete = false
 }: IAccountTableProps) => {
+  
+  const formatRole = (role: string | undefined): string => {
+    if (!role) return '-';
+    
+    switch (role) {
+      case UserRole.SuperAdmin:
+        return 'Super Admin';
+      case UserRole.Admin:
+        return 'Admin';
+      case UserRole.SupervisorAdmin:
+        return 'Supervisor Admin';
+      case UserRole.Supervisor:
+        return 'Supervisor';
+      case UserRole.Emp:
+        return 'Employee';
+      default:
+        return role;
+    }
+  };
+
   const columns: DataTableColumn<IAccountTableRow>[] = [
     { label: '', key: 'empty', render: () => null },
     { 
@@ -28,9 +50,14 @@ const AccountTable = ({
       render: (row) => `${row.firstName} ${row.lastName}`.trim(),
     },
     {
+      label: 'Designation',
+      key: 'designation',
+      render: (row) => row.designation || '-',
+    },
+    {
       label: 'Role',
       key: 'role',
-      render: (row) => row.role || '-',
+      render: (row) => formatRole(row.role),
     },
     {
       label: 'Contact Number',
@@ -63,6 +90,7 @@ const AccountTable = ({
             disableEdit={disableEdit}
             showDelete={showDelete}
             disableDelete={disableDelete}
+            deleteLabel={row.status === 'Active' ? 'Deactivate' : 'Activate'}
           />
         </span>
       ),
@@ -75,8 +103,9 @@ const AccountTable = ({
       rows={rows}
       getRowKey={(row) => row.id ?? ''}
       onRowClick={(row) => {
-        if (onEditRow) onEditRow(row);
+        if (onRowClick) onRowClick(row);
       }}
+      enableHover={true}
     />
   );
 };

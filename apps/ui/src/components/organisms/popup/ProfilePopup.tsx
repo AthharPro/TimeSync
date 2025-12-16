@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Avatar, Divider, Chip } from '@mui/material';
+import { Box, Typography, Avatar, Divider, Chip, Grid } from '@mui/material';
 import PopupLayout from '../../templates/popup/PopUpLayout';
 import BaseBtn from '../../atoms/other/button/BaseBtn';
 import { User, UserRole } from '@tms/shared';
@@ -8,6 +8,8 @@ import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import BadgeIcon from '@mui/icons-material/Badge';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
+import WorkIcon from '@mui/icons-material/Work';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 interface ProfilePopupProps {
   open: boolean;
@@ -37,8 +39,8 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overri
 
   const getRoleLabel = () => {
     switch (user.role) {
-      case UserRole.SuperAdmin: return 'Super Administrator';
-      case UserRole.Admin: return 'Administrator';
+      case UserRole.SuperAdmin: return 'Super Admin';
+      case UserRole.Admin: return 'Admin';
       case UserRole.SupervisorAdmin: return 'Supervisor Admin';
       case UserRole.Supervisor: return 'Supervisor';
       case UserRole.Emp: return 'Employee';
@@ -51,6 +53,7 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overri
       open={open}
       title="Profile"
       onClose={onClose}
+      maxWidth='xs'
       actions={
         <Box
           sx={{
@@ -67,31 +70,44 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overri
         </Box>
       }
     >
-      {/* Profile Header Section */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-        <Avatar
-          sx={{
-            width: 100,
-            height: 100,
-            fontSize: '2.5rem',
-            bgcolor: 'primary.main',
-            mb: 2,
-          }}
-        >
-          {getInitials()}
-        </Avatar>
-        <Typography variant="h5" fontWeight={600}>
-          {user.firstName} {user.lastName}
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-          {user.designation}
-        </Typography>
-        <Chip 
-          label={getRoleLabel()} 
-          color="primary" 
-          size="small" 
-          sx={{ mt: 1 }}
-        />
+      {/* Profile Header Section - Avatar on Left, Details on Right */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3, gap: 3 }}>
+        {/* Left Side - Avatar */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Avatar
+            sx={{
+              width: 80,
+              height: 80,
+              fontSize: '1.5rem',
+              bgcolor: 'grey.400',
+            }}
+          >
+            {getInitials()}
+          </Avatar>
+        </Box>
+
+        {/* Right Side - Details */}
+        <Box>
+          <Typography variant="h5" fontWeight={600}>
+            {user.firstName} {user.lastName}
+          </Typography>
+          
+          {/* Designation with icon */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, mb: 1 }}>
+            <WorkIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
+            <Typography variant="body1">
+              {user.designation}
+            </Typography>
+          </Box>
+
+          {/* Role with icon */}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <AdminPanelSettingsIcon sx={{ fontSize: '1rem', mr: 0.5 }} />
+            <Typography variant="body2">
+              {getRoleLabel()}
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
       <Divider sx={{ my: 3 }} />

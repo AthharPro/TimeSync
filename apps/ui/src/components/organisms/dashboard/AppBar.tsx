@@ -6,9 +6,11 @@ import { useState } from 'react';
 import NotificationPopover from '../popover/NotificationPopover';
 import UserPopover from '../popover/UserPopover';
 import ProfilePopup from '../popup/ProfilePopup';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export default function CustomAppBar() {
   const theme = useTheme();
+  const { user, logout } = useAuth();
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<HTMLElement | null>(null);
   const [userAnchorEl, setUserAnchorEl] = useState<HTMLElement | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -39,26 +41,11 @@ export default function CustomAppBar() {
   };
 
   const handleLogoutClick = () => {
-    // Add your logout logic here
-    console.log('Logout clicked');
-    // Example: window.location.href = '/login';
+    logout();
   };
 
   // Dummy unread notification count
   const unreadCount = 2;
-
-  // Dummy user data
-  const dummyUser = {
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    employee_id: 'EMP001',
-    designation: 'Software Engineer',
-    contactNumber: '+1 234 567 8900',
-    role: 'EMPLOYEE' as any,
-    status: true,
-    isChangedPassword: true,
-  };
 
   return (
     <AppBar
@@ -101,7 +88,7 @@ export default function CustomAppBar() {
             }}
             onClick={handleUserClick}
           >
-            Hi,&nbsp;{dummyUser.firstName || 'User'}
+            Hi,&nbsp;{user?.firstName || 'User'}
           </Button>
         </Box>
       </Toolbar>
@@ -115,12 +102,12 @@ export default function CustomAppBar() {
         onClose={handleUserClose}
         onProfileClick={handleProfileClick}
         onLogoutClick={handleLogoutClick}
-        user={dummyUser}
+        user={user}
       />
       <ProfilePopup
         open={isProfileOpen}
         onClose={handleProfileClose}
-        user={dummyUser}
+        user={user}
       />
     </AppBar>
   );

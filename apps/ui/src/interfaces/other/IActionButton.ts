@@ -4,4 +4,5 @@ export interface ActionButtonProps {
   disableEdit?: boolean;
   showDelete?: boolean;
   disableDelete?: boolean;
+  deleteLabel?: string;
 }

@@ -4,6 +4,9 @@ import { useCallback } from 'react';
 import { IAccountTableRow } from '../../interfaces/component/organism/ITable';
 import { setAccountData, updateAccountById, fetchAccounts } from '../../store/slices/AccountSlice';
 import { RootState, AppDispatch } from '../../store/store';
+import { registerUser } from '../../api/auth';
+import { updateUser } from '../../api/user';
+import { UserRole } from '@tms/shared';
 
 export const useAccount = (): IUseAccountReturn => {
     const dispatch = useDispatch<AppDispatch>();
@@ -35,6 +38,59 @@ export const useAccount = (): IUseAccountReturn => {
         [dispatch]
     );
 
+    // Create a new account
+    const createAccount = useCallback(
+        async (
+            data: {
+                email: string;
+                firstName: string;
+                lastName: string;
+                designation: string;
+                contactNumber: string;
+            },
+            role: UserRole
+        ) => {
+            try {
+                await registerUser(data, role);
+                // Reload accounts after successful creation
+                await dispatch(fetchAccounts());
+            } catch (error) {
+                console.error('Create account error:', error);
+                throw error;
+            }
+        },
+        [dispatch]
+    );
+
+    // Update an existing account
+    const updateAccount = useCallback(
+        async (
+            userId: string,
+            data: {
+                designation?: string;
+                contactNumber?: string;
+                status?: 'Active' | 'Inactive' | string;
+            }
+        ) => {
+            try {
+                // Convert status to boolean for backend
+                const updateData = {
+                    designation: data.designation,
+                    contactNumber: data.contactNumber,
+                    status: data.status === 'Active',
+                };
+                
+                await updateUser(userId, updateData);
+                // Reload accounts after successful update
+                await dispatch(fetchAccounts());
+            } catch (error) {
+                console.error('Update account error:', error);
+                throw error;
+            }
+        },
+        [dispatch]
+    );
+
     return {
         fetchAccountDetails,
         newAccountDetails,
@@ -43,5 +99,7 @@ export const useAccount = (): IUseAccountReturn => {
         addNewAccountDetails,
         updateAccountDetails,
         loadAccounts,
+        createAccount,
+        updateAccount,
     };
 }
