@@ -61,6 +61,12 @@ const MyTimesheetTable = () => {
 
   const [openPickers, setOpenPickers] = useState<Set<string>>(new Set());
   const [selectedProjects, setSelectedProjects] = useState<Record<string, string>>({});
+  
+  // Track which projects we've already loaded tasks for
+  const loadedProjectsRef = useRef<Set<string>>(new Set());
+  
+  // Track if we've already loaded timesheets for the current week
+  const loadedWeekRef = useRef<string>('');
 
   // Create debounced update function (900ms delay)
   const debouncedUpdateRef = useRef(createDebouncedUpdate(updateTimesheet, syncUpdateTimesheet, 900));
@@ -72,18 +78,30 @@ const MyTimesheetTable = () => {
 
   // Load timesheets for the current week
   useEffect(() => {
-    if (currentWeekDays.length > 0) {
+    const currentWeekStartStr = currentWeekStart.toISOString();
+    
+    console.log('MyTimesheetTable - useEffect triggered:', {
+      currentWeekDaysLength: currentWeekDays.length,
+      currentWeekStart: currentWeekStartStr,
+      loadedWeekRef: loadedWeekRef.current,
+      shouldLoad: currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current,
+    });
+    
+    if (currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current) {
       const startDate = currentWeekDays[0].date;
       const endDate = currentWeekDays[currentWeekDays.length - 1].date;
       
       console.log('MyTimesheetTable - Loading timesheets for week:', {
         startDate,
         endDate,
+        currentWeekStart: currentWeekStartStr,
       });
       
       loadTimesheets(startDate, endDate);
+      loadedWeekRef.current = currentWeekStartStr;
     }
-  }, [currentWeekStart, loadTimesheets]); // Use currentWeekStart instead of currentWeekDays to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWeekStart]); // Only depend on currentWeekStart to avoid infinite loop
 
   // Initialize selectedProjects with project IDs from timesheets and load tasks
   useEffect(() => {
@@ -95,8 +113,9 @@ const MyTimesheetTable = () => {
         projectMap[timesheet.id] = timesheet.project;
         
         // Load tasks for this project ID if not already loaded
-        if (!tasksByProject[timesheet.project]) {
+        if (!loadedProjectsRef.current.has(timesheet.project)) {
           loadTasks(timesheet.project);
+          loadedProjectsRef.current.add(timesheet.project);
         }
       }
     });
@@ -118,7 +137,8 @@ const MyTimesheetTable = () => {
       
       return prev; // No changes, return previous state
     });
-  }, [newTimesheets, loadTasks, tasksByProject]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newTimesheets]); // Only depend on newTimesheets
 
   const timesheetData: ITimesheetTableEntry[] = useMemo(() => {
     return newTimesheets.map((timesheet) => {

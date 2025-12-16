@@ -71,6 +71,9 @@ const MyTimesheetCalendarTable = () => {
   
   // Create debounced update function (900ms delay)
   const debouncedUpdateRef = useRef(createDebouncedUpdate(updateTimesheet, syncUpdateTimesheet, 900));
+  
+  // Track if we've already loaded timesheets for the current week
+  const loadedWeekRef = useRef<string>('');
 
   const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
     useMyProjects();
@@ -87,20 +90,25 @@ const MyTimesheetCalendarTable = () => {
     loadMyProjects();
   }, [loadMyProjects]);
 
-  // Load timesheets for the current week
+  // Load timesheets for the current week (only once per week)
   useEffect(() => {
-    if (currentWeekDays.length > 0) {
+    const currentWeekStartStr = currentWeekStart.toISOString();
+    
+    if (currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current) {
       const startDate = currentWeekDays[0].date;
       const endDate = currentWeekDays[currentWeekDays.length - 1].date;
       
       console.log('MyTimesheetCalendarTable - Loading timesheets for week:', {
         startDate,
         endDate,
+        currentWeekStart: currentWeekStartStr,
       });
       
       loadTimesheets(startDate, endDate);
+      loadedWeekRef.current = currentWeekStartStr;
     }
-  }, [currentWeekStart, loadTimesheets]); // Use currentWeekStart instead of currentWeekDays to avoid infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWeekStart]); // Only depend on currentWeekStart to avoid infinite loop
 
   // Load tasks for all projects that appear in calendar view
   useEffect(() => {

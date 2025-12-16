@@ -7,12 +7,13 @@ import {
   TableBody,
   TableContainer,
 } from '@mui/material';
+import React from 'react';
 import {  DataTableProps } from '../../../interfaces';
 
-function DataTable<T>({ columns, rows, getRowKey, onRowClick, enableHover = false }: DataTableProps<T>) {
+function DataTable<T>({ columns, rows, getRowKey, onRowClick, enableHover = false, renderExpandedRow, size = 'small' }: DataTableProps<T>) {
   return (
     <TableContainer>
-      <Table size="small" stickyHeader>
+      <Table size={size} stickyHeader>
         <TableHead>
           <TableRow>
             {columns.map((col, index) => (
@@ -22,7 +23,10 @@ function DataTable<T>({ columns, rows, getRowKey, onRowClick, enableHover = fals
                   width: col.width || 'auto', 
                   backgroundColor: '#f5f5f5',
                   color: 'theme.palette.text.primary',
-                  borderRight: index < columns.length - 1 ? '1px dotted #edededff' : 'none'
+                  borderRight: index < columns.length - 1 ? '1px dotted #edededff' : 'none',
+                  py: 1,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
                 }}
               >
                 {col.renderHeader ? col.renderHeader() : col.label}
@@ -37,27 +41,30 @@ function DataTable<T>({ columns, rows, getRowKey, onRowClick, enableHover = fals
             const rowKeyString = String(computedRowKey);
             
             return (
-              <TableRow 
-                key={rowKeyString} 
-                hover={enableHover} 
-                onClick={onRowClick && enableHover ? () => onRowClick(row) : undefined} 
-                sx={{ 
-                  cursor: onRowClick && enableHover ? 'pointer' : 'default',
-                  backgroundColor: 'inherit'
-                }}
-              >
-                {columns.map((col, colIndex) => (
-                  <TableCell 
-                    key={`${col.key}-${rowKeyString}`} 
-                    sx={{ 
-                      width: col.width || 'auto',
-                      borderRight: colIndex < columns.length - 1 ? '1px dotted #edededff' : 'none'
-                    }}
-                  >
-                    {col.render(row)}
-                  </TableCell>
-                ))}
-              </TableRow>
+              <React.Fragment key={rowKeyString}>
+                <TableRow 
+                  hover={enableHover} 
+                  onClick={onRowClick && enableHover ? () => onRowClick(row) : undefined} 
+                  sx={{ 
+                    cursor: onRowClick && enableHover ? 'pointer' : 'default',
+                    backgroundColor: 'inherit'
+                  }}
+                >
+                  {columns.map((col, colIndex) => (
+                    <TableCell 
+                      key={`${col.key}-${rowKeyString}`} 
+                      sx={{ 
+                        width: col.width || 'auto',
+                        borderRight: colIndex < columns.length - 1 ? '1px dotted #edededff' : 'none',
+                        py: 0.75,
+                      }}
+                    >
+                      {col.render(row)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+                {renderExpandedRow && renderExpandedRow(row)}
+              </React.Fragment>
             );
           })}
         </TableBody>
