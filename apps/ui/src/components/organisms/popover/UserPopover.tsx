@@ -14,17 +14,14 @@ import {
   Person as PersonIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
+import { User } from '@tms/shared';
 
 interface UserPopoverProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
   onProfileClick: () => void;
   onLogoutClick: () => void;
-  user?: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-  };
+  user?: User | null;
 }
 
 export default function UserPopover({

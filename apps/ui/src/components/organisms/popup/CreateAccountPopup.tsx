@@ -13,6 +13,7 @@ import {ICreateAccountData} from '../../../interfaces/auth/IAuth'
 import { CreateAccountPopupProps } from '../../../interfaces/popup';
 import { registerUser } from '../../../api/auth';
 import { CreateAccountForm, BulkAccountForm } from '../../molecules/account';
+import { useAccount } from '../../../hooks/account';
 
 function CreateAccountPopUp({
   open,
@@ -24,6 +25,7 @@ function CreateAccountPopUp({
   const [tabValue, setTabValue] = useState<string>('1');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const { createAccount } = useAccount();
 
   const {
     register,
@@ -54,7 +56,7 @@ function CreateAccountPopUp({
     setError(null);
     
     try {
-      await registerUser(
+      await createAccount(
         {
           email: data.email,
           firstName: data.firstName,

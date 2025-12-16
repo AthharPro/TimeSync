@@ -10,6 +10,7 @@ export default function ActionButton({
   disableEdit = false,
   showDelete = true,
   disableDelete = false,
+  deleteLabel = 'Delete',
 }: ActionButtonProps) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -44,7 +45,7 @@ export default function ActionButton({
         </MenuItem>
         {showDelete && (
           <MenuItem onClick={handleDelete} disabled={disableDelete}>
-            Delete
+            {deleteLabel}
           </MenuItem>
         )}
       </Menu>

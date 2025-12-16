@@ -60,6 +60,7 @@ export interface IAccountTableProps {
   rows: IAccountTableRow[];
   onEditRow?: (row: IAccountTableRow) => void;
   onDelete?: (id: string) => void;
+  onRowClick?: (row: IAccountTableRow) => void;
   disableEdit?: boolean;
   showDelete?: boolean;
   disableDelete?: boolean;
