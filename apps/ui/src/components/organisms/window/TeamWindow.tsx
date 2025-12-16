@@ -5,15 +5,26 @@ import { BaseBtn } from '../../atoms';
 import DataTable from '../../templates/other/DataTable';
 import { ITeam } from '../../../interfaces/team/ITeam';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
-import { dummyTeams } from '../../../data/dummyTeams';
 import ActionButton from '../../molecules/other/ActionButton';
 import CreateTeamPopUp from '../../organisms/popup/CreateTeamPopUp';
+import TeamStaffManager from '../team/TeamStaffManager';
+import ConformationDailog from '../../molecules/other/ConformationDailog';
+import { useTeam } from '../../../hooks/team';
 function TeamWindow() {
-  const [teams] = useState<ITeam[]>(dummyTeams as ITeam[]);
+  const { teams, loading, loadAllTeams, deleteTeam } = useTeam();
   const [viewTeam, setViewTeam] = useState<ITeam | null>(null);
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<ITeam | null>(null);
+  const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<ITeam | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Load teams on mount
+  useEffect(() => {
+    loadAllTeams();
+  }, [loadAllTeams]);
 
   const handleClosePopup = () => {
     setIsCreatePopupOpen(false);
@@ -29,6 +40,50 @@ function TeamWindow() {
 
   const handleAddProject = () => {
     // TODO: Implement add project functionality
+  };
+  const handleEditTeam = (team: ITeam) => {
+    setEditingTeam(team);
+    setIsStaffManagerOpen(true);
+  };
+
+  const handleCloseStaffManager = () => {
+    setIsStaffManagerOpen(false);
+    setEditingTeam(null);
+  };
+
+  const handleTeamStaffSaved = () => {
+    // Refresh teams after save
+    loadAllTeams();
+    handleCloseStaffManager();
+  };
+  
+  const handleDeleteTeam = (team: ITeam) => {
+    setTeamToDelete(team);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (teamToDelete) {
+      try {
+        await deleteTeam(teamToDelete.id);
+        await loadAllTeams(); // Refresh the list
+      } catch (error) {
+        console.error('Failed to delete team:', error);
+      }
+    }
+    setIsDeleteDialogOpen(false);
+    setTeamToDelete(null);
+  };
+  
+  const handleTeamCreated = () => {
+    // Refresh teams after creation
+    loadAllTeams();
+    handleClosePopup();
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteDialogOpen(false);
+    setTeamToDelete(null);
   };
   const theme = useTheme();
   const button = (
@@ -108,10 +163,15 @@ function TeamWindow() {
       {
         label: '',
         key: 'actions',
-        render: () => <ActionButton />,
+        render: (row: ITeam) => (
+          <ActionButton
+            onEdit={() => handleEditTeam(row)}
+            onDelete={() => handleDeleteTeam(row)}
+          />
+        ),
       },
     ],
-    [theme]
+    [theme, handleEditTeam, handleDeleteTeam]
   );
   return (
     <>
@@ -121,6 +181,28 @@ function TeamWindow() {
       <CreateTeamPopUp
         open={isCreatePopupOpen}
         onClose={handleClosePopup}
+        onTeamCreated={handleTeamCreated}
+      />
+      {editingTeam && (
+        <TeamStaffManager
+          open={isStaffManagerOpen}
+          onClose={handleCloseStaffManager}
+          teamId={editingTeam.id}
+          initialMembers={editingTeam.members}
+          initialSupervisor={editingTeam.supervisor}
+          onSaved={handleTeamStaffSaved}
+        />
+      )}
+      <ConformationDailog
+        open={isDeleteDialogOpen}
+        title="Delete Team"
+        message={`Are you sure you want to delete "${
+          teamToDelete?.teamName || 'this team'
+        }"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
       />
     </>
     

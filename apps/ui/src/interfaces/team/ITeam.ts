@@ -14,4 +14,14 @@ export interface CreateTeamFormData {
 export interface CreateTeamPopupProps {
   open: boolean;
   onClose: () => void;
+  onTeamCreated?: () => void;
+}
+
+export interface ITeamStaffManagerProps {
+  open: boolean;
+  onClose: () => void;
+  teamId: string;
+  initialMembers: { id: string; name: string; designation?: string }[];
+  initialSupervisor: { id: string; name: string; designation?: string } | null;
+  onSaved?: () => void;
 }

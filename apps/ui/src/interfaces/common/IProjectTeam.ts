@@ -49,3 +49,22 @@ export interface IEmployeeSectionProps {
   emptyMessage?: string;
   height?: string | number;
 }
+
+export interface ISupervisorSelectorProps {
+  selectedEmployees: IEmployee[];
+  supervisor: string;
+  onSupervisorChange: (supervisor: string) => void;
+  caption?: string;
+}
+
+export interface IStaffSelectorProps {
+  selectedEmployees: IEmployee[];
+  availableEmployees: IEmployee[];
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  onEmployeeToggle: (employee: IEmployee) => void;
+  onRemoveEmployee: (employeeId: string) => void;
+  title?: string;
+  searchPlaceholder?: string;
+  searchLabel?: string;
+}
