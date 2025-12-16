@@ -7,4 +7,6 @@ export * from './IErrorAlertProps';
 export * from './ILoadingSpinnerProps';
 export * from './IDatePickerFieldProps';
 export * from './INumberFieldProps';
+export * from './ICreateAccountForm';
+export * from './IBulkAccountForm';
 export * from './atom';

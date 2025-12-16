@@ -31,9 +31,11 @@ export interface TaskRowProps {
   task: string;
   billableType: BillableType;
   rowId: string;
+  projectId?: string;
   availableTasks: string[];
   onTaskChange: (rowId: string, newTask: string | null) => void;
   onBillableTypeChange: (rowId: string, billableType: BillableType) => void;
+  onCreateNewTask?: (projectId: string, taskName: string) => Promise<any>;
 }
 
 export interface CustomRowProps {

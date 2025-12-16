@@ -1,4 +1,5 @@
-import { IMyTimesheetTableEntry,IMyTimesheetCalendarEntry, IAccountTableEntry } from "../layout";
+import { IMyTimesheetTableEntry,IMyTimesheetCalendarEntry } from "../layout";
+import { IAccountTableRow } from "../component/organism/ITable";
 
 export interface ITimesheetState {
   myTimesheetData: IMyTimesheetTableEntry[];
@@ -7,5 +8,5 @@ export interface ITimesheetState {
 }
 
  export interface IAccountState{
-  accountData: IAccountTableEntry[];
+  accountData: IAccountTableRow[];
  }

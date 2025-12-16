@@ -6,6 +6,11 @@ const DEFAULT_SIGN_OPTIONS: SignOptions = {
   audience: 'user',
 };
 
+export const refreshTokenSignOptions: ITokenOptions = {
+  expiresIn: '30d',
+  secret: JWT_REFRESH_SECRET,
+};
+
 const ACCESS_TOKEN_OPTIONS: ITokenOptions = {
   expiresIn: '45m',
   secret: JWT_SECRET

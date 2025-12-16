@@ -2,52 +2,183 @@ import { Checkbox } from '@mui/material';
 import DataTable from '../../templates/other/DataTable';
 import { DataTableColumn } from '../../../interfaces';
 import { BillableType } from '@tms/shared';
-import {  useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useMyTimesheet } from '../../../hooks/timesheet/useMyTimesheet';
+import { useMyProjects } from '../../../hooks/project/useMyProject';
+import { useTasks } from '../../../hooks/task/useTasks';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../store/store';
 import AutocompleteText from '../../atoms/other/inputField/Autocomplete';
+import AutocompleteWithCreate from '../../atoms/other/inputField/AutocompleteWithCreate';
 import DatePickerField from '../../atoms/other/inputField/DatePickerField';
 import { BaseTextField } from '../../atoms';
 import HoursField from '../../atoms/other/inputField/HoursField';
 import Dropdown from '../../atoms/other/inputField/Dropdown';
 import { ITimesheetTableEntry } from '../../../interfaces/component/organism/ITable';
+import { IMyTimesheetTableEntry } from '../../../interfaces/layout/ITableProps';
+
+// Optimized debounced update that delays both Redux and backend updates
+const createDebouncedUpdate = (
+  updateFn: (id: string, updates: Partial<IMyTimesheetTableEntry>) => void,
+  syncFn: (id: string, updates: Partial<IMyTimesheetTableEntry>) => Promise<void>,
+  delay = 900
+) => {
+  const timers = new Map<string, NodeJS.Timeout>();
+  
+  return (id: string, updates: Partial<IMyTimesheetTableEntry>) => {
+    // Clear existing timer for this ID
+    if (timers.has(id)) {
+      const timer = timers.get(id);
+      if (timer) clearTimeout(timer);
+    }
+    
+    // Debounce both Redux update and backend sync
+    const timer = setTimeout(() => {
+      // Update Redux state
+      updateFn(id, updates);
+      // Sync to backend
+      syncFn(id, updates);
+      timers.delete(id);
+    }, delay);
+    
+    timers.set(id, timer);
+  };
+};
 
 const MyTimesheetTable = () => {
-  const { newTimesheets, updateTimesheet } = useMyTimesheet();
+  const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets, currentWeekDays, currentWeekStart } = useMyTimesheet();
+
+  const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
+    useMyProjects();
+
+  const { loadTasks, createTask } = useTasks();
+  
+  // Get all tasks from Redux store
+  const tasksByProject = useSelector((state: RootState) => state.tasks.tasksByProject);
+  const allTasks = useMemo(() => {
+    return Object.values(tasksByProject).flat();
+  }, [tasksByProject]);
 
   const [openPickers, setOpenPickers] = useState<Set<string>>(new Set());
+  const [selectedProjects, setSelectedProjects] = useState<Record<string, string>>({});
+  
+  // Track which projects we've already loaded tasks for
+  const loadedProjectsRef = useRef<Set<string>>(new Set());
+  
+  // Track if we've already loaded timesheets for the current week
+  const loadedWeekRef = useRef<string>('');
+
+  // Create debounced update function (900ms delay)
+  const debouncedUpdateRef = useRef(createDebouncedUpdate(updateTimesheet, syncUpdateTimesheet, 900));
+
+  // Load projects on component mount
+  useEffect(() => {
+    loadMyProjects();
+  }, [loadMyProjects]);
+
+  // Load timesheets for the current week
+  useEffect(() => {
+    const currentWeekStartStr = currentWeekStart.toISOString();
+    
+    console.log('MyTimesheetTable - useEffect triggered:', {
+      currentWeekDaysLength: currentWeekDays.length,
+      currentWeekStart: currentWeekStartStr,
+      loadedWeekRef: loadedWeekRef.current,
+      shouldLoad: currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current,
+    });
+    
+    if (currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current) {
+      const startDate = currentWeekDays[0].date;
+      const endDate = currentWeekDays[currentWeekDays.length - 1].date;
+      
+      console.log('MyTimesheetTable - Loading timesheets for week:', {
+        startDate,
+        endDate,
+        currentWeekStart: currentWeekStartStr,
+      });
+      
+      loadTimesheets(startDate, endDate);
+      loadedWeekRef.current = currentWeekStartStr;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWeekStart]); // Only depend on currentWeekStart to avoid infinite loop
+
+  // Initialize selectedProjects with project IDs from timesheets and load tasks
+  useEffect(() => {
+    const projectMap: Record<string, string> = {};
+    
+    newTimesheets.forEach((timesheet) => {
+      if (timesheet.project && timesheet.id) {
+        // Store the project ID (timesheet.project contains the ID)
+        projectMap[timesheet.id] = timesheet.project;
+        
+        // Load tasks for this project ID if not already loaded
+        if (!loadedProjectsRef.current.has(timesheet.project)) {
+          loadTasks(timesheet.project);
+          loadedProjectsRef.current.add(timesheet.project);
+        }
+      }
+    });
+    
+    // Only update state if there are actual changes
+    setSelectedProjects((prev) => {
+      const prevKeys = Object.keys(prev);
+      const newKeys = Object.keys(projectMap);
+      
+      if (prevKeys.length !== newKeys.length) {
+        return projectMap;
+      }
+      
+      for (const key of newKeys) {
+        if (prev[key] !== projectMap[key]) {
+          return projectMap;
+        }
+      }
+      
+      return prev; // No changes, return previous state
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newTimesheets]); // Only depend on newTimesheets
 
   const timesheetData: ITimesheetTableEntry[] = useMemo(() => {
-    return newTimesheets.map(timesheet => ({
-      ...timesheet,
-      date: new Date(timesheet.date)
-    }));
-  }, [newTimesheets]);
+    return newTimesheets.map((timesheet) => {
+      // Find project name from project ID
+      const project = myProjects.find(p => p._id === timesheet.project);
+      const projectName = project ? project.projectName : timesheet.project;
+      
+      // Find task name from task ID (search in all tasks from all projects)
+      const task = allTasks.find(t => t._id === timesheet.task);
+      const taskName = task ? task.taskName : timesheet.task;
+      
+      return {
+        ...timesheet,
+        date: new Date(timesheet.date),
+        project: projectName, // Display project name instead of ID
+        task: taskName, // Display task name instead of ID
+      };
+    });
+  }, [newTimesheets, myProjects, allTasks]);
 
-  // Calculate selected count and states from isChecked property
-  const selectedCount = timesheetData.filter(row => row.isChecked).length;
+  // Calculate selection state
+  const selectedCount = timesheetData.filter((row) => row.isChecked).length;
   const isAllSelected = timesheetData.length > 0 && selectedCount === timesheetData.length;
   const isIndeterminate = selectedCount > 0 && selectedCount < timesheetData.length;
 
-  // Available projects list
-  const availableProjects = [
-    'Project Alpha',
-    'Project Beta',
-    'Project Gamma',
-    'Project Delta',
-  ];
+  // Extract project names from backend data
+  const availableProjectNames = useMemo<string[]>(() => {
+    return myProjects.map((proj) => proj.projectName);
+  }, [myProjects]);
 
-  // Available tasks list
-  const availableTasks = [
-    'Development',
-    'Testing',
-    'Code Review',
-    'Documentation',
-    'Bug Fixing',
-    'Meeting',
-  ];
+  // Get available task names for the currently selected project in each row
+  const getAvailableTasksForRow = (rowId: string): string[] => {
+    const projectId = selectedProjects[rowId];
+    if (!projectId) return [];
+    const projectTasks = tasksByProject[projectId] || [];
+    return projectTasks.map(task => task.taskName);
+  };
 
   const handleCheckboxChange = (id: string) => {
-    const currentRow = timesheetData.find(row => row.id === id);
+    const currentRow = timesheetData.find((row) => row.id === id);
     if (currentRow) {
       updateTimesheet(id, { isChecked: !currentRow.isChecked });
     }
@@ -55,41 +186,125 @@ const MyTimesheetTable = () => {
 
   const handleSelectAll = () => {
     const newCheckedState = !isAllSelected;
-    timesheetData.forEach(row => {
+    timesheetData.forEach((row) => {
       updateTimesheet(row.id, { isChecked: newCheckedState });
     });
   };
 
-  const handleProjectChange = (id: string, newProject: string | null) => {
-    if (newProject !== null) {
-      updateTimesheet(id, { project: newProject });
+  const handleProjectChange = (id: string, newProjectName: string | null) => {
+    if (newProjectName !== null) {
+      // Find the project ID from the project name
+      const selectedProject = myProjects.find(proj => proj.projectName === newProjectName);
+      
+      if (selectedProject) {
+        // Get current row data
+        const currentRow = timesheetData.find(row => row.id === id);
+        
+        if (currentRow) {
+          // Check for duplicate project+task on same date
+          const duplicate = timesheetData.find(row => 
+            row.id !== id && // Not the same row
+            row.date.toDateString() === currentRow.date.toDateString() && // Same date
+            row.project === newProjectName && // Same project
+            row.task === currentRow.task && // Same task (if task is already set)
+            currentRow.task !== '' // Only check if task is not empty
+          );
+
+          if (duplicate) {
+            alert('A timesheet entry with this project and task already exists for this date. Please use the existing entry or select a different task.');
+            return;
+          }
+        }
+        
+        // Store the selected project ID for this row
+        setSelectedProjects(prev => ({ ...prev, [id]: selectedProject._id }));
+        
+        // Load tasks for this project
+        loadTasks(selectedProject._id);
+        
+        // Update UI with project name and sync to backend with project ID
+        updateTimesheet(id, { project: newProjectName });
+        debouncedUpdateRef.current(id, { project: selectedProject._id });
+      } else {
+        console.warn('Project not found for name:', newProjectName);
+      }
     }
   };
 
-  const handleTaskChange = (id: string, newTask: string | null) => {
-    if (newTask !== null) {
-      updateTimesheet(id, { task: newTask });
+  const handleTaskChange = (id: string, newTaskName: string | null) => {
+    if (newTaskName !== null) {
+      // Get the project ID for this row
+      const projectId = selectedProjects[id];
+      const projectTasks = projectId ? tasksByProject[projectId] || [] : [];
+      
+      // Get current row data
+      const currentRow = timesheetData.find(row => row.id === id);
+      
+      if (currentRow) {
+        // Check for duplicate project+task on same date
+        const duplicate = timesheetData.find(row => 
+          row.id !== id && // Not the same row
+          row.date.toDateString() === currentRow.date.toDateString() && // Same date
+          row.project === currentRow.project && // Same project
+          row.task === newTaskName // Same task
+        );
+
+        if (duplicate) {
+          alert('A timesheet entry with this project and task already exists for this date. Please use the existing entry.');
+          return;
+        }
+      }
+      
+      // Find the task ID from task name in the current project's tasks
+      const selectedTask = projectTasks.find(task => task.taskName === newTaskName);
+      
+      if (selectedTask) {
+        // Update UI with task name and sync to backend with task ID
+        updateTimesheet(id, { task: newTaskName });
+        debouncedUpdateRef.current(id, { task: selectedTask._id });
+      } else {
+        // If task not found, just update UI (will be created separately)
+        updateTimesheet(id, { task: newTaskName });
+      }
+    }
+  };
+
+  const handleCreateNewTask = async (rowId: string, taskName: string) => {
+    const projectId = selectedProjects[rowId];
+    if (!projectId) {
+      console.error('No project selected for this row');
+      return;
+    }
+
+    try {
+      console.log('Creating new task:', taskName, 'for project:', projectId);
+      const newTask: any = await createTask({ projectId, taskName });
+      
+      // Only sync to backend with new task ID (UI already updated by handleTaskChange)
+      if (newTask && newTask._id) {
+        debouncedUpdateRef.current(rowId, { task: newTask._id });
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
     }
   };
 
   const handleDescriptionChange = (id: string, newDescription: string) => {
-    updateTimesheet(id, { description: newDescription });
+    debouncedUpdateRef.current(id, { description: newDescription });
   };
 
   const handleHoursChange = (id: string, newHours: number) => {
-    updateTimesheet(id, { hours: newHours });
+    console.log('MyTimesheetTable - handleHoursChange called with ID:', id, 'hours:', newHours);
+    debouncedUpdateRef.current(id, { hours: newHours });
   };
 
-  const handleBillableTypeChange = (
-    id: string,
-    newBillableType: BillableType
-  ) => {
-    updateTimesheet(id, { billableType: newBillableType });
+  const handleBillableTypeChange = (id: string, newBillableType: BillableType) => {
+    debouncedUpdateRef.current(id, { billableType: newBillableType });
   };
 
   const handleDateChange = (id: string, newDate: Date | null) => {
     if (newDate !== null) {
-      updateTimesheet(id, { date: newDate.toISOString() });
+      debouncedUpdateRef.current(id, { date: newDate.toISOString() });
     }
   };
 
@@ -99,7 +314,7 @@ const MyTimesheetTable = () => {
       label: '',
       renderHeader: () => (
         <Checkbox
-          size='small'
+          size="small"
           sx={{ paddingTop: 0, paddingBottom: 0 }}
           checked={isAllSelected}
           indeterminate={isIndeterminate}
@@ -120,28 +335,22 @@ const MyTimesheetTable = () => {
     {
       key: 'date',
       label: 'Date',
-      render: (row) => {
-        return (
-          <DatePickerField
-            value={row.date}
-            onChange={(newDate) => handleDateChange(row.id, newDate)}
-            open={openPickers.has(row.id)}
-            onOpen={() => {
-              setOpenPickers(new Set([row.id]));
-            }}
-            onClose={() => {
-              setOpenPickers((prev) => {
-                const newSet = new Set(prev);
-                newSet.delete(row.id);
-                return newSet;
-              });
-            }}
-            onClick={() => {
-              setOpenPickers(new Set([row.id]));
-            }}
-          />
-        );
-      },
+      render: (row) => (
+        <DatePickerField
+          value={row.date}
+          onChange={(newDate) => handleDateChange(row.id, newDate)}
+          open={openPickers.has(row.id)}
+          onOpen={() => setOpenPickers(new Set([row.id]))}
+          onClose={() =>
+            setOpenPickers((prev) => {
+              const newSet = new Set(prev);
+              newSet.delete(row.id);
+              return newSet;
+            })
+          }
+          onClick={() => setOpenPickers(new Set([row.id]))}
+        />
+      ),
       width: '10%',
     },
     {
@@ -150,11 +359,9 @@ const MyTimesheetTable = () => {
       render: (row) => (
         <AutocompleteText
           value={row.project}
-          placeholder="Enter Project"
-          onChange={(event, newValue) =>
-            handleProjectChange(row.id, newValue)
-          }
-          options={availableProjects}
+          placeholder="Select or enter project"
+          onChange={(event, newValue) => handleProjectChange(row.id, newValue)}
+          options={availableProjectNames}
         />
       ),
       width: '14%',
@@ -163,11 +370,13 @@ const MyTimesheetTable = () => {
       key: 'task',
       label: 'Task',
       render: (row) => (
-        <AutocompleteText
+        <AutocompleteWithCreate
           value={row.task}
-          placeholder="Enter Task"
+          placeholder="Select or enter task"
           onChange={(event, newValue) => handleTaskChange(row.id, newValue)}
-          options={availableTasks}
+          options={getAvailableTasksForRow(row.id)}
+          onCreateNew={async (taskName) => await handleCreateNewTask(row.id, taskName)}
+          disabled={!selectedProjects[row.id]}
         />
       ),
       width: '30%',
@@ -177,19 +386,16 @@ const MyTimesheetTable = () => {
       label: 'Description',
       render: (row) => (
         <BaseTextField
-          value={row.description}
+          key={`description-${row.id}`}
+          defaultValue={row.description}
           placeholder="Enter description"
           onChange={(e) => handleDescriptionChange(row.id, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           variant="standard"
           sx={{
             width: '100%',
-            '& .MuiInput-underline:before': {
-              borderBottom: 'none',
-            },
-            '& .MuiInput-underline:after': {
-              borderBottom: 'none',
-            },
+            '& .MuiInput-underline:before': { borderBottom: 'none' },
+            '& .MuiInput-underline:after': { borderBottom: 'none' },
             '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
               borderBottom: 'none',
             },
@@ -237,7 +443,14 @@ const MyTimesheetTable = () => {
     console.log('Clicked row:', row);
   };
 
+  // Loading / Error states
+  if (projectsLoading) {
+    return <div>Loading projects...</div>;
+  }
 
+  if (projectsError) {
+    return <div>Error loading projects: {projectsError}</div>;
+  }
 
   return (
     <DataTable

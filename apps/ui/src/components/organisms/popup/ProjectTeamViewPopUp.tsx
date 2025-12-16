@@ -5,7 +5,7 @@ import PopUpLayout from '../../templates/popup/PopUpLayout';
 import TeamMemberCard from '../../molecules/project/TeamMemberCard';
 import { ITeamViewModalProps } from '../../../interfaces/project/ITeamView';
 
-const TeamViewModal: React.FC<ITeamViewModalProps> = ({ open, onClose, project }) => {
+const ProjectTeamViewPopUp: React.FC<ITeamViewModalProps> = ({ open, onClose, project }) => {
   const totalMembers = project.teamMembers.length + 1; // +1 for project manager
 
   return (
@@ -62,4 +62,4 @@ const TeamViewModal: React.FC<ITeamViewModalProps> = ({ open, onClose, project }
   );
 };
 
-export default TeamViewModal;
+export default ProjectTeamViewPopUp;

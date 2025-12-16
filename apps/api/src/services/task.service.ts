@@ -16,3 +16,9 @@ export const createTask = async (
 
   return await task.save();
 };
+
+export const getTasksByProject = async (
+  projectId: string
+): Promise<ITaskDocument[]> => {
+  return await Task.find({ projectId }).sort({ taskName: 1 });
+};

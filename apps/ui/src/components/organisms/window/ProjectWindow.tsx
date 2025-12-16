@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
 import AddIcon from '@mui/icons-material/Add';
-import FilterListOutlinedIcon from '@mui/icons-material/FilterListOutlined';
 import DataTable from '../../templates/other/DataTable';
 import { IProject } from '../../../interfaces/project/IProject';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
@@ -9,25 +8,27 @@ import { dummyProjects } from '../../../data/dummyProjects';
 import ProjectManagerCell from '../../molecules/project/ProjectManagerCell';
 import TeamMembersCell from '../../molecules/project/TeamMembersCell';
 import DateRangeCell from '../../molecules/project/DateRangeCell';
-import ProjectActionButtons from '../../molecules/project/ProjectActionButtons';
-import TeamViewModal from '../popup/ProjectTeamViewPopUp';
+import ProjectTeamViewPopUp from '../popup/ProjectTeamViewPopUp';
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
-
+import ActionButton from '../../molecules/other/ActionButton';
+import ConformationDailog from '../../molecules/other/ConformationDailog';
 function ProjectWindow() {
-  const [projects] = useState<IProject[]>(dummyProjects);
+  const [projects, setProjects] = useState<IProject[]>(dummyProjects);
   const [isLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleEdit = (project: IProject) => {
     console.log('Edit project:', project);
     // TODO: Implement edit functionality
   };
 
-  const handleDelete = (projectId: string) => {
-    console.log('Delete project:', projectId);
-    // TODO: Implement delete functionality
+  const handleDelete = (project: IProject) => {
+    setProjectToDelete(project);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleViewTeam = (project: IProject) => {
@@ -48,6 +49,21 @@ function ProjectWindow() {
   const handleFilter = () => {
     console.log('Open filter');
     // TODO: Implement filter functionality
+  };
+
+  const handleConfirmDelete = () => {
+    if (projectToDelete) {
+      setProjects((prevProjects) =>
+        prevProjects.filter((proj) => proj.id !== projectToDelete.id)
+      );
+    }
+    setIsDeleteDialogOpen(false);
+    setProjectToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteDialogOpen(false);
+    setProjectToDelete(null);
   };
 
   const columns: DataTableColumn<IProject>[] = useMemo(
@@ -107,18 +123,16 @@ function ProjectWindow() {
         width: 80,
         render: (row) => row.billable ? 'Billable' : 'Non-Billable',
       },
-      {
-        key: 'actions',
-        label: 'Actions',
-        width: 80,
-        render: (row) => (
-          <ProjectActionButtons
-            project={row}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ),
-      },
+       {
+              label: '',
+              key: 'actions',
+              render: (row) => (
+                <ActionButton
+                  onEdit={() => handleEdit(row)}
+                  onDelete={() => handleDelete(row)}
+                />
+              ),
+            },
     ],
     []
   );
@@ -155,12 +169,23 @@ function ProjectWindow() {
 
       {/* Team View Modal */}
       {selectedProject && (
-        <TeamViewModal
+        <ProjectTeamViewPopUp
           open={isTeamModalOpen}
           onClose={handleCloseTeamModal}
           project={selectedProject}
         />
       )}
+      <ConformationDailog
+        open={isDeleteDialogOpen}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${
+          projectToDelete?.projectName || 'this project'
+        }"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </>
   );
 }

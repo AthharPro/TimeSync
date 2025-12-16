@@ -6,7 +6,7 @@ import { APP_ORIGIN, NODE_ENV, PORT } from './constants';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import errorHandler from "./middleware/errorHandler";
-import {userRoutes,authRoutes,timesheetRoutes} from "./routes";
+import {userRoutes,authRoutes,timesheetRoutes,projectRoutes,taskRoutes,teamRoutes,reportRoutes} from "./routes";
 
 const port = Number(PORT);
 
@@ -26,11 +26,12 @@ app.use(cookieParser());
 
 app.use("/auth",authRoutes);
 app.use("/api/user",userRoutes);
-// app.use("/api/project",projectRoutes)
+app.use("/api/project",projectRoutes)
 app.use("/api/timesheet", timesheetRoutes)
-// app.use('/api/team', teamRoutes);
+app.use("/api/task",taskRoutes)
+app.use('/api/team', teamRoutes);
+app.use('/api/report', reportRoutes);
 // app.use('/api/notifications', notificationRoutes);
-// app.use('/api/reports', reportRoutes);
 // app.use('/api/dashboard', dashboardRoutes);
 // app.use('/api/history', historyRoutes);
 

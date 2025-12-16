@@ -7,9 +7,11 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useNavigate } from 'react-router-dom';
 import { ILoginData } from '../../../interfaces/auth';
-
+import { useAuth } from '../../../contexts/AuthContext';
+  
 const LoginFormSection: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth()!;
 
   const {
     register,
@@ -22,6 +24,11 @@ const LoginFormSection: React.FC = () => {
 
   const onSubmit = async (data: ILoginData) => {
     console.log(data);
+    const res = await login(data.email, data.password);
+    if (res.success) {
+          navigate('/admin', { replace: true });
+    }
+
   };
 
   return (

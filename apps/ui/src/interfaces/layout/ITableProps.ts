@@ -1,3 +1,4 @@
+import React from "react";
 import { BillableType, DailyTimesheetStatus } from "@tms/shared";
 
 export interface DataTableColumn<T> {
@@ -14,6 +15,8 @@ export interface DataTableProps<T> {
   getRowKey: (row: T) => string | number;
   onRowClick?: (row: T) => void;
   enableHover?: boolean;
+  renderExpandedRow?: (row: T) => React.ReactNode;
+  size?: 'small' | 'medium';
 }
 
 export interface IMyTimesheetTableEntry {
