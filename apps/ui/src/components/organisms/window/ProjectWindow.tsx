@@ -12,20 +12,23 @@ import ProjectTeamViewPopUp from '../popup/ProjectTeamViewPopUp';
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import ActionButton from '../../molecules/other/ActionButton';
+import ConformationDailog from '../../molecules/other/ConformationDailog';
 function ProjectWindow() {
-  const [projects] = useState<IProject[]>(dummyProjects);
+  const [projects, setProjects] = useState<IProject[]>(dummyProjects);
   const [isLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleEdit = (project: IProject) => {
     console.log('Edit project:', project);
     // TODO: Implement edit functionality
   };
 
-  const handleDelete = (projectId: string) => {
-    console.log('Delete project:', projectId);
-    // TODO: Implement delete functionality
+  const handleDelete = (project: IProject) => {
+    setProjectToDelete(project);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleViewTeam = (project: IProject) => {
@@ -46,6 +49,21 @@ function ProjectWindow() {
   const handleFilter = () => {
     console.log('Open filter');
     // TODO: Implement filter functionality
+  };
+
+  const handleConfirmDelete = () => {
+    if (projectToDelete) {
+      setProjects((prevProjects) =>
+        prevProjects.filter((proj) => proj.id !== projectToDelete.id)
+      );
+    }
+    setIsDeleteDialogOpen(false);
+    setProjectToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteDialogOpen(false);
+    setProjectToDelete(null);
   };
 
   const columns: DataTableColumn<IProject>[] = useMemo(
@@ -108,7 +126,12 @@ function ProjectWindow() {
        {
               label: '',
               key: 'actions',
-              render: () => <ActionButton />,
+              render: (row) => (
+                <ActionButton
+                  onEdit={() => handleEdit(row)}
+                  onDelete={() => handleDelete(row)}
+                />
+              ),
             },
     ],
     []
@@ -152,6 +175,17 @@ function ProjectWindow() {
           project={selectedProject}
         />
       )}
+      <ConformationDailog
+        open={isDeleteDialogOpen}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${
+          projectToDelete?.projectName || 'this project'
+        }"?`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </>
   );
 }

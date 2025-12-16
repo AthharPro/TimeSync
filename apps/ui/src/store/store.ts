@@ -3,12 +3,16 @@ import myTimesheets from "./slices/myTimesheetSlice";
 import account from "./slices/AccountSlice";
 import myProjectReducer from "./slices/myProjectSlice";
 import taskReducer from "./slices/taskSlice";
+import teamReducer from "./slices/teamSlice";
+import reportReducer from "./slices/reportSlice";
 
 const appReducer = combineReducers({
     myTimesheet: myTimesheets,
     account: account,
     myProjects: myProjectReducer,
     tasks: taskReducer,
+    team: teamReducer,
+    report: reportReducer,
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {

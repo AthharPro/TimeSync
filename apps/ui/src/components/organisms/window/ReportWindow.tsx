@@ -95,7 +95,7 @@ function ReportWindow({ onReset }: IReportWindowProps) {
                 <TabPanel value="1">
                   {/* Detailed TimeSheet Preview Content */}
                   <HelperText>
-                    First, add the report filters to see the preview
+                     Apply the required report filters to generate and preview the report
                   </HelperText>
                 </TabPanel>
                 <TabPanel value="2">
