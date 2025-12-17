@@ -1,7 +1,7 @@
 import { Checkbox } from '@mui/material';
 import DataTable from '../../templates/other/DataTable';
 import { DataTableColumn } from '../../../interfaces';
-import { BillableType } from '@tms/shared';
+import { BillableType, DailyTimesheetStatus } from '@tms/shared';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useMyTimesheet } from '../../../hooks/timesheet/useMyTimesheet';
 import { useMyProjects } from '../../../hooks/project/useMyProject';
@@ -16,6 +16,7 @@ import HoursField from '../../atoms/other/inputField/HoursField';
 import Dropdown from '../../atoms/other/inputField/Dropdown';
 import { ITimesheetTableEntry } from '../../../interfaces/component/organism/ITable';
 import { IMyTimesheetTableEntry } from '../../../interfaces/layout/ITableProps';
+import { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
 
 // Optimized debounced update that delays both Redux and backend updates
 const createDebouncedUpdate = (
@@ -45,7 +46,11 @@ const createDebouncedUpdate = (
   };
 };
 
-const MyTimesheetTable = () => {
+interface MyTimesheetTableProps {
+  filters?: TimesheetFilters;
+}
+
+const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
   const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets, currentWeekDays, currentWeekStart } = useMyTimesheet();
 
   const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
@@ -141,7 +146,7 @@ const MyTimesheetTable = () => {
   }, [newTimesheets]); // Only depend on newTimesheets
 
   const timesheetData: ITimesheetTableEntry[] = useMemo(() => {
-    return newTimesheets.map((timesheet) => {
+    let filteredTimesheets = newTimesheets.map((timesheet) => {
       // Find project name from project ID
       const project = myProjects.find(p => p._id === timesheet.project);
       const projectName = project ? project.projectName : timesheet.project;
@@ -157,7 +162,40 @@ const MyTimesheetTable = () => {
         task: taskName, // Display task name instead of ID
       };
     });
-  }, [newTimesheets, myProjects, allTasks]);
+
+    // Apply filters if provided
+    if (filters) {
+      filteredTimesheets = filteredTimesheets.filter((timesheet) => {
+        // Filter by date range
+        if (filters.startDate) {
+          const startDate = new Date(filters.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          if (timesheet.date < startDate) return false;
+        }
+        
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          if (timesheet.date > endDate) return false;
+        }
+
+        // Filter by status
+        if (filters.status && filters.status !== 'All') {
+          if (timesheet.status !== filters.status) return false;
+        }
+
+        // Filter by project (comparing with original project ID from newTimesheets)
+        if (filters.project && filters.project !== 'All') {
+          const originalTimesheet = newTimesheets.find(t => t.id === timesheet.id);
+          if (originalTimesheet && originalTimesheet.project !== filters.project) return false;
+        }
+
+        return true;
+      });
+    }
+
+    return filteredTimesheets;
+  }, [newTimesheets, myProjects, allTasks, filters]);
 
   // Calculate selection state
   const selectedCount = timesheetData.filter((row) => row.isChecked).length;
@@ -197,25 +235,6 @@ const MyTimesheetTable = () => {
       const selectedProject = myProjects.find(proj => proj.projectName === newProjectName);
       
       if (selectedProject) {
-        // Get current row data
-        const currentRow = timesheetData.find(row => row.id === id);
-        
-        if (currentRow) {
-          // Check for duplicate project+task on same date
-          const duplicate = timesheetData.find(row => 
-            row.id !== id && // Not the same row
-            row.date.toDateString() === currentRow.date.toDateString() && // Same date
-            row.project === newProjectName && // Same project
-            row.task === currentRow.task && // Same task (if task is already set)
-            currentRow.task !== '' // Only check if task is not empty
-          );
-
-          if (duplicate) {
-            alert('A timesheet entry with this project and task already exists for this date. Please use the existing entry or select a different task.');
-            return;
-          }
-        }
-        
         // Store the selected project ID for this row
         setSelectedProjects(prev => ({ ...prev, [id]: selectedProject._id }));
         
@@ -236,24 +255,6 @@ const MyTimesheetTable = () => {
       // Get the project ID for this row
       const projectId = selectedProjects[id];
       const projectTasks = projectId ? tasksByProject[projectId] || [] : [];
-      
-      // Get current row data
-      const currentRow = timesheetData.find(row => row.id === id);
-      
-      if (currentRow) {
-        // Check for duplicate project+task on same date
-        const duplicate = timesheetData.find(row => 
-          row.id !== id && // Not the same row
-          row.date.toDateString() === currentRow.date.toDateString() && // Same date
-          row.project === currentRow.project && // Same project
-          row.task === newTaskName // Same task
-        );
-
-        if (duplicate) {
-          alert('A timesheet entry with this project and task already exists for this date. Please use the existing entry.');
-          return;
-        }
-      }
       
       // Find the task ID from task name in the current project's tasks
       const selectedTask = projectTasks.find(task => task.taskName === newTaskName);
@@ -351,7 +352,7 @@ const MyTimesheetTable = () => {
           onClick={() => setOpenPickers(new Set([row.id]))}
         />
       ),
-      width: '10%',
+      width: '6%',
     },
     {
       key: 'project',
@@ -364,7 +365,7 @@ const MyTimesheetTable = () => {
           options={availableProjectNames}
         />
       ),
-      width: '14%',
+      width: '18%',
     },
     {
       key: 'task',

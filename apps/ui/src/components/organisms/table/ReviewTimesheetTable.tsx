@@ -103,25 +103,25 @@ const ReviewTimesheetTable = () => {
     {
       label: 'Employee ID',
       key: 'employeeId',
-      render: (row) => <Box sx={{ py: 0.5 }}>{row.employeeId}</Box>,
+      render: (row) => <Box sx={{ py: 1 }}>{row.employeeId}</Box>,
       width: '15%',
     },
     {
       label: 'Name',
       key: 'name',
-      render: (row) => <Box sx={{ py: 0.5 }}>{row.name}</Box>,
+      render: (row) => <Box sx={{ py: 1 }}>{row.name}</Box>,
       width: '20%',
     },
     {
       label: 'Email',
       key: 'email',
-      render: (row) => <Box sx={{ py: 0.5 }}>{row.email}</Box>,
+      render: (row) => <Box sx={{ py: 1 }}>{row.email}</Box>,
       width: '30%',
     },
     {
       label: 'Designation',
       key: 'designation',
-      render: (row) => <Box sx={{ py: 0.5 }}>{row.designation}</Box>,
+      render: (row) => <Box sx={{ py: 1 }}>{row.designation}</Box>,
       width: '35%',
     },
   ];
@@ -144,7 +144,7 @@ const ReviewTimesheetTable = () => {
                   p: 0,
                   borderBottom: '2px solid',
                   borderColor: 'divider',
-                  backgroundColor: 'background.default',
+                  backgroundColor: 'background.paper',
                 }}
               >
                 <Collapse in={expandedEmployees.has(employee.id)} timeout="auto" unmountOnExit>

@@ -14,6 +14,10 @@ const DatePickerField = ({
   variant = 'standard',
   size = 'small',
   sx = {},
+  label,
+  minDate,
+  views,
+  openTo,
 }: DatePickerFieldProps) => {
   const handleDateChange = (newValue: unknown) => {
     // Convert Dayjs or other PickerValue types to Date
@@ -35,6 +39,10 @@ const DatePickerField = ({
         open={open}
         onOpen={onOpen}
         onClose={onClose}
+        minDate={minDate}
+        label={label}
+        views={views}
+        openTo={openTo}
         slots={{
           openPickerIcon: () => null,
         }}
@@ -43,7 +51,7 @@ const DatePickerField = ({
             size,
             variant,
             InputProps: {
-              disableUnderline: true,
+              disableUnderline: variant === 'standard',
             },
             onClick: (e) => {
               e.stopPropagation();

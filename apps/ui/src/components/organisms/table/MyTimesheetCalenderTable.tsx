@@ -16,7 +16,7 @@ import { useTasks } from '../../../hooks/task/useTasks';
 import { useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store/store';
-import { IconButton } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CustomRow from './other/CustomRow';
 
@@ -135,6 +135,9 @@ const MyTimesheetCalendarTable = () => {
       projectMap.set(proj._id, { name: proj.projectName, tasks: [] });
     });
 
+    // Track unique task entries to prevent duplicates
+    const seenEntries = new Set<string>();
+
     // Populate tasks from calendar data
     myCalendarViewData.forEach((entry) => {
       // Find which project this entry belongs to by matching project ID or name
@@ -150,11 +153,18 @@ const MyTimesheetCalendarTable = () => {
         const task = allTasks.find(t => t._id === entry.task);
         const taskName = task ? task.taskName : entry.task;
         
-        projectMap.get(key)!.tasks.push({
-          ...entry,
-          project: matchingProject.projectName, // Use project name for display
-          task: taskName, // Use task name for display
-        });
+        // Create a unique key for this task entry to prevent duplicates
+        const entryKey = `${matchingProject._id}|${entry.task}|${entry.billableType}`;
+        
+        // Only add if we haven't seen this exact entry before
+        if (!seenEntries.has(entryKey)) {
+          seenEntries.add(entryKey);
+          projectMap.get(key)!.tasks.push({
+            ...entry,
+            project: matchingProject.projectName, // Use project name for display
+            task: taskName, // Use task name for display
+          });
+        }
       }
     });
 
@@ -201,9 +211,13 @@ const MyTimesheetCalendarTable = () => {
     const project = myProjects.find((p) => p._id === projectId);
     if (!project) return;
 
-    createEmptyCalendarRow(project.projectName, '', BillableType.Billable);
-    // Note: createEmptyCalendarRow likely expects projectName, not _id
-    // Adjust if your hook supports _id in the future
+    // Load tasks for this project if not already loaded
+    if (!tasksByProject[projectId]) {
+      loadTasks(projectId);
+    }
+
+    // Use project ID instead of project name for consistency
+    createEmptyCalendarRow(projectId, '', BillableType.Billable);
   };
 
   const handleDeleteTask = (rowId: string) => {
@@ -220,18 +234,6 @@ const MyTimesheetCalendarTable = () => {
     const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
     if (!matchingProject) return;
 
-    // Check if there's already a calendar row with the same project and task
-    const duplicate = myCalendarViewData.find(row => 
-      row.id !== calendarRowId && // Not the same row
-      (row.project === calendarRow.project || row.project === matchingProject.projectName) && // Same project
-      row.task === newTaskName // Same task
-    );
-
-    if (duplicate) {
-      alert('A timesheet entry with this project and task already exists. Please use the existing entry or select a different task.');
-      return;
-    }
-
     // Get tasks for this project
     const projectTasks = tasksByProject[matchingProject._id] || [];
     
@@ -243,8 +245,8 @@ const MyTimesheetCalendarTable = () => {
       calendarRow.myTimesheetEntriesIds.forEach((timesheetId) => {
         const timesheet = newTimesheets.find((t) => t.id === timesheetId);
         if (timesheet) {
-          // Update UI with task name
-          updateTimesheet(timesheetId, { task: newTaskName });
+          // Update with task ID for backend
+          updateTimesheet(timesheetId, { task: taskId });
           // Sync task ID to backend
           if (selectedTask) {
             debouncedUpdateRef.current(timesheetId, { task: taskId });
@@ -252,7 +254,8 @@ const MyTimesheetCalendarTable = () => {
         }
       });
     } else {
-      updateCalendar(calendarRow.id, calendarRow.project, newTaskName, calendarRow.billableType);
+      // Use project ID and task ID for consistency
+      updateCalendar(calendarRow.id, matchingProject._id, taskId, calendarRow.billableType);
     }
   };
 
@@ -324,7 +327,7 @@ const MyTimesheetCalendarTable = () => {
       addNewTimesheet({
         id: crypto.randomUUID(),
         date: date.toISOString(),
-        project: calendarRow.project,
+        project: matchingProject._id,
         task: taskId,
         description: '',
         hours: value,
@@ -365,7 +368,7 @@ const MyTimesheetCalendarTable = () => {
       addNewTimesheet({
         id: crypto.randomUUID(),
         date: date.toISOString(),
-        project: calendarRow.project,
+        project: matchingProject._id,
         task: taskId,
         description: value,
         hours: 0,
@@ -461,23 +464,47 @@ const MyTimesheetCalendarTable = () => {
       render: (row: ExtendedTimesheetRow) => {
         if (row.isProjectRow || row.isCreateTaskRow) return null;
 
+        // Check if all timesheets in this row are in Draft or Default status
+        const rowTimesheets = newTimesheets.filter(ts => 
+          row.myTimesheetEntriesIds?.includes(ts.id)
+        );
+        
+        const hasNonDraftTimesheets = rowTimesheets.some(ts => 
+          ts.status !== DailyTimesheetStatus.Draft && 
+          ts.status !== DailyTimesheetStatus.Default
+        );
+        
+        const canDelete = !hasNonDraftTimesheets;
+        const tooltipMessage = hasNonDraftTimesheets 
+          ? 'Cannot delete: Row contains submitted or approved timesheets'
+          : 'Delete task row';
+
         return (
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteTask(row.id);
-            }}
-            sx={{
-              color: '#666',
-              '&:hover': {
-                color: '#d32f2f',
-                backgroundColor: 'rgba(211, 47, 47, 0.04)',
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
+          <Tooltip title={tooltipMessage} placement="left">
+            <span>
+              <IconButton
+                size="small"
+                disabled={!canDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteTask(row.id);
+                }}
+                sx={{
+                  color: canDelete ? '#666' : '#ccc',
+                  cursor: canDelete ? 'pointer' : 'not-allowed',
+                  '&:hover': canDelete ? {
+                    color: '#d32f2f',
+                    backgroundColor: 'rgba(211, 47, 47, 0.04)',
+                  } : {},
+                  '&.Mui-disabled': {
+                    color: '#ccc',
+                  },
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
         );
       },
     },
