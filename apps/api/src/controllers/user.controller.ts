@@ -22,7 +22,31 @@ export const registerHandler = (role: UserRole) =>
   });
 
 export const getAllUsersHandler = catchErrors(async (req: Request, res: Response) => {
-  const users = await getAllUsers();
+  const rolesParam = req.query.roles;
+
+  const parseRoles = (value: typeof rolesParam): string[] | undefined => {
+    if (Array.isArray(value)) {
+      const collected = value
+        .filter((v): v is string => typeof v === 'string')
+        .flatMap((v) => v.split(','));
+      const cleaned = collected.map((r) => r.trim()).filter(Boolean);
+      return cleaned.length ? cleaned : undefined;
+    }
+
+    if (typeof value === 'string' && value.length) {
+      const cleaned = value
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
+      return cleaned.length ? cleaned : undefined;
+    }
+
+    return undefined;
+  };
+
+  const roles = parseRoles(rolesParam);
+
+  const users = await getAllUsers(roles);
   return res.status(OK).json(users);
 });
 

@@ -20,11 +20,12 @@ const EmployeeList: React.FC<IEmployeeListProps> = ({
       {employees.length > 0 ? (
         <List sx={{ p: 0 }}>
           {employees.map((employee: IEmployee) => {
-            const isSelected = selectedEmployees.find(
-              (emp: IEmployee) => emp.id === employee.id
+            const employeeId = employee._id || employee.id;
+            const isSelected = selectedEmployees.some(
+              (emp: IEmployee) => (emp._id || emp.id) === employeeId
             );
             return (
-              <Box key={employee.id}>
+              <Box key={employeeId || employee.email}>
                 <EmployeeListItem
                   employee={employee}
                   isSelected={!!isSelected}

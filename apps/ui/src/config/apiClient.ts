@@ -39,20 +39,35 @@ const transformMongoResponse = (data: any): any => {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,  
+  withCredentials: true,
+  timeout: 10000, // 10 second default timeout
 });
 
 // ✨ 1. Add access token to all requests
 api.interceptors.request.use((config) => {
+  console.log('API Request Interceptor:', {
+    url: config.url,
+    baseURL: config.baseURL,
+    method: config.method,
+    hasToken: !!ACCESS_TOKEN,
+  });
   if (ACCESS_TOKEN) {
     config.headers.Authorization = `Bearer ${ACCESS_TOKEN}`;
   }
   return config;
+}, (error) => {
+  console.error('API Request Interceptor Error:', error);
+  return Promise.reject(error);
 });
 
 // ✨ 2. Handle refresh token logic and transform MongoDB responses
 api.interceptors.response.use(
   (res) => {
+    console.log('API Response Interceptor Success:', {
+      url: res.config.url,
+      status: res.status,
+      hasData: !!res.data,
+    });
     // Transform _id to id in response data
     if (res.data) {
       res.data = transformMongoResponse(res.data);
@@ -61,6 +76,12 @@ api.interceptors.response.use(
   },
 
   async (err) => {
+    console.error('API Response Interceptor Error:', {
+      url: err.config?.url,
+      status: err.response?.status,
+      message: err.message,
+      code: err.code,
+    });
     const original = err.config;
 
     // Token expired → try refresh

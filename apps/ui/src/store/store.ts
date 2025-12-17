@@ -1,7 +1,7 @@
 import { configureStore, combineReducers, UnknownAction } from "@reduxjs/toolkit";
 import myTimesheets from "./slices/myTimesheetSlice";
 import account from "./slices/AccountSlice";
-import myProjectReducer from "./slices/myProjectSlice";
+import projectReducer from "./slices/projectSlice";
 import taskReducer from "./slices/taskSlice";
 import teamReducer from "./slices/teamSlice";
 import reportReducer from "./slices/reportSlice";
@@ -9,7 +9,7 @@ import reportReducer from "./slices/reportSlice";
 const appReducer = combineReducers({
     myTimesheet: myTimesheets,
     account: account,
-    myProjects: myProjectReducer,
+    project: projectReducer,
     tasks: taskReducer,
     team: teamReducer,
     report: reportReducer,

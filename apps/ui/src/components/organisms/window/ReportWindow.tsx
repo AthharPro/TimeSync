@@ -48,15 +48,13 @@ function ReportWindow({ onReset }: IReportWindowProps) {
   };
   
   const button = (
-    <>
-      <BaseBtn
+    <BaseBtn
         startIcon={<RestartAltRoundedIcon />}
         variant="contained"
         onClick={handleReset}
       >
         Reset
       </BaseBtn>
-    </>
   );
   return (
     <WindowLayout title="Report" buttons={button}>

@@ -2,50 +2,50 @@ import { useEffect, useMemo, useState } from 'react';
 import { Box, Divider } from '@mui/material';
 import PopupLayout from '../../templates/popup/PopUpLayout';
 import BaseBtn from '../../atoms/other/button/BaseBtn';
-import { UserRole } from '@tms/shared';
 import { IEmployee } from '../../../interfaces/user/IUser';
 import StaffSelector from '../../molecules/common/StaffSelector';
 import SupervisorSelector from '../../molecules/common/SupervisorSelector';
 import SelectedEmployeeChips from '../../molecules/common/SelectedEmployeeChips';
-import { ITeamStaffManagerProps } from '../../../interfaces/team/ITeam';
-import { useTeam } from '../../../hooks/team';
+import { ProjectStaffManagerProps } from '../../../interfaces/project/IProject';
+import { useProjects } from '../../../hooks/project/useProjects';
 import { getUsers } from '../../../api/user';
 
-export default function TeamStaffManager({
+export default function ProjectStaffManager({
   open,
   onClose,
-  teamId,
-  initialMembers,
+  projectId,
+  initialEmployees,
   initialSupervisor,
   onSaved,
-}: ITeamStaffManagerProps) {
-  const { updateTeamStaff, loading: teamLoading } = useTeam();
+}: ProjectStaffManagerProps) {
+  const { updateProjectStaff } = useProjects();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMembers, setSelectedMembers] = useState<IEmployee[]>([]);
+  const [selectedEmployees, setSelectedEmployees] = useState<IEmployee[]>([]);
   const [supervisor, setSupervisor] = useState<string | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [employeeOptions, setEmployeeOptions] = useState<IEmployee[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const mapUserToEmployee = (user: any): IEmployee => {
-    const firstName = user.firstName || '';
-    const lastName = user.lastName || '';
+  const mapUserToEmployee = (user: unknown): IEmployee => {
+    const userRecord = user as Record<string, unknown>;
+    const firstName = (userRecord.firstName as string) || '';
+    const lastName = (userRecord.lastName as string) || '';
     const name =
-      user.name ||
+      (userRecord.name as string) ||
       [firstName, lastName].filter(Boolean).join(' ').trim() ||
-      user.email ||
+      (userRecord.email as string) ||
       'Unknown User';
 
-    const id = user._id || user.id || user.employee_id || user.email;
+    const id = (userRecord._id as string) || (userRecord.id as string) || (userRecord.employee_id as string) || (userRecord.email as string);
 
     return {
-      _id: user._id || id,
+      _id: (userRecord._id as string) || id,
       id,
       name,
       firstName: firstName || name,
       lastName: lastName || '',
-      email: user.email || '',
-      designation: user.designation,
+      email: (userRecord.email as string) || '',
+      designation: userRecord.designation as string,
     };
   };
 
@@ -60,16 +60,22 @@ export default function TeamStaffManager({
         const users = await getUsers();
         if (!isMounted) return;
         setEmployeeOptions(users.map(mapUserToEmployee));
-      } catch (e: any) {
-        if (!isMounted) return;
+      } catch (e: unknown) {
+        if (!isMounted) {
+          setIsLoading(false);
+          return;
+        }
+        const error = e as { response?: { data?: { message?: string } }; message?: string };
         setError(
-          e?.response?.data?.message ||
-            e?.message ||
+          error?.response?.data?.message ||
+            error?.message ||
             'Failed to load employees'
         );
         setEmployeeOptions([]);
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
     loadUsers();
@@ -78,10 +84,11 @@ export default function TeamStaffManager({
     };
   }, [open]);
 
+  // Initialize selected employees and supervisor from props
   useEffect(() => {
     if (open) {
-      setSelectedMembers(
-        initialMembers.map((e) => ({
+      setSelectedEmployees(
+        (initialEmployees || []).map((e) => ({
           _id: e.id,
           id: e.id,
           name: e.name,
@@ -94,14 +101,14 @@ export default function TeamStaffManager({
       setSupervisor(initialSupervisor?.id || '');
       setSearchTerm('');
     }
-  }, [open, initialMembers, initialSupervisor]);
+  }, [open, initialEmployees, initialSupervisor]);
 
   const filteredEmployees = useMemo(() => {
     const lc = searchTerm.toLowerCase();
     return employeeOptions
       .filter(
         (e) =>
-          !selectedMembers.some(
+          !selectedEmployees.some(
             (sel) => (sel._id || sel.id) === (e._id || e.id)
           )
       )
@@ -110,10 +117,10 @@ export default function TeamStaffManager({
           .filter(Boolean)
           .some((v) => v!.toLowerCase().includes(lc))
       );
-  }, [employeeOptions, searchTerm, selectedMembers]);
+  }, [employeeOptions, searchTerm, selectedEmployees]);
 
   const handleEmployeeToggle = (employee: IEmployee) => {
-    setSelectedMembers((prev) => {
+    setSelectedEmployees((prev) => {
       const exists = prev.some((e) => e.id === employee.id);
       if (exists) {
         const updated = prev.filter((e) => e.id !== employee.id);
@@ -125,59 +132,66 @@ export default function TeamStaffManager({
   };
 
   const handleRemoveEmployee = (employeeId: string) => {
-    setSelectedMembers((prev) => prev.filter((e) => e.id !== employeeId));
+    setSelectedEmployees((prev) => prev.filter((e) => e.id !== employeeId));
     if (supervisor === employeeId) setSupervisor('');
   };
 
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      await updateTeamStaff(teamId, {
-        members: selectedMembers.map((e) => e.id),
+      await updateProjectStaff(projectId, {
+        employees: selectedEmployees.map((e) => e.id),
         supervisor: supervisor || null,
       });
-      onSaved && onSaved();
+      onSaved?.();
       onClose();
-    } catch (e) {
-      console.error('Failed to update team staff:', e);
-      // You might want to show an error message to the user here
+    } catch (e: unknown) {
+      console.error('Failed to update project staff:', e);
+      const error = e as { response?: { data?: { message?: string } }; message?: string };
+      setError(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Failed to update project staff'
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+ 
+
   return (
     <PopupLayout
       open={open}
       onClose={onClose}
-      title="Manage Team Members"
-      subtitle="Add or remove team members and set a supervisor"
-    maxWidth="lg"
+      title="Manage Project Members"
+      subtitle="Add or remove project members and set a supervisor"
+      maxWidth='xs'
     >
       <Box>
         {error && (
           <Box sx={{ color: 'error.main', mb: 1, fontSize: 14 }}>{error}</Box>
         )}
         <SelectedEmployeeChips
-          employees={selectedMembers}
+          employees={selectedEmployees}
           onRemove={handleRemoveEmployee}
           title="Selected Employees"
           sx={{ mb: 2 }}
         />
         <SupervisorSelector
-          selectedEmployees={selectedMembers}
+          selectedEmployees={selectedEmployees}
           supervisor={supervisor}
           onSupervisorChange={setSupervisor}
-          caption="Choose a supervisor from selected team members"
+          caption="Choose a supervisor from selected employees"
         />
         <StaffSelector
-          selectedEmployees={selectedMembers}
+          selectedEmployees={selectedEmployees}
           availableEmployees={filteredEmployees}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onEmployeeToggle={handleEmployeeToggle}
           onRemoveEmployee={handleRemoveEmployee}
-          title="Add more team members"
+          title="Add more employees"
         />
       </Box>
       <Box>
@@ -200,8 +214,8 @@ export default function TeamStaffManager({
         >
           Cancel
         </BaseBtn>
-        <BaseBtn onClick={handleSave} variant="contained" disabled={isLoading || teamLoading}>
-          {isLoading || teamLoading ? 'Saving...' : 'Save'}
+        <BaseBtn onClick={handleSave} variant="contained" disabled={isLoading}>
+          {isLoading ? 'Saving...' : 'Save'}
         </BaseBtn>
       </Box>
     </PopupLayout>

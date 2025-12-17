@@ -5,11 +5,6 @@ import DateRangePicker from '../../molecules/report/DateRangePicker';
 import UserFilterTypeSelector from '../../molecules/report/UserFilterTypeSelector';
 import dayjs, { Dayjs } from 'dayjs';
 import UserSelectionField from '../../molecules/report/UserSelectionField';
-import {
-  mockEmployees,
-  mockTeams,
-  mockProjects,
-} from '../../../data/reportFiltersMockData';
 import { useState, useEffect, useRef } from 'react';
 import { ReportFilter } from '../../../interfaces/report/IReportFilter';
 
@@ -86,13 +81,10 @@ export const ReportFilterForm = ({ resetTrigger, currentFilter, updateFilter }: 
         <FilterColumn>
           <UserSelectionField
             filterType={filterType as 'individual' | 'team' | 'project'}
-            employees={mockEmployees}
             selectedEmployeeIds={selectedEmployeeIds}
             onEmployeeChange={(ids) => setSelectedEmployeeIds(ids)}
-            teams={mockTeams}
             selectedTeamId={selectedTeamId}
             onTeamChange={(id) => setSelectedTeamId(id)}
-            projects={mockProjects}
             selectedProjectId={selectedProjectId}
             onProjectChange={(id) => setSelectedProjectId(id)}
           />

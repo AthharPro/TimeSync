@@ -11,6 +11,7 @@ import ActionButton from '../../molecules/other/ActionButton';
 import CreateTeamPopUp from '../../organisms/popup/CreateTeamPopUp';
 import TeamStaffManager from '../team/TeamStaffManager';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
+import ViewTeamMembers from '../team/ViewTeamMembers';
 import { useTeam } from '../../../hooks/team';
 function TeamWindow() {
   const { teams, loading, loadAllTeams, deleteTeam } = useTeam();
@@ -85,6 +86,10 @@ function TeamWindow() {
     setIsDeleteDialogOpen(false);
     setTeamToDelete(null);
   };
+
+  const handleCloseViewTeam = () => {
+    setViewTeam(null);
+  };
   const theme = useTheme();
   const button = (
     <>
@@ -99,6 +104,12 @@ function TeamWindow() {
         Team
       </BaseBtn>
     </>
+  );
+
+  // Filter teams to only show active teams (status=true)
+  const activeTeams = useMemo(
+    () => teams.filter(team => team.status !== false),
+    [teams]
   );
 
   const columns: DataTableColumn<ITeam>[] = useMemo(
@@ -174,9 +185,10 @@ function TeamWindow() {
     [theme, handleEditTeam, handleDeleteTeam]
   );
   return (
+
     <>
       <WindowLayout title="Team" buttons={button}>
-        <DataTable columns={columns} rows={teams} getRowKey={(row) => row.id} />
+        <DataTable columns={columns} rows={activeTeams} getRowKey={(row) => row.id} />
       </WindowLayout>
       <CreateTeamPopUp
         open={isCreatePopupOpen}
@@ -198,11 +210,16 @@ function TeamWindow() {
         title="Delete Team"
         message={`Are you sure you want to delete "${
           teamToDelete?.teamName || 'this team'
-        }"?`}
+        }"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+      <ViewTeamMembers
+        open={viewTeam !== null}
+        onClose={handleCloseViewTeam}
+        team={viewTeam}
       />
     </>
     
