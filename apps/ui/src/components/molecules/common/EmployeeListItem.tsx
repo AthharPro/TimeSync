@@ -15,6 +15,11 @@ const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
   onToggle,
 }) => {
   const theme = useTheme();
+  const displayName =
+    employee.name ||
+    [employee.firstName, employee.lastName].filter(Boolean).join(' ').trim() ||
+    employee.email ||
+    'Unknown User';
   const handleToggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     onToggle(employee);
@@ -66,7 +71,7 @@ const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {employee.name}
+              {displayName}
             </Typography>
           </Box>
 

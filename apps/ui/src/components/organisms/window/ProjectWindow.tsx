@@ -1,29 +1,53 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
 import AddIcon from '@mui/icons-material/Add';
 import DataTable from '../../templates/other/DataTable';
-import { IProject } from '../../../interfaces/project/IProject';
+import { IProject, IProjectManager } from '../../../interfaces/project/IProject';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
-import { dummyProjects } from '../../../data/dummyProjects';
 import ProjectManagerCell from '../../molecules/project/ProjectManagerCell';
 import TeamMembersCell from '../../molecules/project/TeamMembersCell';
 import DateRangeCell from '../../molecules/project/DateRangeCell';
 import ProjectTeamViewPopUp from '../popup/ProjectTeamViewPopUp';
+import CreateProjectPopUp from '../popup/CreateProjectPopUp';
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import ActionButton from '../../molecules/other/ActionButton';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
+import ProjectStaffManager from '../project/ProjectStaffManager';
+import { useProjects } from '../../../hooks/project/useProjects';
+import { Box, CircularProgress, Typography } from '@mui/material';
+
 function ProjectWindow() {
-  const [projects, setProjects] = useState<IProject[]>(dummyProjects);
-  const [isLoading] = useState(false);
+  const { projects, loading: isLoading, error, loadProjects, deleteProject } = useProjects();
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('ProjectWindow state:', { 
+      projectsCount: projects.length, 
+      isLoading, 
+      error 
+    });
+  }, [projects, isLoading, error]);
+  
   const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
+
+  // Load projects on component mount
+  useEffect(() => {
+    console.log('ProjectWindow: Loading projects...');
+    loadProjects().catch((err) => {
+      console.error('ProjectWindow: Error loading projects:', err);
+    });
+  }, [loadProjects]);
 
   const handleEdit = (project: IProject) => {
-    console.log('Edit project:', project);
-    // TODO: Implement edit functionality
+    setProjectToEdit(project);
+    setIsStaffManagerOpen(true);
   };
 
   const handleDelete = (project: IProject) => {
@@ -42,8 +66,22 @@ function ProjectWindow() {
   };
 
   const handleAddProject = () => {
-    console.log('Add new project');
-    // TODO: Implement add project functionality
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  const handleCloseStaffManager = () => {
+    setIsStaffManagerOpen(false);
+    setProjectToEdit(null);
+  };
+
+  const handleStaffSaved = () => {
+    console.log('Staff saved successfully');
+    // Refresh project data after staff update
+    loadProjects();
   };
 
   const handleFilter = () => {
@@ -51,14 +89,18 @@ function ProjectWindow() {
     // TODO: Implement filter functionality
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (projectToDelete) {
-      setProjects((prevProjects) =>
-        prevProjects.filter((proj) => proj.id !== projectToDelete.id)
-      );
+      try {
+        await deleteProject(projectToDelete.id);
+        setIsDeleteDialogOpen(false);
+        setProjectToDelete(null);
+        // Projects are automatically updated in Redux store
+      } catch (error) {
+        console.error('Failed to delete project:', error);
+        // Error is handled by Redux, but you could show a toast notification here
+      }
     }
-    setIsDeleteDialogOpen(false);
-    setProjectToDelete(null);
   };
 
   const handleCancelDelete = () => {
@@ -96,7 +138,24 @@ function ProjectWindow() {
         key: 'projectManager',
         label: 'Project Manager',
         width: 150,
-        render: (row) => <ProjectManagerCell manager={row.projectManager} />,
+        render: (row) => {
+          // Derive manager details from supervisor + teamMembers
+          const managerMember = row.teamMembers.find(
+            (member) => member.id === row.supervisor
+          );
+
+          const manager: IProjectManager | null = managerMember
+            ? {
+                id: managerMember.id,
+                name: managerMember.name,
+                email: managerMember.email || '',
+                avatar: managerMember.avatar,
+                allocation: managerMember.allocation,
+              }
+            : null;
+
+          return <ProjectManagerCell manager={manager} />;
+        },
       },
       {
         key: 'teamMembers',
@@ -137,6 +196,22 @@ function ProjectWindow() {
     []
   );
 
+  // Compute initial supervisor details for ProjectStaffManager
+  const projectToEditInitialSupervisor = projectToEdit
+    ? (() => {
+        const managerMember = projectToEdit.teamMembers.find(
+          (member) => member.id === projectToEdit.supervisor
+        );
+        return managerMember
+          ? {
+              id: managerMember.id,
+              name: managerMember.name,
+              designation: managerMember.role,
+            }
+          : null;
+      })()
+    : null;
+
   return (
     <>
       <WindowLayout
@@ -160,11 +235,58 @@ function ProjectWindow() {
           </>
         }
       >
-        <DataTable
-          columns={columns}
-          rows={projects}
-          getRowKey={(row) => row.id}
-        />
+        {isLoading ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '400px',
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '400px',
+              gap: 2,
+            }}
+          >
+            <Typography color="error" variant="h6">
+              Error loading projects
+            </Typography>
+            <Typography color="text.secondary" variant="body2">
+              {error}
+            </Typography>
+            <BaseBtn onClick={loadProjects} variant="outlined">
+              Retry
+            </BaseBtn>
+          </Box>
+        ) : projects.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '400px',
+            }}
+          >
+            <Typography color="text.secondary" variant="body1">
+              No projects found. Create a new project to get started.
+            </Typography>
+          </Box>
+        ) : (
+          <DataTable
+            columns={columns}
+            rows={projects}
+            getRowKey={(row) => row.id}
+          />
+        )}
       </WindowLayout>
 
       {/* Team View Modal */}
@@ -175,6 +297,14 @@ function ProjectWindow() {
           project={selectedProject}
         />
       )}
+
+      {/* Create Project Modal */}
+      <CreateProjectPopUp
+        open={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onProjectCreated={loadProjects}
+      />
+
       <ConformationDailog
         open={isDeleteDialogOpen}
         title="Delete Project"
@@ -186,6 +316,22 @@ function ProjectWindow() {
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
+
+      {/* Project Staff Manager Modal */}
+      {projectToEdit && (
+        <ProjectStaffManager
+          open={isStaffManagerOpen}
+          onClose={handleCloseStaffManager}
+          projectId={projectToEdit.id}
+          initialEmployees={projectToEdit.teamMembers.map(member => ({
+            id: member.id,
+            name: member.name,
+            designation: member.role
+          }))}
+          initialSupervisor={projectToEditInitialSupervisor}
+          onSaved={handleStaffSaved}
+        />
+      )}
     </>
   );
 }

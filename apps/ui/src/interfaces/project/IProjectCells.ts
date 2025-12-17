@@ -1,7 +1,7 @@
 import { IProject, IProjectManager, ITeamMember } from './IProject';
 
 export interface IProjectManagerCellProps {
-  manager: IProjectManager;
+  manager?: IProjectManager | null;
 }
 
 export interface ITeamMembersCellProps {

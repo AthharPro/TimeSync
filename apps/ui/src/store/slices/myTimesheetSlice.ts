@@ -97,6 +97,8 @@ const initialState: ITimesheetState = {
   myTimesheetData: [],
   myCalendarViewData: [],
   currentWeekStart: getWeekStart(new Date()).toISOString(),
+  loading: false,
+  error: null,
 };
 
 const myTimesheetSlice = createSlice({

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ReportFilter } from '../../interfaces/report/IReportFilter';
 import { 
-  UseReportFiltersOptions as UseReportFiltersOptions, 
-  UseReportFiltersReturn as UseReportFiltersReturn 
+  UseReportFiltersOptions, 
+  UseReportFiltersReturn 
 } from '../../interfaces/hook/IReport';
 
 export const useReportFilters = ({ 

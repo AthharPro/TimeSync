@@ -3,6 +3,7 @@ export interface ITeam {
   teamName: string;
   members: { id: string; name: string; designation?: string; email?: string }[];
   supervisor: { id: string; name: string; designation?: string; email?: string } | null;
+  status?: boolean;
 }
 
 export interface CreateTeamFormData {
@@ -25,3 +26,33 @@ export interface ITeamStaffManagerProps {
   initialSupervisor: { id: string; name: string; designation?: string } | null;
   onSaved?: () => void;
 }
+
+export interface ISupervisorMemberCardProps {
+  supervisor: {
+    name: string;
+    designation?: string;
+    email?: string;
+  } | null;
+}
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email?: string;
+  designation?: string;
+}
+
+export interface TeamMemberCardProps {
+  member: TeamMember;
+}
+
+export interface ViewTeamMembersProps {
+  open: boolean;
+  onClose: () => void;
+  team: {
+    teamName: string;
+    supervisor: TeamMember | null;
+    members: TeamMember[];
+  } | null;
+}
+

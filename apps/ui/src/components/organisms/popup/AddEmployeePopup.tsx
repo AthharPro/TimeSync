@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PopupLayout from '../../templates/popup/PopUpLayout';
 import EmployeePicker from '../../molecules/common/EmployeePicker';
 import { IEmployee } from '../../../interfaces/user/IUser';
 import BaseBtn from '../../atoms/other/button/BaseBtn';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import Divider from '@mui/material/Divider';
 import { AddEmployeePopupProps } from '../../../interfaces/popup/IPopupProps';
+import { getUsers } from '../../../api/user';
 
 const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
   open,
@@ -14,26 +15,89 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
   initialSelectedEmployees = [],
   roles = [],
 }) => {
+  const [allEmployees, setAllEmployees] = useState<IEmployee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployees, setSelectedEmployees] = useState<IEmployee[]>(
     initialSelectedEmployees
   );
-  
-  const [filteredEmployees, setFilteredEmployees] = useState<IEmployee[]>(
-    []
-  );
+  const [filteredEmployees, setFilteredEmployees] = useState<IEmployee[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const roleFilters = useMemo(() => roles || [], [roles]);
 
+  // Normalize backend user shape into the frontend IEmployee shape
+  const mapUserToEmployee = (user: any): IEmployee => {
+    const firstName = user.firstName || '';
+    const lastName = user.lastName || '';
+    const name =
+      user.name ||
+      [firstName, lastName].filter(Boolean).join(' ').trim() ||
+      user.email ||
+      'Unknown User';
+
+    const id = user._id || user.id || user.employee_id || user.email;
+
+    return {
+      _id: user._id || id,
+      id,
+      name,
+      firstName: firstName || name,
+      lastName: lastName || '',
+      email: user.email || '',
+      designation: user.designation,
+    };
+  };
+
+  // Fetch users when dialog opens or role filter changes
   useEffect(() => {
-    // TODO: Fetch users by roles from API
-    // For now, using empty array until the hook is implemented
-    const users: IEmployee[] = [];
-    const filtered = users.filter((employee) =>
-      [employee.firstName, employee.lastName, employee.email]
+    if (!open) return;
+
+    let isMounted = true;
+
+    const loadUsers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const users = await getUsers(roleFilters);
+        if (!isMounted) return;
+        const mappedEmployees = users.map(mapUserToEmployee);
+        setAllEmployees(mappedEmployees);
+      } catch (err: any) {
+        if (!isMounted) return;
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            'Failed to load employees'
+        );
+        setAllEmployees([]);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadUsers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, roleFilters]);
+
+  // Apply search filtering whenever data or search term changes
+  useEffect(() => {
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = allEmployees.filter((employee) =>
+      [
+        employee.name,
+        employee.firstName,
+        employee.lastName,
+        employee.email,
+        employee.designation,
+      ]
         .filter(Boolean)
-        .some((field) => field.toLowerCase().includes(searchTerm.toLowerCase()))
+        .some((field) => field?.toString().toLowerCase().includes(term))
     );
     setFilteredEmployees(filtered);
-  }, [searchTerm]);
+  }, [searchTerm, allEmployees]);
 
   useEffect(() => {
     if (open) {
@@ -74,9 +138,19 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
       title="Build Your Team"
       subtitle="Search and select employees to add to your Team"
       maxWidth="xs"
-      paperHeight="75vh"
+      
     >
       <Box sx={{ p: 1 }}>
+        {isLoading && (
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Loading employees...
+          </Typography>
+        )}
+        {error && (
+          <Typography color="error" variant="body2" sx={{ mb: 1 }}>
+            {error}
+          </Typography>
+        )}
         <EmployeePicker
           users={filteredEmployees}
           selected={selectedEmployees}
