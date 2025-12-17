@@ -39,6 +39,8 @@ export interface DatePickerAtomProps {
   onChange: (date: Dayjs | null) => void;
   disabled?: boolean;
   minDate?: Dayjs;
+  views?: Array<'year' | 'month' | 'day'>;
+  openTo?: 'year' | 'month' | 'day';
 }
 
 export interface DateRangePickerProps {

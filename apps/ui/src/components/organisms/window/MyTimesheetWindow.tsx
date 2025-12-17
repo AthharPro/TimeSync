@@ -10,15 +10,24 @@ import MyTimesheetCalenderTable from '../table/MyTimesheetCalenderTable';
 import { BaseBtn } from '../../atoms';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import WeekNavigator from '../../atoms/other/button/WeekNavigator';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import MyTimesheetFilterPopover, { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
 
 function MyTimesheetWindow() {
-  const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets } = useMyTimesheet();
+  const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets, deleteSelectedTimesheets } = useMyTimesheet();
 
-    const [view, setView] = useState('table');
+  const [view, setView] = useState('table');
+  const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
+  const [filters, setFilters] = useState<TimesheetFilters>({
+    startDate: null,
+    endDate: null,
+    month: null,
+    year: null,
+    status: 'All',
+    project: 'All',
+  });
 
   const handleCreateClick = () => {
     if(view==='table'){
@@ -65,13 +74,13 @@ function MyTimesheetWindow() {
         
         alert(`Successfully submitted ${result.updated} timesheet${result.updated > 1 ? 's' : ''}`);
       } else {
-        // Calendar view: submit all timesheets in current week
+        // Calendar view: submit all draft timesheets in current week
         const weekStart = currentWeekDays[0];
         const weekEnd = currentWeekDays[currentWeekDays.length - 1];
         
         // Confirm submission (validation happens in the hook)
         const confirmed = window.confirm(
-          `Submit all timesheets for the week of ${weekStart.monthName} ${weekStart.dayNumber} - ${weekEnd.monthName} ${weekEnd.dayNumber}?\n\nNote: Timesheets with 0 hours or missing project/task/description will be skipped.`
+          `Submit all draft timesheets for the week of ${weekStart.monthName} ${weekStart.dayNumber} - ${weekEnd.monthName} ${weekEnd.dayNumber}?\n\nOnly timesheets in Draft status with valid hours, project, and task will be submitted.\nTimesheets that are already Pending, Approved, or Rejected will be skipped.`
         );
 
         if (!confirmed) {
@@ -81,7 +90,7 @@ function MyTimesheetWindow() {
         // Submit current week timesheets
         const result = await submitCurrentWeekTimesheets();
         
-        alert(`Successfully submitted ${result.updated} timesheet${result.updated > 1 ? 's' : ''} for the current week`);
+        alert(`Successfully submitted ${result.updated} draft timesheet${result.updated > 1 ? 's' : ''} for the current week.\nStatus changed from Draft to Pending.`);
       }
     } catch (error: any) {
       console.error('Submit error:', error);
@@ -89,8 +98,50 @@ function MyTimesheetWindow() {
     }
   };
 
+  const handleDeleteClick = async () => {
+    try {
+      // Get selected timesheets count
+      const selectedCount = newTimesheets.filter((ts) => ts.isChecked).length;
+      
+      if (selectedCount === 0) {
+        alert('Please select at least one timesheet to delete');
+        return;
+      }
+
+      // Confirm deletion
+      const confirmed = window.confirm(
+        `Delete ${selectedCount} selected timesheet${selectedCount > 1 ? 's' : ''}?\n\nNote: Only draft timesheets can be deleted.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      // Delete selected timesheets
+      const result = await deleteSelectedTimesheets();
+      
+      alert(`Successfully deleted ${result.deleted} timesheet${result.deleted > 1 ? 's' : ''}`);
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      alert(`Failed to delete timesheets: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   const handleChange = () => {
     setView((prev) => (prev === 'table' ? 'calendar' : 'table'));
+  };
+
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleApplyFilters = (newFilters: TimesheetFilters) => {
+    setFilters(newFilters);
+    // The filters will be passed to MyTimesheetTable component
   };
 
   const buttons = (
@@ -102,7 +153,13 @@ function MyTimesheetWindow() {
           onNextWeek={goToNextWeek} 
         />
       )}
-      <BaseBtn variant='outlined' startIcon={<FilterAltOutlinedIcon/>}>Filter</BaseBtn>
+      {view === 'table' && (
+        <>
+          <BaseBtn variant='outlined' startIcon={<DeleteForeverOutlinedIcon/>} onClick={handleDeleteClick}>Delete</BaseBtn>
+          <BaseBtn variant='outlined' startIcon={<FilterAltOutlinedIcon/>} onClick={handleFilterClick}>Filter</BaseBtn>
+        </>
+      )}
+     
       <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>} onClick={handleSubmitClick}>Submit</BaseBtn>
       <BaseBtn variant="contained" color="primary" startIcon={<AddOutlinedIcon/>} onClick={handleCreateClick}>Create</BaseBtn>
       <ToggleButtonGroup
@@ -121,8 +178,16 @@ function MyTimesheetWindow() {
 
   return (
     <WindowLayout title="My Timesheet" buttons={buttons}>
-      {view === 'table' && <MyTimesheetTable/>}
+      {view === 'table' && <MyTimesheetTable filters={filters} />}
       {view === 'calendar' && <MyTimesheetCalenderTable/>}
+      
+      <MyTimesheetFilterPopover
+        anchorEl={filterAnchorEl}
+        open={Boolean(filterAnchorEl)}
+        onClose={handleFilterClose}
+        onApplyFilters={handleApplyFilters}
+        currentFilters={filters}
+      />
     </WindowLayout>
   );
 }

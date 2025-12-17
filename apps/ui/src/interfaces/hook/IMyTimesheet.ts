@@ -24,4 +24,5 @@ export interface IUseMyTimesheetReturn {
   loadTimesheets: (startDate?: Date, endDate?: Date) => Promise<void>;
   submitTimesheets: () => Promise<any>;
   submitCurrentWeekTimesheets: () => Promise<any>;
+  deleteSelectedTimesheets: () => Promise<any>;
 }

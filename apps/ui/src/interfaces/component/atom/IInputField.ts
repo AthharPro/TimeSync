@@ -13,7 +13,7 @@ export interface AutocompleteTextProps<T> {
 }
 
 export interface DatePickerFieldProps {
-  value: Date;
+  value: Date | null;
   onChange: (newDate: Date | null) => void;
   open?: boolean;
   onOpen?: () => void;
@@ -23,6 +23,10 @@ export interface DatePickerFieldProps {
   variant?: 'standard' | 'outlined' | 'filled';
   size?: 'small' | 'medium';
   sx?: SxProps<Theme>;
+  label?: string;
+  minDate?: Date;
+  views?: Array<'year' | 'month' | 'day'>;
+  openTo?: 'year' | 'month' | 'day';
 }
 
 export interface IDropdownProps<T extends string | number> {
