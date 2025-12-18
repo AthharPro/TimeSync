@@ -10,6 +10,7 @@ const AutocompleteText = <T,>({
   options,
   variant = 'standard',
   placeholder,
+  disabled = false,
 }: AutocompleteTextProps<T>) => {
 
   return (
@@ -20,7 +21,14 @@ const AutocompleteText = <T,>({
       options={options}
       onClick={(e) => e.stopPropagation()}
       disableClearable
-      sx={{ width: '100%' }}
+      disabled={disabled}
+      sx={{ 
+        width: '100%',
+        '& .MuiInputBase-input.Mui-disabled': {
+          WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+          color: 'rgba(0, 0, 0, 0.87)',
+        },
+      }}
       renderInput={(params) => (
         <TextField
           {...params}
@@ -35,6 +43,9 @@ const AutocompleteText = <T,>({
                 borderBottom: 'none',
               },
               '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
+                borderBottom: 'none',
+              },
+              '& .MuiInput-underline.Mui-disabled:before': {
                 borderBottom: 'none',
               },
             }),

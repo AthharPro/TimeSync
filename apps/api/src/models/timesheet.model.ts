@@ -11,6 +11,9 @@ const timesheetSchema = new Schema<ITimesheetDocument>({
   billable:{type:String},
   description: { type: String },
   hours: { type: Number},
+  approvalDate: { type: Date, required: false },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+  rejectionDate: { type: Date, required: false },
 }, {
   timestamps: true
 });

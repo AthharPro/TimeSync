@@ -87,6 +87,10 @@ const AutocompleteWithCreate = ({
             border: 'none',
           },
         },
+        '& .MuiInputBase-input.Mui-disabled': {
+          WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+          color: 'rgba(0, 0, 0, 0.87)',
+        },
       }}
       renderOption={(props, option) => {
         // Render special "Create new" option

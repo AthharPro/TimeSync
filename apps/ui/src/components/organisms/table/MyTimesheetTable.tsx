@@ -197,10 +197,11 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     return filteredTimesheets;
   }, [newTimesheets, myProjects, allTasks, filters]);
 
-  // Calculate selection state
-  const selectedCount = timesheetData.filter((row) => row.isChecked).length;
-  const isAllSelected = timesheetData.length > 0 && selectedCount === timesheetData.length;
-  const isIndeterminate = selectedCount > 0 && selectedCount < timesheetData.length;
+  // Calculate selection state (only count Draft timesheets)
+  const draftTimesheets = timesheetData.filter((row) => row.status === DailyTimesheetStatus.Draft);
+  const selectedDraftCount = draftTimesheets.filter((row) => row.isChecked).length;
+  const isAllSelected = draftTimesheets.length > 0 && selectedDraftCount === draftTimesheets.length;
+  const isIndeterminate = selectedDraftCount > 0 && selectedDraftCount < draftTimesheets.length;
 
   // Extract project names from backend data
   const availableProjectNames = useMemo<string[]>(() => {
@@ -224,8 +225,11 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
 
   const handleSelectAll = () => {
     const newCheckedState = !isAllSelected;
+    // Only select/deselect Draft timesheets
     timesheetData.forEach((row) => {
-      updateTimesheet(row.id, { isChecked: newCheckedState });
+      if (row.status === DailyTimesheetStatus.Draft) {
+        updateTimesheet(row.id, { isChecked: newCheckedState });
+      }
     });
   };
 
@@ -329,6 +333,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           checked={row.isChecked || false}
           onChange={() => handleCheckboxChange(row.id)}
           onClick={(e) => e.stopPropagation()}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '2%',
@@ -350,6 +355,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
             })
           }
           onClick={() => setOpenPickers(new Set([row.id]))}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '6%',
@@ -363,6 +369,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           placeholder="Select or enter project"
           onChange={(event, newValue) => handleProjectChange(row.id, newValue)}
           options={availableProjectNames}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '18%',
@@ -377,7 +384,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           onChange={(event, newValue) => handleTaskChange(row.id, newValue)}
           options={getAvailableTasksForRow(row.id)}
           onCreateNew={async (taskName) => await handleCreateNewTask(row.id, taskName)}
-          disabled={!selectedProjects[row.id]}
+          disabled={!selectedProjects[row.id] || row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '30%',
@@ -393,12 +400,17 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           onChange={(e) => handleDescriptionChange(row.id, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           variant="standard"
+          disabled={row.status !== DailyTimesheetStatus.Draft}
           sx={{
             width: '100%',
             '& .MuiInput-underline:before': { borderBottom: 'none' },
             '& .MuiInput-underline:after': { borderBottom: 'none' },
             '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
               borderBottom: 'none',
+            },
+            '& .MuiInputBase-input.Mui-disabled': {
+              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+              color: 'rgba(0, 0, 0, 0.87)',
             },
           }}
         />
@@ -413,6 +425,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           value={row.hours}
           onChange={(newHours) => handleHoursChange(row.id, newHours)}
           onClick={(e) => e.stopPropagation()}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '7%',
@@ -428,6 +441,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           }
           options={BillableType}
           onClick={(e) => e.stopPropagation()}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '10%',
