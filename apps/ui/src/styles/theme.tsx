@@ -18,8 +18,8 @@ const theme = createTheme({
       primary: '#090D1F',
       secondary: '#9A9A9A',
     },
-    error: { main: '#fa9aa5ff' },
-    success: { main: '#b6ffb6ff' },
+    error: { main: '#fe5266ff' },
+    success: { main: '#56fc56ff' },
   },
   typography: {
     fontFamily: fonts.primary,
