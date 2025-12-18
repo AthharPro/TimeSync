@@ -109,6 +109,10 @@ const HoursField: React.FC<IHoursFieldProps> = ({ value = 0, onChange, ...rest }
           padding: '4px 2px',
           textAlign: 'center',
         },
+        '& .MuiInputBase-input.Mui-disabled': {
+          WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+          color: 'rgba(0, 0, 0, 0.87)',
+        },
         ...rest.sx,
       }}
       {...rest}

@@ -13,13 +13,16 @@ const TimesheetCell: React.FC<TimesheetCellProps> = ({
   isTodayColumn,
   onHoursChange,
   onDescriptionChange,
+  disabled = false,
 }) => {
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const hasDescription = Boolean(description && description.trim().length > 0);
 
   const handleDescriptionClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+    if (!disabled) {
+      setAnchorEl(event.currentTarget);
+    }
   };
 
   const handleClosePopover = () => {
@@ -27,7 +30,7 @@ const TimesheetCell: React.FC<TimesheetCellProps> = ({
   };
 
   const handleDescriptionChange = (newDescription: string) => {
-    if (onDescriptionChange) {
+    if (onDescriptionChange && !disabled) {
       onDescriptionChange(newDescription);
     }
   };
@@ -38,18 +41,22 @@ const TimesheetCell: React.FC<TimesheetCellProps> = ({
         <HoursField
           value={hours}
           onChange={onHoursChange}
+          disabled={disabled}
         />
-        <Tooltip title={hasDescription ? 'Edit description' : 'Add description'}>
-          <IconButton
-            size="small"
-            onClick={handleDescriptionClick}
-            sx={{
-              padding: '2px',
-              color: hasDescription ? theme.palette.primary.main : theme.palette.action.disabled,
-            }}
-          >
-            <AddOutlinedIcon sx={{ fontSize: 18 }} />
-          </IconButton>
+        <Tooltip title={disabled ? 'Cannot edit non-Draft timesheet' : (hasDescription ? 'Edit description' : 'Add description')}>
+          <span>
+            <IconButton
+              size="small"
+              onClick={handleDescriptionClick}
+              disabled={disabled}
+              sx={{
+                padding: '2px',
+                color: hasDescription ? theme.palette.primary.main : theme.palette.action.disabled,
+              }}
+            >
+              <AddOutlinedIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </span>
         </Tooltip>
       </Box>
       <DescriptionPopover

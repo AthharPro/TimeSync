@@ -67,6 +67,13 @@ export const updateMyTimesheet = async (
     return null;
   }
 
+  // Only allow updating Draft timesheets
+  const isDraft = existingTimesheet.status === 'Draft' || existingTimesheet.status === '' || existingTimesheet.status === 'Default';
+  
+  if (!isDraft) {
+    throw new Error('Only Draft timesheets can be modified. This timesheet has been submitted and cannot be edited.');
+  }
+
   const updateData: any = {};
 
   if (date !== undefined) updateData.date = date;
@@ -83,12 +90,14 @@ export const updateMyTimesheet = async (
     }
   }
 
-  // Only update taskId if it's a valid, non-empty string
+  // Only update taskId if it's a valid, non-empty string (and only for Draft)
   if (taskId !== undefined) {
-    if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
-      updateData.taskId = new mongoose.Types.ObjectId(taskId);
-    } else {
-      updateData.taskId = null;
+    if (isDraft) {
+      if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
+        updateData.taskId = new mongoose.Types.ObjectId(taskId);
+      } else {
+        updateData.taskId = null;
+      }
     }
   }
 

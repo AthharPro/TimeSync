@@ -21,6 +21,8 @@ export interface TimesheetCellProps {
   onDescriptionChange?: (value: string) => void;
   date?: Date;
   row?: ITimesheetRow;
+  disabled?: boolean;
+  status?: string;
 }
 
 export interface CreateTaskRowProps {
