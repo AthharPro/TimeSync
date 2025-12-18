@@ -17,7 +17,7 @@ const TimesheetPieChartSection: React.FC<ITimesheetPieChartSectionProps> = ({ da
           Timesheet Submissions
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Status breakdown
+          Current Month Status breakdown
         </Typography>
         <Divider sx={{ my: 2 }} />
 

@@ -12,7 +12,7 @@ const ProjectProgressSection: React.FC<IProjectProgressSectionProps> = ({ projec
     <Card elevation={2} sx={{ height: '100%' }}>
       <CardContent>
         <Typography variant="h6" fontWeight={600} gutterBottom>
-          Project Status
+          Project Timeline
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
           Track project timelines and deadlines
