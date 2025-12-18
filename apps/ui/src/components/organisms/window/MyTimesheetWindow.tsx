@@ -3,7 +3,7 @@ import {  ToggleButton, ToggleButtonGroup } from '@mui/material';
 import MyTimesheetTable from '../table/MyTimesheetTable';
 import { useMyTimesheet } from '../../../hooks/timesheet/useMyTimesheet';
 import { BillableType, DailyTimesheetStatus } from '@tms/shared';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import TableRowsOutlinedIcon from '@mui/icons-material/TableRowsOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import MyTimesheetCalenderTable from '../table/MyTimesheetCalenderTable';
@@ -14,20 +14,33 @@ import WeekNavigator from '../../atoms/other/button/WeekNavigator';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import MyTimesheetFilterPopover, { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
+import dayjs from 'dayjs';
 
 function MyTimesheetWindow() {
   const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets, deleteSelectedTimesheets } = useMyTimesheet();
 
   const [view, setView] = useState('table');
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
-  const [filters, setFilters] = useState<TimesheetFilters>({
-    startDate: null,
-    endDate: null,
-    month: null,
-    year: null,
-    status: 'All',
-    project: 'All',
-  });
+  
+  // Default filters for table view: current year and current month
+  const defaultTableFilters = useMemo(() => {
+    const now = dayjs();
+    const year = now.format('YYYY');
+    const month = now.format('YYYY-MM');
+    const startDate = now.startOf('month').format('YYYY-MM-DD');
+    const endDate = now.endOf('month').format('YYYY-MM-DD');
+    
+    return {
+      startDate,
+      endDate,
+      month,
+      year,
+      status: 'All' as const,
+      project: 'All',
+    };
+  }, []);
+
+  const [filters, setFilters] = useState<TimesheetFilters>(defaultTableFilters);
 
   const handleCreateClick = () => {
     if(view==='table'){
