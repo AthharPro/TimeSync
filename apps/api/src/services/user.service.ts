@@ -37,8 +37,11 @@ export const createUser = async (data: CreateUserParams) => {
   };
 };
 
-export const getAllUsers = async () => {
-  const users = await UserModel.find({}).select('-password');
+export const getAllUsers = async (roles?: string[]) => {
+  // Apply optional role filtering when provided
+  const query = roles?.length ? { role: { $in: roles } } : {};
+
+  const users = await UserModel.find(query).select('-password');
   return users;
 };
 

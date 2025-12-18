@@ -5,13 +5,14 @@ import BaseBtn from '../../atoms/other/button/BaseBtn';
 import LoginSchema from '../../../validations/auth/LoginSchema';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useNavigate } from 'react-router-dom';
+import { replace, useNavigate } from 'react-router-dom';
 import { ILoginData } from '../../../interfaces/auth';
 import { useAuth } from '../../../contexts/AuthContext';
+import { UserRole } from '@tms/shared';
   
 const LoginFormSection: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth()!;
+  const { login,user } = useAuth()!;
 
   const {
     register,
@@ -27,6 +28,27 @@ const LoginFormSection: React.FC = () => {
     const res = await login(data.email, data.password);
     if (res.success) {
           navigate('/admin', { replace: true });
+
+          switch(user?.role) {
+            case UserRole.SuperAdmin:
+              navigate('/super-admin', { replace: true });
+              break;
+            case UserRole.Admin:
+              navigate('/admin', { replace: true });
+              break;
+            case UserRole.Emp:
+              navigate('/employee', { replace: true });
+              break;
+            case UserRole.Supervisor:
+              navigate('/employee', { replace: true });
+              break;
+            case UserRole.SupervisorAdmin:
+              navigate('/admin', { replace: true });
+              break;
+            default:
+              navigate('/login', { replace: true });
+          }
+
     }
 
   };

@@ -1,18 +1,20 @@
 import { configureStore, combineReducers, UnknownAction } from "@reduxjs/toolkit";
 import myTimesheets from "./slices/myTimesheetSlice";
 import account from "./slices/AccountSlice";
-import myProjectReducer from "./slices/myProjectSlice";
+import projectReducer from "./slices/projectSlice";
 import taskReducer from "./slices/taskSlice";
 import teamReducer from "./slices/teamSlice";
 import reportReducer from "./slices/reportSlice";
+import reviewTimesheetReducer from "./slices/reviewTimesheetSlice";
 
 const appReducer = combineReducers({
     myTimesheet: myTimesheets,
     account: account,
-    myProjects: myProjectReducer,
+    project: projectReducer,
     tasks: taskReducer,
     team: teamReducer,
     report: reportReducer,
+    reviewTimesheet: reviewTimesheetReducer,
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {

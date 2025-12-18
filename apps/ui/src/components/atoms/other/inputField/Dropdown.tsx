@@ -10,6 +10,7 @@ const Dropdown = <T extends string | number>({
   size = 'small',
   variant = 'standard',
   sx,
+  disabled = false,
 }: IDropdownProps<T>) => {
   const handleChange = (e: SelectChangeEvent<T>) => {
     onChange(e.target.value as T);
@@ -31,6 +32,7 @@ const Dropdown = <T extends string | number>({
       onChange={handleChange}
       onClick={onClick}
       variant={variant}
+      disabled={disabled}
       sx={{
         width: '100%',
         '&:before': {
@@ -41,6 +43,15 @@ const Dropdown = <T extends string | number>({
         },
         '&:hover:not(.Mui-disabled):before': {
           borderBottom: 'none',
+        },
+        '&.Mui-disabled': {
+          '&:before': {
+            borderBottom: 'none',
+          },
+          '& .MuiSelect-select': {
+            WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+            color: 'rgba(0, 0, 0, 0.87)',
+          },
         },
         ...sx,
       }}

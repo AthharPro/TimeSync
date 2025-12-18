@@ -9,6 +9,7 @@ import SupervisorSelector from '../../molecules/common/SupervisorSelector';
 import SelectedEmployeeChips from '../../molecules/common/SelectedEmployeeChips';
 import { ITeamStaffManagerProps } from '../../../interfaces/team/ITeam';
 import { useTeam } from '../../../hooks/team';
+import { getUsers } from '../../../api/user';
 
 export default function TeamStaffManager({
   open,
@@ -23,8 +24,59 @@ export default function TeamStaffManager({
   const [selectedMembers, setSelectedMembers] = useState<IEmployee[]>([]);
   const [supervisor, setSupervisor] = useState<string | ''>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [employeeOptions, setEmployeeOptions] = useState<IEmployee[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const employeeOptions: IEmployee[] = useMemo(() => [], []);
+  const mapUserToEmployee = (user: any): IEmployee => {
+    const firstName = user.firstName || '';
+    const lastName = user.lastName || '';
+    const name =
+      user.name ||
+      [firstName, lastName].filter(Boolean).join(' ').trim() ||
+      user.email ||
+      'Unknown User';
+
+    const id = user._id || user.id || user.employee_id || user.email;
+
+    return {
+      _id: user._id || id,
+      id,
+      name,
+      firstName: firstName || name,
+      lastName: lastName || '',
+      email: user.email || '',
+      designation: user.designation,
+    };
+  };
+
+  // Load all users when the popup opens
+  useEffect(() => {
+    if (!open) return;
+    let isMounted = true;
+    const loadUsers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const users = await getUsers();
+        if (!isMounted) return;
+        setEmployeeOptions(users.map(mapUserToEmployee));
+      } catch (e: any) {
+        if (!isMounted) return;
+        setError(
+          e?.response?.data?.message ||
+            e?.message ||
+            'Failed to load employees'
+        );
+        setEmployeeOptions([]);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+    loadUsers();
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -46,12 +98,19 @@ export default function TeamStaffManager({
 
   const filteredEmployees = useMemo(() => {
     const lc = searchTerm.toLowerCase();
-    return employeeOptions.filter((e) =>
-      [e.name, e.email, e.designation]
-        .filter(Boolean)
-        .some((v) => v!.toLowerCase().includes(lc))
-    );
-  }, [employeeOptions, searchTerm]);
+    return employeeOptions
+      .filter(
+        (e) =>
+          !selectedMembers.some(
+            (sel) => (sel._id || sel.id) === (e._id || e.id)
+          )
+      )
+      .filter((e) =>
+        [e.name, e.email, e.designation]
+          .filter(Boolean)
+          .some((v) => v!.toLowerCase().includes(lc))
+      );
+  }, [employeeOptions, searchTerm, selectedMembers]);
 
   const handleEmployeeToggle = (employee: IEmployee) => {
     setSelectedMembers((prev) => {
@@ -96,6 +155,9 @@ export default function TeamStaffManager({
     maxWidth="lg"
     >
       <Box>
+        {error && (
+          <Box sx={{ color: 'error.main', mb: 1, fontSize: 14 }}>{error}</Box>
+        )}
         <SelectedEmployeeChips
           employees={selectedMembers}
           onRemove={handleRemoveEmployee}

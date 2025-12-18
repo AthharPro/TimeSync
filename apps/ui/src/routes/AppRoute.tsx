@@ -9,6 +9,7 @@ import PasswordChangePage from '../pages/PasswordChangePage';
 import UnauthorizedPage from '../pages/UnauthorizedPage';
 import ProtectedRoute from './ProtectedRoute';
 import { UserRole } from '@tms/shared';
+import EmployeePage from '../pages/EmployeePage';
 
 const AppRoute: React.FC = () => {
   return (
@@ -24,6 +25,12 @@ const AppRoute: React.FC = () => {
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="/admin" element={<ProtectedRoute allowedRoles={[UserRole.Admin, UserRole.SupervisorAdmin, UserRole.SuperAdmin]}>
         <AdminPage />
+      </ProtectedRoute>} />
+            <Route path="/super-admin" element={<ProtectedRoute allowedRoles={[UserRole.SupervisorAdmin]}>
+        <AdminPage />
+      </ProtectedRoute>} />
+            <Route path="/employee" element={<ProtectedRoute allowedRoles={[UserRole.Emp,UserRole.Supervisor]}>
+        <EmployeePage/>
       </ProtectedRoute>} />
     </Routes>
   );

@@ -3,7 +3,13 @@ import mongoose, { Document } from 'mongoose';
 
 export interface IProject extends Document {
   projectName: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  description: string;
+  isPublic: boolean;
+  costCenter: string;
   clientName: string;
+  projectType: string;
   billable: BillableType;
   employees: mongoose.Types.ObjectId[];
   status: boolean;
@@ -15,8 +21,15 @@ export interface IProject extends Document {
 export interface IProjectDocument extends mongoose.Document, IProject {}
 
 export interface ICreateProjectParams {
+
   projectName: string;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  description: string;
   clientName: string;
+  costCenter: string;
+  projectType: string;
+  isPublic: boolean;
   billable: BillableType;
   employees?: mongoose.Types.ObjectId[];
   status?: boolean;
@@ -29,7 +42,15 @@ export interface IUpdateProjectParams extends Partial<ICreateProjectParams> {
 
 export interface CreateProjectParams {
   projectName: string;
+  // Optional dates coming from normalized schema
+  startDate?: Date | null;
+  endDate?: Date | null;
+  // Required description (validated by zod before reaching service)
+  description: string;
+  isPublic: boolean;
   clientName: string;
+  costCenter: string;
+  projectType: string;
   billable: BillableType;
   employees?: string[];
   supervisor?: string | null;

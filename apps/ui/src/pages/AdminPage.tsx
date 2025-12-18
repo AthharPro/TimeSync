@@ -16,10 +16,13 @@ import AccountWindow from '../components/organisms/window/AccountWindow';
 import TeamWindow from '../components/organisms/window/TeamWindow';
 import HistoryWindow from '../components/organisms/window/HistoryWindow';
 import ReviewTimesheetWindow from '../components/organisms/window/ReviewTimesheetWindow';
+import { useAuth } from '../contexts/AuthContext';
+import { UserRole } from '@tms/shared';
 
 
 const AdminPage = () => {
   const { selectedButton, setSelectedButton } = useWindowNavigation();
+  const { user } = useAuth();
 
   useEffect(() => {
     setSelectedButton("Dashboard");
@@ -34,7 +37,9 @@ const AdminPage = () => {
       { text: 'Teams', icon: <BusinessOutlinedIcon /> },
       { text: 'My Timesheets', icon: <AssignmentIcon /> },
       { text: 'History', icon: <HistoryIcon /> },
-      { text: 'Review Timesheets', icon: <RateReviewIcon /> },
+            ...(user?.role === UserRole.SupervisorAdmin 
+        ? [{ text: 'Review Timesheets', icon: <RateReviewIcon /> }] 
+        : [])
     ]
   ];
 

@@ -438,6 +438,8 @@ const MyTimesheetCalendarTable = () => {
         if (row.isProjectRow || row.isCreateTaskRow) return null;
 
         const timesheet = getTimesheetForDate(row, day.date);
+        // Only allow editing for Draft timesheets
+        const isDraft = !timesheet?.status || timesheet.status === DailyTimesheetStatus.Draft;
 
         return (
           <TimesheetCell
@@ -450,6 +452,8 @@ const MyTimesheetCalendarTable = () => {
             }
             date={day.date}
             row={row}
+            disabled={!isDraft}
+            status={timesheet?.status}
           />
         );
       },

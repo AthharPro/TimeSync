@@ -6,7 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import dayjs from 'dayjs';
 import { DatePickerAtomProps } from '../../../interfaces/report/IReportFilter';
 
-const DatePickerAtom: React.FC<DatePickerAtomProps> = ({ label, value, onChange, disabled, minDate }) => {
+const DatePickerAtom: React.FC<DatePickerAtomProps> = ({ label, value, onChange, disabled, minDate, views, openTo }) => {
   const theme = useTheme();
   
   return (
@@ -17,6 +17,8 @@ const DatePickerAtom: React.FC<DatePickerAtomProps> = ({ label, value, onChange,
           onChange={(newValue) => onChange(newValue as dayjs.Dayjs | null)}
           disabled={disabled}
           minDate={minDate}
+          views={views}
+          openTo={openTo}
           enableAccessibleFieldDOMStructure={false}
           slotProps={{
             textField: {
