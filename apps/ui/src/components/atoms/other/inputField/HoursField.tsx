@@ -13,6 +13,7 @@ const HoursField: React.FC<IHoursFieldProps> = ({ value = 0, onChange, ...rest }
     const m = Math.round((validHours - h) * 60);
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   };
+  
 
   // Convert HH:MM format to decimal hours
   const parseHours = (input: string): number => {
