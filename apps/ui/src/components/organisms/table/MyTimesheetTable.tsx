@@ -51,7 +51,7 @@ interface MyTimesheetTableProps {
 }
 
 const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
-  const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets, currentWeekDays, currentWeekStart } = useMyTimesheet();
+  const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets } = useMyTimesheet();
 
   const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
     useMyProjects();
@@ -69,9 +69,6 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
   
   // Track which projects we've already loaded tasks for
   const loadedProjectsRef = useRef<Set<string>>(new Set());
-  
-  // Track if we've already loaded timesheets for the current week
-  const loadedWeekRef = useRef<string>('');
 
   // Create debounced update function (900ms delay)
   const debouncedUpdateRef = useRef(createDebouncedUpdate(updateTimesheet, syncUpdateTimesheet, 900));
@@ -81,32 +78,22 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     loadMyProjects();
   }, [loadMyProjects]);
 
-  // Load timesheets for the current week
+  // Load timesheets based on filters (for table view)
   useEffect(() => {
-    const currentWeekStartStr = currentWeekStart.toISOString();
-    
-    console.log('MyTimesheetTable - useEffect triggered:', {
-      currentWeekDaysLength: currentWeekDays.length,
-      currentWeekStart: currentWeekStartStr,
-      loadedWeekRef: loadedWeekRef.current,
-      shouldLoad: currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current,
-    });
-    
-    if (currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current) {
-      const startDate = currentWeekDays[0].date;
-      const endDate = currentWeekDays[currentWeekDays.length - 1].date;
+    // Only load if filters are provided (table view should always have filters)
+    if (filters && filters.startDate && filters.endDate) {
+      const startDate = new Date(filters.startDate);
+      const endDate = new Date(filters.endDate);
       
-      console.log('MyTimesheetTable - Loading timesheets for week:', {
-        startDate,
-        endDate,
-        currentWeekStart: currentWeekStartStr,
+      console.log('MyTimesheetTable - Loading timesheets for filtered date range:', {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
       });
       
       loadTimesheets(startDate, endDate);
-      loadedWeekRef.current = currentWeekStartStr;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWeekStart]); // Only depend on currentWeekStart to avoid infinite loop
+  }, [filters?.startDate, filters?.endDate]); // Load when filter dates change
 
   // Initialize selectedProjects with project IDs from timesheets and load tasks
   useEffect(() => {
