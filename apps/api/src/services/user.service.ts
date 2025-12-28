@@ -74,3 +74,15 @@ export const updateUserById = async (
     user: user.omitPassword(),
   };
 };
+
+//for components that need to show available users
+export const getAllActiveUsers = async () => {
+  const data = await UserModel.find({ status: true }).lean();
+  const users = data.map((user) => {
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  });
+  return {
+    users,
+  };
+};

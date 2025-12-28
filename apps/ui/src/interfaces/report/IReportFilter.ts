@@ -1,5 +1,4 @@
 import dayjs, { Dayjs } from 'dayjs';
-import { IEmployee } from '../user/IUser';
 
 export interface QuickDateButtonsProps {
   onDateRangeSelect: (start: Dayjs, end: Dayjs) => void;
@@ -35,7 +34,7 @@ export interface FilterRowProps {
 
 export interface DatePickerAtomProps {
   label: string;
-  value: string | null;
+  value: Dayjs | null;
   onChange: (date: Dayjs | null) => void;
   disabled?: boolean;
   minDate?: Dayjs;
@@ -49,7 +48,7 @@ export interface DateRangePickerProps {
   disabled?: boolean;
 }
 
-export type UserFilterType = 'individual' | 'team' | 'project';
+
 
 export interface UserFilterTypeSelectorProps {
   filterType?: UserFilterType;
@@ -93,7 +92,7 @@ export interface ProjectTeamSelectProps {
 export interface UserSelectionFieldProps {
   filterType: UserFilterType;
   // Individual selection props
-  employees?: IEmployee[];
+  employees?: ReportEmployee[];
   selectedEmployeeIds?: string[];
   onEmployeeChange?: (ids: string[]) => void;
   // Team selection props
@@ -113,4 +112,58 @@ export interface UserSelectionFieldProps {
 
 export interface IReportFilterProps {
   resetTrigger?: number;
+  currentFilter?: ReportFilter;
+  onFilterChange?: (filter: ReportFilter) => void;
+}
+
+export type UserFilterType = 'individual' | 'team' | 'project';
+
+export interface UserFilterConfig {
+  type: UserFilterType;
+  individualIds?: string[];
+  teamIds?: string[];
+  projectIds?: string[];
+}
+
+
+
+export interface UseUserFilterTypeOptions {
+  userRole: string;
+  canSeeAllData: boolean;
+}
+
+export interface TeamListItem {
+  _id: string;
+  teamName: string;
+  createdAt: string;
+  members: Array<{ _id: string; firstName: string; lastName: string; email?: string; designation?: string }>;
+  supervisor: { _id: string; firstName: string; lastName: string; email?: string; designation?: string } | null;
+  isDepartment?: boolean;
+}
+
+export interface ProjectListItem {
+  _id: string;
+  projectName: string;
+  billable: boolean;
+  employees: { _id: string; firstName: string; lastName: string; email: string; designation?: string }[];
+  supervisor?: { _id: string; firstName: string; lastName: string; email: string; designation?: string } | null;
+  createdAt?: string;
+  status?: boolean;
+}
+
+export interface UseUserFilterTypeReturn {
+  userFilterType: UserFilterType;
+  setUserFilterType: React.Dispatch<React.SetStateAction<UserFilterType>>;
+  availableFilterOptions: UserFilterType[];
+  teams: TeamListItem[];
+  selectedTeamId: string;
+  setSelectedTeamId: React.Dispatch<React.SetStateAction<string>>;
+  isLoadingTeams: boolean;
+  projects: ProjectListItem[];
+  selectedProjectId: string;
+  setSelectedProjectId: React.Dispatch<React.SetStateAction<string>>;
+  isLoadingProjects: boolean;
+  users: ReportEmployee[];
+  isLoadingUsers: boolean;
+  resetFilterType: () => void;
 }

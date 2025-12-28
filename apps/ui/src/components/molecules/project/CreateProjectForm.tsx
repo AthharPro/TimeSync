@@ -159,7 +159,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             render={({ field }) => (
               <DatePickerAtom
                 label="Start Date"
-                value={field.value ? field.value.toISOString() : null}
+                value={field.value ? dayjs(field.value) : null}
                 onChange={(date) => field.onChange(date ? date.toDate() : null)}
               />
             )}
@@ -178,7 +178,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                 render={({ field: startField }) => (
                   <DatePickerAtom
                     label="End Date"
-                    value={field.value ? field.value.toISOString() : null}
+                    value={field.value ? dayjs(field.value) : null}
                     onChange={(date) => field.onChange(date ? date.toDate() : null)}
                     minDate={startField.value ? dayjs(startField.value) : undefined}
                   />

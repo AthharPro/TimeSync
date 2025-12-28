@@ -17,7 +17,7 @@
         "format": ["cjs"],
         "bundle": true,
         "thirdParty": true,
-        "external": ["bcrypt", "bcryptjs"]
+        "external": ["bcrypt", "bcryptjs", "pdfkit"]
       },
       "configurations": {
         "development": {},

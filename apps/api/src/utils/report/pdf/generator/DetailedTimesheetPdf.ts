@@ -405,6 +405,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       .lineWidth(1);
     this.currentY += 20;
     // Group data into separate sub-tables similar to the preview 
+    // CRITICAL: Aggregate by BOTH week date AND project/team to avoid duplicate rows
     type SubRow = { sortDate: Date; cells: string[] };
     type SubTable = { title: string; includeWork: boolean; rows: SubRow[] };
     const tablesByTitle = new Map<string, SubTable>();
@@ -416,21 +417,28 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     let hasTeam = false;
     let hasLeave = false;
 
+    // First pass: aggregate all data by week+title to handle duplicate weeks
+    type WeekTitleKey = string; // Format: "2025-12-01_Project: ProjectName"
+    type AggregatedWeekItem = {
+      weekStartRaw: Date;
+      weekStart: string;
+      weekEnd: string;
+      title: string;
+      includeWork: boolean;
+      work?: string;
+      dailyHours: number[];
+    };
+    const weekTitleMap = new Map<WeekTitleKey, AggregatedWeekItem>();
+
     employeeData.forEach((timesheetWeek) => {
+      const weekStartRaw = new Date(timesheetWeek.weekStartDate);
+      const weekStart = this.formatDate(weekStartRaw);
+      const weekEnd = this.formatDate(this.addDays(timesheetWeek.weekStartDate, 4)); // Friday = Monday + 4 days
+
       timesheetWeek.categories.forEach((category) => {
         category.items.forEach((item) => {
           const dailyHours = item.dailyHours || [];
 
-          // Totals
-          dailyHours.forEach((hours, index) => {
-            if (index < 5 && hours) {
-              employeeDailyTotals[index] += parseFloat(hours.toString()) || 0;
-            }
-          });
-          const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => sum + (parseFloat(hours?.toString()) || 0), 0);
-          employeeGrandTotal += rowTotal;
-
-         
           let title: string | null = null;
           let includeWork = false;
           if (item.projectName) {
@@ -448,32 +456,65 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
           // Skip items that don't belong to any specific category
           if (!title) return;
 
-          // Ensure table container
-          if (!tablesByTitle.has(title)) {
-            tablesByTitle.set(title, { title, includeWork, rows: [] });
-          }
-          const table = tablesByTitle.get(title)!;
+          // Create unique key combining week start date and title
+          const weekTitleKey: WeekTitleKey = `${weekStart}_${title}`;
 
-          // Build row
-          const weekStartRaw = new Date(timesheetWeek.weekStartDate);
-          const weekStart = this.formatDate(weekStartRaw);
-          const weekEnd = this.formatDate(this.addDays(timesheetWeek.weekStartDate, 6));
-          const baseCells = [
-            weekStart,
-            weekEnd,
-          ]
-          const workCells = includeWork ? [item.work || ''] : [];
-          const dayCells = [
-            this.formatHoursForDisplay(dailyHours[0]),
-            this.formatHoursForDisplay(dailyHours[1]),
-            this.formatHoursForDisplay(dailyHours[2]),
-            this.formatHoursForDisplay(dailyHours[3]),
-            this.formatHoursForDisplay(dailyHours[4]),
-            this.formatHoursForDisplay(rowTotal),
-          ];
-          table.rows.push({ sortDate: weekStartRaw, cells: [...baseCells, ...workCells, ...dayCells] });
+          // Aggregate items with the same week+title combination
+          if (!weekTitleMap.has(weekTitleKey)) {
+            weekTitleMap.set(weekTitleKey, {
+              weekStartRaw,
+              weekStart,
+              weekEnd,
+              title,
+              includeWork,
+              work: includeWork ? (item.work || '') : undefined,
+              dailyHours: [0, 0, 0, 0, 0, 0, 0]
+            });
+          }
+
+          const aggregatedItem = weekTitleMap.get(weekTitleKey)!;
+          // Sum up the hours for each day
+          dailyHours.forEach((hours, index) => {
+            aggregatedItem.dailyHours[index] += parseFloat(hours?.toString() || '0') || 0;
+          });
         });
       });
+    });
+
+    // Second pass: create rows from aggregated data
+    weekTitleMap.forEach((aggregatedItem) => {
+      const { weekStartRaw, weekStart, weekEnd, title, includeWork, work, dailyHours } = aggregatedItem;
+
+      // Add to employee totals
+      dailyHours.forEach((hours, index) => {
+        if (index < 5 && hours) {
+          employeeDailyTotals[index] += hours;
+        }
+      });
+      const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => sum + hours, 0);
+      employeeGrandTotal += rowTotal;
+
+      // Ensure table container for this title
+      if (!tablesByTitle.has(title)) {
+        tablesByTitle.set(title, { title, includeWork, rows: [] });
+      }
+      const table = tablesByTitle.get(title)!;
+
+      // Build row - one row per unique week+project/team combination
+      const baseCells = [
+        weekStart,
+        weekEnd,
+      ]
+      const workCells = includeWork ? [work || ''] : [];
+      const dayCells = [
+        this.formatHoursForDisplay(dailyHours[0]),
+        this.formatHoursForDisplay(dailyHours[1]),
+        this.formatHoursForDisplay(dailyHours[2]),
+        this.formatHoursForDisplay(dailyHours[3]),
+        this.formatHoursForDisplay(dailyHours[4]),
+        this.formatHoursForDisplay(rowTotal),
+      ];
+      table.rows.push({ sortDate: weekStartRaw, cells: [...baseCells, ...workCells, ...dayCells] });
     });
 
     // Sort tables

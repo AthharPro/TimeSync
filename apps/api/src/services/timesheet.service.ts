@@ -7,6 +7,7 @@ interface CreateTimesheetParams {
   userId: string;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours: number;
@@ -18,6 +19,7 @@ interface UpdateTimesheetParams {
   date?: Date;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours?: number;
@@ -46,6 +48,13 @@ export const createMyTimesheet = async (
     timesheetData.taskId = new mongoose.Types.ObjectId(params.taskId);
   } else {
     timesheetData.taskId = null;
+  }
+
+  // Only add teamId if it's a valid, non-empty string
+  if (params.teamId && mongoose.Types.ObjectId.isValid(params.teamId)) {
+    timesheetData.teamId = new mongoose.Types.ObjectId(params.teamId);
+  } else {
+    timesheetData.teamId = null;
   }
 
   // Check for duplicate project+task on same date (only if both projectId and taskId are set)
@@ -78,7 +87,7 @@ export const createMyTimesheet = async (
 export const updateMyTimesheet = async (
   params: UpdateTimesheetParams
 ): Promise<ITimesheetDocument | null> => {
-  const { timesheetId, userId, date, projectId, taskId, billable, description, hours } = params;
+  const { timesheetId, userId, date, projectId, taskId, teamId, billable, description, hours } = params;
 
   // Verify the timesheet exists and belongs to the user
   const existingTimesheet = await Timesheet.findOne({
@@ -112,6 +121,15 @@ export const updateMyTimesheet = async (
       updateData.taskId = new mongoose.Types.ObjectId(taskId);
     } else {
       updateData.taskId = null;
+    }
+  }
+
+  // Only update teamId if it's a valid, non-empty string
+  if (params.teamId !== undefined) {
+    if (params.teamId && mongoose.Types.ObjectId.isValid(params.teamId)) {
+      updateData.teamId = new mongoose.Types.ObjectId(params.teamId);
+    } else {
+      updateData.teamId = null;
     }
   }
 

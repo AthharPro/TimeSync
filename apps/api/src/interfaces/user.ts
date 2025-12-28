@@ -37,8 +37,6 @@ export interface IUser extends Document {
 
 export type IUserDocument = mongoose.Document & IUser;
 
-export type IUserModel = mongoose.Model<IUserDocument>;
-
 export interface CreateUserParams {
   email: string;
   designation: string;
@@ -46,4 +44,11 @@ export interface CreateUserParams {
   lastName: string;
   contactNumber: string;
   role: UserRole;
+}
+
+
+export interface IUserModel extends mongoose.Model<IUserDocument> {
+
+  findAllActive(): Promise<IUserDocument[]>;
+
 }

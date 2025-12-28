@@ -86,47 +86,285 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     this.addCompanyHeader();
     this.pageStartY = this.currentY; // Track where content starts on first page
 
-    // If multiple employees, show each employee separately with their own tables
+    // If multiple employees (project-wise or team-wise filter), show each employee with their own table
     if (data.length > 1) {
-      data.forEach((employeeData, employeeIndex) => {
-        // Get entries grouped by project for this employee
-        const entriesByProject = this.getEmployeeEntriesByProject(employeeData);
-
-        // Generate content for each project for this employee
-        entriesByProject.forEach((projectData, projectIndex) => {
-          // Add spacing between sections (but don't force page break)
-          if (employeeIndex > 0 || projectIndex > 0) {
-            this.currentY += 20;
-          }
-
-          // Add project title first
-          this.addProjectTitle(projectData.projectName);
-
-          // Add employee title
-          this.addEmployeeTitle(employeeData.employeeName, employeeData.employeeEmail);
-
-          // Add table with entries (with header) - this method handles page breaks internally
-          this.addTimesheetTable(projectData.entries);
+      // Collect all unique project/team names from all tables
+      const allTitles = new Set<string>();
+      data.forEach(emp => {
+        emp.tables.forEach(table => {
+          allTitles.add(table.title);
         });
       });
+      
+      // Determine the main title based on common pattern
+      let mainTitle = '';
+      const titlesArray = Array.from(allTitles);
+      
+      // Check if all titles are for the same project or team
+      const projectTitles = titlesArray.filter(t => t.includes('Project:'));
+      const teamTitles = titlesArray.filter(t => t.includes('Team:'));
+      
+      // Check if ALL titles are teams (and NO projects)
+      if (teamTitles.length > 0 && projectTitles.length === 0 && titlesArray.length === teamTitles.length) {
+        // All entries are from teams only
+        const teamName = teamTitles[0].split('Team:')[1].trim();
+        mainTitle = `Timesheet Entries for the ${teamName} Team`;
+        
+        data.forEach((employeeData, employeeIndex) => {
+          // Add new page for each employee after the first
+          if (employeeIndex > 0) {
+            this.doc.addPage();
+          }
+          
+          // Add team title for each employee on their page
+          this.addProjectTitle(mainTitle);
+
+          // Flatten all entries for this employee
+          const allEntries = this.flattenEmployeeEntries(employeeData);
+
+          // Add single table with all entries for this employee
+          this.addTimesheetTable(allEntries);
+        });
+      } 
+      // Check if ALL titles are projects (and NO teams)
+      else if (projectTitles.length > 0 && teamTitles.length === 0 && titlesArray.length === projectTitles.length) {
+        // All entries are from projects only
+        const projectName = projectTitles[0].split('Project:')[1].trim();
+        mainTitle = `Timesheet Entries for the ${projectName} Project`;
+        
+        data.forEach((employeeData, employeeIndex) => {
+          // Add new page for each employee after the first
+          if (employeeIndex > 0) {
+            this.doc.addPage();
+          }
+          
+          // Add project title for each employee on their page
+          this.addProjectTitle(mainTitle);
+
+          // Flatten all entries for this employee
+          const allEntries = this.flattenEmployeeEntries(employeeData);
+
+          // Add single table with all entries for this employee
+          this.addTimesheetTable(allEntries);
+        });
+      } 
+      // Mixed project and team entries
+      else if (projectTitles.length > 0 && teamTitles.length > 0) {
+        mainTitle = 'Timesheet Entries - Mixed Work';
+        
+        // Add main project/team title
+        this.addProjectTitle(mainTitle);
+
+        data.forEach((employeeData, employeeIndex) => {
+          // Add new page for each employee after the first
+          if (employeeIndex > 0) {
+            this.doc.addPage();
+          }
+
+          // Flatten all entries for this employee
+          const allEntries = this.flattenEmployeeEntries(employeeData);
+
+          // Add employee subtitle
+          this.addEmployeeSubtitle(employeeData.employeeName);
+
+          // Add single table with all entries for this employee
+          this.addTimesheetTable(allEntries);
+        });
+      } 
+      // Multiple projects
+      else if (projectTitles.length > 1) {
+        mainTitle = 'Timesheet Entries - Multiple Projects';
+        
+        // Add main project/team title
+        this.addProjectTitle(mainTitle);
+
+        data.forEach((employeeData, employeeIndex) => {
+          // Add new page for each employee after the first
+          if (employeeIndex > 0) {
+            this.doc.addPage();
+          }
+
+          // Flatten all entries for this employee
+          const allEntries = this.flattenEmployeeEntries(employeeData);
+
+          // Add employee subtitle
+          this.addEmployeeSubtitle(employeeData.employeeName);
+
+          // Add single table with all entries for this employee
+          this.addTimesheetTable(allEntries);
+        });
+      } 
+      // Multiple teams
+      else if (teamTitles.length > 1) {
+        mainTitle = 'Timesheet Entries - Multiple Teams';
+        
+        // Add main project/team title
+        this.addProjectTitle(mainTitle);
+
+        data.forEach((employeeData, employeeIndex) => {
+          // Add new page for each employee after the first
+          if (employeeIndex > 0) {
+            this.doc.addPage();
+          }
+
+          // Flatten all entries for this employee
+          const allEntries = this.flattenEmployeeEntries(employeeData);
+
+          // Add employee subtitle
+          this.addEmployeeSubtitle(employeeData.employeeName);
+
+          // Add single table with all entries for this employee
+          this.addTimesheetTable(allEntries);
+        });
+      } 
+      // Fallback
+      else {
+        mainTitle = 'Timesheet Entries';
+        
+        // Add main project/team title
+        this.addProjectTitle(mainTitle);
+
+        data.forEach((employeeData, employeeIndex) => {
+          // Add new page for each employee after the first
+          if (employeeIndex > 0) {
+            this.doc.addPage();
+          }
+
+          // Flatten all entries for this employee
+          const allEntries = this.flattenEmployeeEntries(employeeData);
+
+          // Add employee subtitle
+          this.addEmployeeSubtitle(employeeData.employeeName);
+
+          // Add single table with all entries for this employee
+          this.addTimesheetTable(allEntries);
+        });
+      }
     } else {
-      // Single employee - use existing logic
-      // Flatten all entries and group by project
-      const entriesByProject = this.flattenAndGroupEntries(data);
-
-      // Generate content for each project
-      entriesByProject.forEach((projectData, projectIndex) => {
-        if (projectIndex > 0) {
-          this.checkPageBreak(100);
-          this.currentY += 20;
-        }
-
-        // Add project title
-        this.addProjectTitle(projectData.projectName);
-
-        // Add table with entries
-        this.addTimesheetTable(projectData.entries);
+      // Single employee (individual user filter) - show all entries in one table
+      const employeeData = data[0];
+      
+      // Collect all unique project/team names from all tables
+      const allTitles = new Set<string>();
+      employeeData.tables.forEach(table => {
+        allTitles.add(table.title);
       });
+      
+      // Determine the main title based on common pattern
+      let mainTitle = '';
+      const titlesArray = Array.from(allTitles);
+      
+      // Check if all titles are for the same project or team
+      const projectTitles = titlesArray.filter(t => t.includes('Project:'));
+      const teamTitles = titlesArray.filter(t => t.includes('Team:'));
+      
+      // Check if ALL titles are teams (and NO projects)
+      if (teamTitles.length > 0 && projectTitles.length === 0 && titlesArray.length === teamTitles.length) {
+        // Single team
+        const teamName = teamTitles[0].split('Team:')[1].trim();
+        mainTitle = `Timesheet Entries for the ${teamName} Team`;
+        
+        // Add main team title
+        this.addProjectTitle(mainTitle);
+        
+        // Flatten all entries for this employee
+        const allEntries = this.flattenEmployeeEntries(employeeData);
+
+        // Add single table with all entries
+        this.addTimesheetTable(allEntries);
+      } 
+      // Check if ALL titles are projects (and NO teams)
+      else if (projectTitles.length > 0 && teamTitles.length === 0 && titlesArray.length === projectTitles.length) {
+        // Single project
+        const projectName = projectTitles[0].split('Project:')[1].trim();
+        mainTitle = `Timesheet Entries for the ${projectName} Project`;
+        
+        // Add main project title
+        this.addProjectTitle(mainTitle);
+        
+        // Flatten all entries for this employee
+        const allEntries = this.flattenEmployeeEntries(employeeData);
+
+        // Add single table with all entries
+        this.addTimesheetTable(allEntries);
+      } 
+      // Mixed project and team entries
+      else if (projectTitles.length > 0 && teamTitles.length > 0) {
+        // Get entries grouped by project/team
+        const groupedEntries = this.getEmployeeEntriesByProject(employeeData);
+        
+        // Create separate table for each project/team with its own title
+        groupedEntries.forEach((group, index) => {
+          // Add spacing between tables
+          if (index > 0) {
+            this.currentY += 20;
+          }
+          
+          // Determine if this is a project or team and add appropriate title
+          if (group.projectName.includes('Project:') || projectTitles.some(t => t.includes(group.projectName))) {
+            this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Project`);
+          } else {
+            this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Team`);
+          }
+          
+          // Add table for this project/team
+          this.addTimesheetTable(group.entries);
+        });
+      } 
+      // Multiple projects
+      else if (projectTitles.length > 1) {
+        // Get entries grouped by project
+        const groupedEntries = this.getEmployeeEntriesByProject(employeeData);
+        
+        // Create separate table for each project with its own title
+        groupedEntries.forEach((group, index) => {
+          // Add spacing between tables
+          if (index > 0) {
+            this.currentY += 20;
+          }
+          
+          // Add project title
+          this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Project`);
+          
+          // Add table for this project
+          this.addTimesheetTable(group.entries);
+        });
+      } 
+      // Multiple teams
+      else if (teamTitles.length > 1) {
+        // Get entries grouped by team
+        const groupedEntries = this.getEmployeeEntriesByProject(employeeData);
+        
+        // Create separate table for each team with its own title
+        groupedEntries.forEach((group, index) => {
+          // Add spacing between tables
+          if (index > 0) {
+            this.currentY += 20;
+          }
+          
+          // Add team title
+          this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Team`);
+          
+          // Add table for this team
+          this.addTimesheetTable(group.entries);
+        });
+      } 
+      // Fallback
+      else {
+        mainTitle = 'Timesheet Entries';
+        
+        // Add main title
+        this.addProjectTitle(mainTitle);
+        
+        // Flatten all entries for this employee
+        const allEntries = this.flattenEmployeeEntries(employeeData);
+
+        // Add employee subtitle
+        this.addEmployeeSubtitle(employeeData.employeeName);
+
+        // Add single table with all entries
+        this.addTimesheetTable(allEntries);
+      }
     }
 
     // Draw footer on last page
@@ -247,7 +485,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
 
   private drawPageHeader(): void {
     const headerY = 30;
-    const logoSize = 65;
+    const logoSize = 40;
     const logoX = this.margin;
     const logoY = headerY;
     const brandTextX = logoX + logoSize + 10;
@@ -262,17 +500,17 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     }
 
     // Brand text near the logo
-    const brandTextMarginTop = 5; // Adjust this value to customize vertical position (positive = down, negative = up)
+    const brandTextMarginTop = 18; // Adjust this value to customize vertical position (positive = down, negative = up)
     const brandTextY = logoY + brandTextMarginTop;
     this.doc
-      .fontSize(22)
+      .fontSize(20)
       .fillColor('#035082')
       .font(this.latoFont)
       .text('ALLION', brandTextX, brandTextY);
 
     // Calculate position for company information (below logo)
     const companyInfoX = this.margin;
-    const lineY = logoY + logoSize + 10; // Line below logo with 10px spacing
+    const lineY = logoY + logoSize + 5; // Line below logo with 5px spacing
     const companyInfoY = lineY + 15; // Company info starts 15px below the line
 
     // Draw black horizontal line between logo and company details
@@ -306,6 +544,8 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         .text('No.200, Narahenpita - Nawala Rd', companyInfoX, adjustedCompanyInfoY + 28)
         .text('Colombo 00500', companyInfoX, adjustedCompanyInfoY + 41)
         .text('Sri Lanka', companyInfoX, adjustedCompanyInfoY + 54);
+      
+      this.currentY = adjustedCompanyInfoY + 54 + 20;
       return;
     }
 
@@ -323,16 +563,42 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       .text('No.200, Narahenpita - Nawala Rd', companyInfoX, companyInfoY + 28)
       .text('Colombo 00500', companyInfoX, companyInfoY + 41)
       .text('Sri Lanka', companyInfoX, companyInfoY + 54);
+
+    this.currentY = companyInfoY + 54 + 20;
   }
 
-  private addProjectTitle(projectName: string): void {
+  private addProjectSubtitle(projectName: string): void {
+    this.checkPageBreak(40);
+
+    this.doc
+      .fontSize(12)
+      .fillColor('#475569')
+      .font(this.latoFont)
+      .text(projectName, this.margin, this.currentY);
+
+    this.currentY += 25;
+  }
+
+  private addProjectTitle(title: string): void {
     this.checkPageBreak(60);
 
     this.doc
       .fontSize(18)
       .fillColor('#035082')
       .font(this.latoFont)
-      .text(`Timesheet Entries for the ${projectName}`, this.margin, this.currentY);
+      .text(title, this.margin, this.currentY);
+
+    this.currentY += 40;
+  }
+
+  private addEmployeeSubtitle(employeeName: string): void {
+    this.checkPageBreak(40);
+
+    this.doc
+      .fontSize(14)
+      .fillColor('#334155')
+      .font(this.latoFont)
+      .text(employeeName, this.margin, this.currentY);
 
     this.currentY += 30;
   }
@@ -731,10 +997,8 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     this.doc.addPage = () => {
       this.drawFooter();
       originalAddPage();
-      this.drawPageHeader(); // Draw header on new page
+      this.drawPageHeader(); // Draw header on new page (this sets currentY correctly)
       this.pageNumber++;
-      // Set currentY after header (header takes about 180px: logo + line + company info)
-      this.currentY = this.margin + 180;
       this.pageStartY = this.currentY; // Track where content starts on this new page
       this.isFirstPage = false;
     };
@@ -747,11 +1011,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
 
     if (requiredSpace > availableSpace) {
       this.doc.addPage(); // addPage override will draw footer and header
-      // Ensure currentY is not above expected header end (approx 194px from top for this header)
-      const expectedHeaderEnd = 30 + 65 + 10 + 15 + 54 + 20; // headerY + logoSize + spacing + line + company info + padding
-      if (this.currentY < expectedHeaderEnd) {
-        this.currentY = expectedHeaderEnd;
-      }
+      // drawPageHeader already sets currentY correctly, no need to override it
       this.pageStartY = this.currentY;
       this.isFirstPage = false;
     }

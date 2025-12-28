@@ -3,36 +3,43 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useTheme } from '@mui/material/styles';
-import dayjs from 'dayjs';
+import { Dayjs } from 'dayjs';
 import { DatePickerAtomProps } from '../../../interfaces/report/IReportFilter';
 
-const DatePickerAtom: React.FC<DatePickerAtomProps> = ({ label, value, onChange, disabled, minDate }) => {
+const DatePickerAtom: React.FC<DatePickerAtomProps> = ({
+  label,
+  value,
+  onChange,
+  disabled,
+  minDate,
+}) => {
   const theme = useTheme();
-  
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <DatePicker
-          label={label}
-          value={value ? dayjs(value) : null}
-          onChange={(newValue) => onChange(newValue as dayjs.Dayjs | null)}
-          disabled={disabled}
-          minDate={minDate}
-          enableAccessibleFieldDOMStructure={false}
-          slotProps={{
-            textField: {
-              fullWidth: true,
-              size: 'small'
+      <DatePicker
+        label={label}
+        value={value}
+        onChange={(newValue) => onChange(newValue as Dayjs | null)}
+        disabled={disabled}
+        minDate={minDate}
+        enableAccessibleFieldDOMStructure={false}
+        slotProps={{
+          textField: {
+            fullWidth: true,
+            size: 'small',
+          },
+          popper: {
+            sx: {
+              '& .MuiPaper-root': {
+                backgroundColor: theme.palette.background.default,
+              },
             },
-            popper: {
-              sx: {
-                '& .MuiPaper-root': {
-                  backgroundColor: theme.palette.background.default
-              }
-            }
-          }
+          },
         }}
       />
     </LocalizationProvider>
   );
 };
+
 export default DatePickerAtom;

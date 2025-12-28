@@ -59,6 +59,7 @@ export default function ConformationDailog({
         )}
         <Typography
           variant="h5"
+          component="span"
           sx={{ fontWeight: 600, color: theme.palette.text.primary }}
         >
           {title}

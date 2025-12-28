@@ -9,6 +9,7 @@ interface CreateTimesheetParams {
   date: Date | string;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours?: number;
@@ -18,6 +19,7 @@ interface UpdateTimesheetParams {
   date?: Date | string;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours?: number;
@@ -46,6 +48,7 @@ export const createTimesheet = async (params: CreateTimesheetParams) => {
   
   if (params.projectId) payload.projectId = params.projectId;
   if (params.taskId) payload.taskId = params.taskId;
+  if (params.teamId) payload.teamId = params.teamId;
   if (params.billable) payload.billable = params.billable;
   if (params.description !== undefined) payload.description = params.description;
   if (params.hours !== undefined) payload.hours = params.hours;
@@ -62,6 +65,7 @@ export const updateTimesheet = async (timesheetId: string, params: UpdateTimeshe
   }
   if (params.projectId !== undefined) payload.projectId = params.projectId || null;
   if (params.taskId !== undefined) payload.taskId = params.taskId || null;
+  if (params.teamId !== undefined) payload.teamId = params.teamId || null;
   if (params.billable !== undefined) payload.billable = params.billable;
   if (params.description !== undefined) payload.description = params.description;
   if (params.hours !== undefined) payload.hours = params.hours;

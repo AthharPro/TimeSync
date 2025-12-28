@@ -8,12 +8,15 @@ import { BillableType } from "@tms/shared";
 export const createMyTimesheetHandler = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const parsed = createTimesheetSchema.parse(req.body);
-  const {date} = parsed;
+  const {date, projectId, taskId, teamId} = parsed;
 
   // Pass as strings; conversion to ObjectId happens in the service
   const params= {
     userId,
     date,
+    projectId,
+    taskId,
+    teamId,
     billable:BillableType.NonBillable,
     description:"",
     hours:0.0
