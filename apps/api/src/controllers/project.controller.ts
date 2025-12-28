@@ -13,7 +13,6 @@ import {
   listSupervisedProjects,
 } from '../services/project.service';
 import { UserRole } from '@tms/shared';
-import { is } from 'zod/v4/locales';
 
 
 export const createHandler = catchErrors(async (req, res) => {
@@ -36,7 +35,7 @@ export const createHandler = catchErrors(async (req, res) => {
     supervisor: parsedUi.supervisor ?? null,
   });
 
-  const project = await createProject(normalized, req.userId);
+  const project = await createProject(normalized);
 
   return res.status(CREATED).json(project);
 });
@@ -61,13 +60,13 @@ export const updateStaffHandler = catchErrors(async (req, res) => {
     employees?: string[];
     supervisor?: string | null;
   };
-  const result = await updateProjectStaff(id, { employees, supervisor }, req.userId);
+  const result = await updateProjectStaff(id, { employees, supervisor });
   return res.status(OK).json(result);
 });
 
 export const deleteHandler = catchErrors(async (req, res) => {
   const { id } = req.params as { id: string };
-  const result = await softDeleteProject(id, req.userId);
+  const result = await softDeleteProject(id);
   return res.status(OK).json(result);
 });
 

@@ -87,7 +87,7 @@ export const createMyTimesheet = async (
 export const updateMyTimesheet = async (
   params: UpdateTimesheetParams
 ): Promise<ITimesheetDocument | null> => {
-  const { timesheetId, userId, date, projectId, taskId, teamId, billable, description, hours } = params;
+  const { timesheetId, userId, date, projectId, taskId, billable, description, hours } = params;
 
   // Verify the timesheet exists and belongs to the user
   const existingTimesheet = await Timesheet.findOne({
@@ -166,14 +166,6 @@ export const updateMyTimesheet = async (
 
     if (duplicate) {
       throw new Error('A timesheet entry with this project and task already exists for this date');
-
-    if (isDraft) {
-      if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
-        updateData.taskId = new mongoose.Types.ObjectId(taskId);
-      } else {
-        updateData.taskId = null;
-      }
-
     }
   }
 

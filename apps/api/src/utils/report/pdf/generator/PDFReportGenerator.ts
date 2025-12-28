@@ -13,7 +13,7 @@ export class PDFReportGenerator {
     filters?: { startDate?: string; endDate?: string }
   ): void {
     this.generator = new DetailedTimesheetPdf();
-    this.generator.generate(data, filters);
+    this.generator.generate(data);
   }
 
   async generateBuffer(): Promise<Buffer> {

@@ -67,7 +67,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           this.latoFont = 'Lato-Medium';
           break;
         }
-      } catch (error) {
+      } catch {
         // Continue to next path
         continue;
       }
@@ -79,8 +79,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       employeeName: string;
       employeeEmail: string;
       tables: Array<{ title: string; rows: TimesheetEntryRow[] }>;
-    }>,
-    filters: { startDate?: string; endDate?: string }
+    }>
   ): PDFDocument {
     // Add header with logo and company info on first page
     this.addCompanyHeader();
@@ -391,7 +390,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           this.logoPath = logoPath;
           break;
         }
-      } catch (error) {
+      } catch {
         // Continue to next path
         continue;
       }
@@ -410,7 +409,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     if (this.logoPath) {
       try {
         this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
-      } catch (error) {
+      } catch {
         // Logo loading failed, continue without it
       }
     }
@@ -494,7 +493,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     if (this.logoPath) {
       try {
         this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
-      } catch (error) {
+      } catch {
         // Logo loading failed, continue without it
       }
     }
@@ -603,7 +602,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     this.currentY += 30;
   }
 
-  private addEmployeeTitle(employeeName: string, employeeEmail: string): void {
+  private addEmployeeTitle(employeeName: string): void {
     this.checkPageBreak(60);
 
     this.doc
@@ -689,14 +688,17 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         const hours = parseFloat(row.quantity) || 0;
         const timeSpent = this.formatHoursToHHMM(hours);
 
-        projectMap.get(projectName)!.push({
-          date: this.formatDateForTable(row.date),
-          originalDate: row.date, // Store original date for sorting
-          responsible: employeeData.employeeName,
-          description: row.description || '-',
-          timeSpent: timeSpent,
-          projectName: projectName,
-        });
+        const array = projectMap.get(projectName);
+        if (array) {
+          array.push({
+            date: this.formatDateForTable(row.date),
+            originalDate: row.date, // Store original date for sorting
+            responsible: employeeData.employeeName,
+            description: row.description || '-',
+            timeSpent: timeSpent,
+            projectName: projectName,
+          });
+        }
       });
     });
 
@@ -743,14 +745,17 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           const hours = parseFloat(row.quantity) || 0;
           const timeSpent = this.formatHoursToHHMM(hours);
 
-          projectMap.get(projectName)!.push({
-            date: this.formatDateForTable(row.date),
-            originalDate: row.date, // Store original date for sorting
-            responsible: emp.employeeName,
-            description: row.description || '-',
-            timeSpent: timeSpent,
-            projectName: projectName,
-          });
+          const array = projectMap.get(projectName);
+          if (array) {
+            array.push({
+              date: this.formatDateForTable(row.date),
+              originalDate: row.date, // Store original date for sorting
+              responsible: emp.employeeName,
+              description: row.description || '-',
+              timeSpent: timeSpent,
+              projectName: projectName,
+            });
+          }
         });
       });
     });

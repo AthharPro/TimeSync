@@ -233,7 +233,10 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
             description: row.description,
             hours,
           };
-          projectMap.get(projectName)!.push(entry);
+          const array = projectMap.get(projectName);
+          if (array) {
+            array.push(entry);
+          }
         });
       });
     });

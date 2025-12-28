@@ -2,8 +2,6 @@ import { DailyTimesheetStatus } from '@tms/shared';
 import appAssert from '../utils/validation/appAssert';
 import { UNAUTHORIZED } from '../constants/http';
 import { Timesheet } from '../models/timesheet.model';
-import ProjectModel from '../models/project.model';
-import TeamModel from '../models/team.model';
 import {UserModel} from '../models/user.model';
 import { 
   IReportFilter, 
@@ -107,19 +105,22 @@ export class ReportService {
           if (!projectTaskMap.has(key)) {
             projectTaskMap.set(key, []);
           }
-          projectTaskMap.get(key)!.push({
-            ...entry,
-            _categoryType: categoryType,
-            _categoryName: isLeave ? 'Leave' : `${projectName} - ${taskName}`,
-            _projectName: projectName,
-            _taskName: taskName
-          });
+          const array = projectTaskMap.get(key);
+          if (array) {
+            array.push({
+              ...entry,
+              _categoryType: categoryType,
+              _categoryName: isLeave ? 'Leave' : `${projectName} - ${taskName}`,
+              _projectName: projectName,
+              _taskName: taskName
+            });
+          }
         }
         
         // Create categories for each project/task/leave
         const categories: ITimesheetReportCategory[] = [];
         
-        for (const [key, entries] of projectTaskMap) {
+        for (const [, entries] of projectTaskMap) {
           const firstEntry = entries[0];
           const categoryType = firstEntry._categoryType;
           const categoryName = firstEntry._categoryName;
@@ -132,7 +133,8 @@ export class ReportService {
           const weekItems: ITimesheetReportDataItem[] = [];
           
           for (const weekStartDate of sortedWeeks) {
-            const weekEntries = weeklyData.get(weekStartDate)!;
+            const weekEntries = weeklyData.get(weekStartDate);
+            if (!weekEntries) continue;
             
             // Get week end date (Friday - last working day)
             const weekStart = new Date(weekStartDate);
@@ -321,7 +323,10 @@ export class ReportService {
       if (!userMap.has(userId)) {
         userMap.set(userId, []);
       }
-      userMap.get(userId)!.push(timesheet);
+      const array = userMap.get(userId);
+      if (array) {
+        array.push(timesheet);
+      }
     }
 
     return userMap;
@@ -337,7 +342,10 @@ export class ReportService {
       if (!weeklyMap.has(weekStart)) {
         weeklyMap.set(weekStart, []);
       }
-      weeklyMap.get(weekStart)!.push(timesheet);
+      const array = weeklyMap.get(weekStart);
+      if (array) {
+        array.push(timesheet);
+      }
     }
 
     return weeklyMap;
@@ -355,7 +363,10 @@ export class ReportService {
       if (!weeklyMap.has(key)) {
         weeklyMap.set(key, []);
       }
-      weeklyMap.get(key)!.push(timesheet);
+      const array = weeklyMap.get(key);
+      if (array) {
+        array.push(timesheet);
+      }
     }
 
     return weeklyMap;
@@ -389,7 +400,10 @@ export class ReportService {
       if (!groups.has(key)) {
         groups.set(key, []);
       }
-      groups.get(key)!.push(timesheet);
+      const array = groups.get(key);
+      if (array) {
+        array.push(timesheet);
+      }
     }
 
     // Transform to report items

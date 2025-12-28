@@ -151,7 +151,7 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
           <Box sx={{ flex: 1 }}>
             <DatePickerAtom
               label="Filter By Year"
-              value={filters.year}
+              value={filters.year ? dayjs(filters.year) : null}
               onChange={handleYearChange}
               disabled={false}
               views={['year']}
@@ -161,7 +161,7 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
           <Box sx={{ flex: 1 }}>
             <DatePickerAtom
               label="Filter By Month"
-              value={filters.month}
+              value={filters.month ? dayjs(filters.month) : null}
               onChange={handleMonthChange}
               disabled={false}
               views={['year', 'month']}

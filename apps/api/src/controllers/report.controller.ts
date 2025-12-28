@@ -16,10 +16,6 @@ import { getSupervisedUserIds } from '../utils/data/assignmentUtils';
 import { createWeekOverlapQuery } from '../utils/report/date/dateFilterUtils';
 import mongoose from 'mongoose';
 
-type ReportFormat = 'pdf' | 'excel';
-
-const parseDate = (value?: string) => (value ? new Date(value) : undefined);
-
 const formatDateForDisplay = (date: Date | string): string => {
   if (!date) return '';
   const d = new Date(date);
@@ -269,11 +265,7 @@ const ensureSupervisorScope = async (
   }
 };
 
-// Helpers to emit files
-const sendExcel = async (res: any, filename: string, build: (gen: any) => void) => {
-  await build;
-  await (build as any);
-};
+
 
 export const generateDetailedTimesheetReportHandler: RequestHandler = async (req, res) => {
   const supervisorId = req.userId as string;
@@ -443,7 +435,7 @@ export const generateDetailedTimesheetReportHandler: RequestHandler = async (req
   }
   if (format === 'pdf') {
     const pdf = new DetailedTimesheetPdf();
-    const doc = pdf.generate(data, { startDate, endDate });
+    const doc = pdf.generate(data);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=detailed-timesheet-report.pdf');
     doc.pipe(res);
@@ -578,7 +570,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     try {
       console.log('Generating PDF for timesheet entries...');
       const pdf = new TimesheetEntriesPdf();
-      const doc = pdf.generate(employees, { startDate, endDate });
+      const doc = pdf.generate(employees);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename=timesheet-entries-report.pdf');
       doc.pipe(res);

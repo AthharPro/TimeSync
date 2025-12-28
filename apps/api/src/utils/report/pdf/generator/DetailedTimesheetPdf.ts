@@ -35,8 +35,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
   }
 
   generate(
-    data: IDetailedTimesheetReport[],
-    filters: { startDate?: string; endDate?: string }
+    data: IDetailedTimesheetReport[]
   ): PDFDocument {
     // Add header with logo and company info on first page
     this.addCompanyHeader();
@@ -78,7 +77,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
           this.latoFont = 'Lato-Medium';
           break;
         }
-      } catch (error) {
+      } catch {
         // Continue to next path
         continue;
       }
@@ -102,7 +101,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
           this.logoPath = logoPath;
           break;
         }
-      } catch (error) {
+      } catch {
         // Continue to next path
         continue;
       }
@@ -121,7 +120,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     if (this.logoPath) {
       try {
         this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
-      } catch (error) {
+      } catch {
         // Logo loading failed, continue without it
       }
     }
@@ -204,7 +203,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     if (this.logoPath) {
       try {
         this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
-      } catch (error) {
+      } catch {
         // Logo loading failed, continue without it
       }
     }
@@ -348,7 +347,10 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
         groupedData.set(employeeKey, []);
       }
       
-      groupedData.get(employeeKey)!.push(timesheetWeek);
+      const array = groupedData.get(employeeKey);
+      if (array) {
+        array.push(timesheetWeek);
+      }
     });
     
     return groupedData;
@@ -372,7 +374,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       return nameA.localeCompare(nameB);
     });
 
-    sortedEmployees.forEach(([employeeKey, employeeData], index) => {
+    sortedEmployees.forEach(([, employeeData], index) => {
       if (index > 0) {
         // Add page break before each new employee 
         this.checkPageBreak(200);
@@ -472,11 +474,13 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
             });
           }
 
-          const aggregatedItem = weekTitleMap.get(weekTitleKey)!;
-          // Sum up the hours for each day
-          dailyHours.forEach((hours, index) => {
-            aggregatedItem.dailyHours[index] += parseFloat(hours?.toString() || '0') || 0;
-          });
+          const aggregatedItem = weekTitleMap.get(weekTitleKey);
+          if (aggregatedItem) {
+            // Sum up the hours for each day
+            dailyHours.forEach((hours, index) => {
+              aggregatedItem.dailyHours[index] += parseFloat(hours?.toString() || '0') || 0;
+            });
+          }
         });
       });
     });
@@ -498,7 +502,8 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       if (!tablesByTitle.has(title)) {
         tablesByTitle.set(title, { title, includeWork, rows: [] });
       }
-      const table = tablesByTitle.get(title)!;
+      const table = tablesByTitle.get(title);
+      if (!table) return;
 
       // Build row - one row per unique week+project/team combination
       const baseCells = [
@@ -657,8 +662,9 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
         });
       }
       
-      const employeeStat = employeeStats.get(key)!;
-      employeeStat.weeks++;
+      const employeeStat = employeeStats.get(key);
+      if (employeeStat) {
+        employeeStat.weeks++;
       
       // Calculate total hours from categories
       timesheetWeek.categories.forEach(category => {
@@ -670,6 +676,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
           employeeStat.totalHours += rowTotal;
         });
       });
+      }
     });
 
   }

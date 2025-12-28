@@ -1,11 +1,7 @@
 import { Router } from "express";
 import { loginHandler, logoutHandler,getCurrentUser,refreshHandler } from "../controllers/auth.controller";
-import authenticate from "../middleware/authenticate";
-import { UserRole } from "@tms/shared";
 
 const authRoutes=Router();
-
-const allRoles: UserRole[] = Object.values(UserRole);
 
 authRoutes.post("/login",loginHandler);
 authRoutes.get("/refresh", refreshHandler);

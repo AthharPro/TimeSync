@@ -7,7 +7,6 @@ import {
   getProjectProgress,
   getTimesheetStats,
 } from '../controllers/dashboard.controller';
-import { UserRole } from '@tms/shared';
 
 const router = Router();
 

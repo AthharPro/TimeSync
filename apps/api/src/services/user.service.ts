@@ -79,6 +79,7 @@ export const updateUserById = async (
 export const getAllActiveUsers = async () => {
   const data = await UserModel.find({ status: true }).lean();
   const users = data.map((user) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   });
