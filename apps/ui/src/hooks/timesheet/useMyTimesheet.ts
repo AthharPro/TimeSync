@@ -10,13 +10,14 @@ import {
   updateCalendarRow,
   deleteCalendarRow,
   syncTimesheetUpdate,
+  deleteTimesheets,
 } from '../../store/slices/myTimesheetSlice';
 import type { RootState, AppDispatch } from '../../store/store';
 import { IMyTimesheetTableEntry } from '../../interfaces';
 import { IUseMyTimesheetReturn } from '../../interfaces';
-import { BillableType } from '@tms/shared';
+import { BillableType, DailyTimesheetStatus } from '@tms/shared';
 import api from '../../config/apiClient';
-import { getTimesheets, submitTimesheetsAPI } from '../../api/timesheet';
+import { getTimesheets, submitTimesheetsAPI, deleteTimesheetsAPI } from '../../api/timesheet';
 
 export const useMyTimesheet = (): IUseMyTimesheetReturn => {
   const dispatch = useDispatch();
@@ -61,7 +62,12 @@ export const useMyTimesheet = (): IUseMyTimesheetReturn => {
 const addNewTimesheet = useCallback(
   async (timesheet: IMyTimesheetTableEntry) => {
     const timesheetReqBody = {
-      date: timesheet.date
+      date: timesheet.date,
+      projectId: timesheet.project,
+      taskId: timesheet.task,
+      billable: timesheet.billableType,
+      description: timesheet.description,
+      hours: timesheet.hours
     };
 
     const res = await api.post("/api/timesheet", timesheetReqBody);
@@ -268,25 +274,45 @@ const addNewTimesheet = useCallback(
           throw new Error('No timesheets found for the current week');
         }
 
+        // Filter for Draft/Default status timesheets only
+        const draftTimesheets = currentWeekTimesheets.filter((ts) => {
+          return (
+            ts.status === DailyTimesheetStatus.Draft || 
+            ts.status === DailyTimesheetStatus.Default
+          );
+        });
+
+        if (draftTimesheets.length === 0) {
+          throw new Error('No draft timesheets to submit. All timesheets in this week have already been submitted.');
+        }
+
         // Filter out invalid timesheets (hours = 0 or missing required fields)
-        const validTimesheets = currentWeekTimesheets.filter((ts) => {
+        const validTimesheets = draftTimesheets.filter((ts) => {
           return (
             ts.hours > 0 &&
             ts.project && 
-            ts.task && 
-            ts.description
+            ts.task
           );
         });
 
         if (validTimesheets.length === 0) {
-          throw new Error('No valid timesheets to submit. Please ensure all timesheets have hours > 0, project, task, and description filled in.');
+          throw new Error('No valid timesheets to submit. Please ensure all timesheets have hours > 0, project, and task filled in.');
         }
 
-        const invalidCount = currentWeekTimesheets.length - validTimesheets.length;
-        if (invalidCount > 0) {
-          const proceed = window.confirm(
-            `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped because they are incomplete (missing hours, project, task, or description). Continue with ${validTimesheets.length} valid timesheet${validTimesheets.length > 1 ? 's' : ''}?`
-          );
+        const invalidCount = draftTimesheets.length - validTimesheets.length;
+        const alreadySubmittedCount = currentWeekTimesheets.length - draftTimesheets.length;
+        
+        let confirmMessage = '';
+        if (invalidCount > 0 && alreadySubmittedCount > 0) {
+          confirmMessage = `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped (incomplete) and ${alreadySubmittedCount} timesheet${alreadySubmittedCount > 1 ? 's are' : ' is'} already submitted. Continue with ${validTimesheets.length} valid draft timesheet${validTimesheets.length > 1 ? 's' : ''}?`;
+        } else if (invalidCount > 0) {
+          confirmMessage = `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped because they are incomplete (missing hours, project, or task). Continue with ${validTimesheets.length} valid timesheet${validTimesheets.length > 1 ? 's' : ''}?`;
+        } else if (alreadySubmittedCount > 0) {
+          confirmMessage = `${alreadySubmittedCount} timesheet${alreadySubmittedCount > 1 ? 's are' : ' is'} already submitted and will be skipped. Continue with ${validTimesheets.length} draft timesheet${validTimesheets.length > 1 ? 's' : ''}?`;
+        }
+        
+        if (confirmMessage) {
+          const proceed = window.confirm(confirmMessage);
           if (!proceed) {
             throw new Error('Submission cancelled');
           }
@@ -324,6 +350,55 @@ const addNewTimesheet = useCallback(
     [newTimesheets, currentWeekStart, dispatch]
   );
 
+  // Delete selected timesheets (only drafts)
+  const deleteSelectedTimesheets = useCallback(
+    async () => {
+      try {
+        // Get selected timesheets
+        const selectedTimesheets = newTimesheets.filter((ts) => ts.isChecked);
+
+        if (selectedTimesheets.length === 0) {
+          throw new Error('No timesheets selected');
+        }
+
+        // Filter to only allow deleting draft timesheets (status is Default or Draft)
+        const draftTimesheets = selectedTimesheets.filter((ts) => {
+          return ts.status === DailyTimesheetStatus.Default || ts.status === DailyTimesheetStatus.Draft;
+        });
+
+        if (draftTimesheets.length === 0) {
+          throw new Error('No draft timesheets selected. Only draft timesheets can be deleted.');
+        }
+
+        const nonDraftCount = selectedTimesheets.length - draftTimesheets.length;
+        if (nonDraftCount > 0) {
+          const proceed = window.confirm(
+            `${nonDraftCount} timesheet${nonDraftCount > 1 ? 's' : ''} cannot be deleted because they are not drafts. Delete ${draftTimesheets.length} draft timesheet${draftTimesheets.length > 1 ? 's' : ''}?`
+          );
+          if (!proceed) {
+            throw new Error('Deletion cancelled');
+          }
+        }
+
+        const draftTimesheetIds = draftTimesheets.map((ts) => ts.id);
+
+        // Call API to delete timesheets
+        await deleteTimesheetsAPI(draftTimesheetIds);
+        
+        // Update Redux state by removing deleted timesheets
+        dispatch(deleteTimesheets(draftTimesheetIds));
+
+        return {
+          deleted: draftTimesheets.length,
+        };
+      } catch (error) {
+        console.error('Delete timesheets error:', error);
+        throw error;
+      }
+    },
+    [newTimesheets, dispatch]
+  );
+
   return {
     // States
     newTimesheets,
@@ -346,5 +421,6 @@ const addNewTimesheet = useCallback(
     loadTimesheets,
     submitTimesheets,
     submitCurrentWeekTimesheets,
+    deleteSelectedTimesheets,
   };
 };

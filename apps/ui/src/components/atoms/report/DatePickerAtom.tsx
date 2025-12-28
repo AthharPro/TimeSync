@@ -6,34 +6,24 @@ import { useTheme } from '@mui/material/styles';
 import { Dayjs } from 'dayjs';
 import { DatePickerAtomProps } from '../../../interfaces/report/IReportFilter';
 
-const DatePickerAtom: React.FC<DatePickerAtomProps> = ({
-  label,
-  value,
-  onChange,
-  disabled,
-  minDate,
-}) => {
+const DatePickerAtom: React.FC<DatePickerAtomProps> = ({ label, value, onChange, disabled, minDate, views, openTo }) => {
   const theme = useTheme();
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <DatePicker
-        label={label}
-        value={value}
-        onChange={(newValue) => onChange(newValue as Dayjs | null)}
-        disabled={disabled}
-        minDate={minDate}
-        enableAccessibleFieldDOMStructure={false}
-        slotProps={{
-          textField: {
-            fullWidth: true,
-            size: 'small',
-          },
-          popper: {
-            sx: {
-              '& .MuiPaper-root': {
-                backgroundColor: theme.palette.background.default,
-              },
+        <DatePicker
+          label={label}
+          value={value ? dayjs(value) : null}
+          onChange={(newValue) => onChange(newValue as dayjs.Dayjs | null)}
+          disabled={disabled}
+          minDate={minDate}
+          views={views}
+          openTo={openTo}
+          enableAccessibleFieldDOMStructure={false}
+          slotProps={{
+            textField: {
+              fullWidth: true,
+              size: 'small'
             },
           },
         }}

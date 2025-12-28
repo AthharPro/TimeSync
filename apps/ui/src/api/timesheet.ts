@@ -78,3 +78,8 @@ export const submitTimesheetsAPI = async (timesheetIds: string[]) => {
   const response = await api.post('/api/timesheet/submit', { timesheetIds });
   return response.data;
 };
+
+export const deleteTimesheetsAPI = async (timesheetIds: string[]) => {
+  const response = await api.delete('/api/timesheet', { data: { timesheetIds } });
+  return response.data;
+};

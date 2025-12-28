@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -8,12 +8,15 @@ import {
   TableRow,
   Box,
   Checkbox,
+  CircularProgress,
+  Typography,
 } from '@mui/material';
 import { BillableType, DailyTimesheetStatus } from '@tms/shared';
 import { BaseTextField } from '../../atoms';
 import HoursField from '../../atoms/other/inputField/HoursField';
 import Dropdown from '../../atoms/other/inputField/Dropdown';
 import AutocompleteWithCreate from '../../atoms/other/inputField/AutocompleteWithCreate';
+import { useReviewTimesheet } from '../../../hooks/timesheet';
 
 // Interface for employee timesheet entry
 interface IEmpTimesheetEntry {
@@ -28,64 +31,10 @@ interface IEmpTimesheetEntry {
   isChecked?: boolean;
 }
 
-// Dummy data for employee timesheet
-const dummyEmpTimesheet: IEmpTimesheetEntry[] = [
-  {
-    id: '1',
-    date: '2025-12-09',
-    project: 'TimeSync Development',
-    task: 'Frontend Development',
-    description: 'Implemented review timesheet table with expandable rows and inline editing functionality',
-    hours: 8,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '2',
-    date: '2025-12-10',
-    project: 'TimeSync Development',
-    task: 'Backend API',
-    description: 'Created timesheet endpoints for employee review and approval workflow',
-    hours: 7.5,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '3',
-    date: '2025-12-11',
-    project: 'Internal Meeting',
-    task: 'Team Meeting',
-    description: 'Sprint planning meeting and retrospective for current iteration',
-    hours: 2,
-    billableType: BillableType.NonBillable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '4',
-    date: '2025-12-12',
-    project: 'TimeSync Development',
-    task: 'Testing',
-    description: 'Unit tests for timesheet module including API integration tests',
-    hours: 6,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '5',
-    date: '2025-12-13',
-    project: 'TimeSync Development',
-    task: 'Documentation',
-    description: 'API documentation update and inline code comments for better maintainability',
-    hours: 4,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-];
+interface EmpTimesheetTableProps {
+  employeeId: string;
+  onSelectedTimesheetsChange?: (timesheetIds: string[]) => void;
+}
 
 // Dummy task options
 const taskOptions = [
@@ -104,9 +53,54 @@ const billableTypeOptions: Record<string, BillableType> = {
   'Non-Billable': BillableType.NonBillable,
 };
 
-const EmpTimesheetTable: React.FC = () => {
+const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSelectedTimesheetsChange }) => {
+  const {
+    loadEmployeeTimesheets,
+    getEmployeeTimesheets,
+    isEmployeeTimesheetsLoading,
+    getEmployeeTimesheetsError,
+  } = useReviewTimesheet();
+
   // State to manage timesheet data
-  const [timesheetData, setTimesheetData] = useState<IEmpTimesheetEntry[]>(dummyEmpTimesheet);
+  const [timesheetData, setTimesheetData] = useState<IEmpTimesheetEntry[]>([]);
+
+  // Get data from Redux store
+  const timesheets = getEmployeeTimesheets(employeeId);
+  const loading = isEmployeeTimesheetsLoading(employeeId);
+  const error = getEmployeeTimesheetsError(employeeId);
+
+  // Fetch timesheet data when component mounts or employeeId changes
+  useEffect(() => {
+    loadEmployeeTimesheets(employeeId);
+  }, [employeeId, loadEmployeeTimesheets]);
+
+  // Update local state when Redux data changes
+  useEffect(() => {
+    if (timesheets) {
+      const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => ({
+        id: ts.id,
+        date: ts.date,
+        project: ts.project,
+        task: ts.task,
+        description: ts.description,
+        hours: ts.hours,
+        billableType: ts.billableType as BillableType,
+        status: ts.status as DailyTimesheetStatus,
+        isChecked: false,
+      }));
+      setTimesheetData(transformedData);
+    }
+  }, [timesheets]);
+
+  // Notify parent of selected timesheets when selection changes
+  useEffect(() => {
+    if (onSelectedTimesheetsChange) {
+      const selectedIds = timesheetData
+        .filter(entry => entry.isChecked && entry.status === DailyTimesheetStatus.Pending)
+        .map(entry => entry.id);
+      onSelectedTimesheetsChange(selectedIds);
+    }
+  }, [timesheetData, onSelectedTimesheetsChange]);
 
   // Handle checkbox change
   const handleCheckboxChange = (id: string) => {
@@ -118,12 +112,19 @@ const EmpTimesheetTable: React.FC = () => {
   // Handle select all checkbox
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     const checked = event.target.checked;
-    setTimesheetData((prev) => prev.map((entry) => ({ ...entry, isChecked: checked })));
+    // Only select Pending timesheets
+    setTimesheetData((prev) =>
+      prev.map((entry) => ({
+        ...entry,
+        isChecked: entry.status === DailyTimesheetStatus.Pending ? checked : entry.isChecked,
+      }))
+    );
   };
 
-  // Check if all entries are selected
-  const isAllSelected = timesheetData.length > 0 && timesheetData.every((entry) => entry.isChecked);
-  const isIndeterminate = timesheetData.some((entry) => entry.isChecked) && !isAllSelected;
+  // Check if all Pending entries are selected
+  const pendingTimesheets = timesheetData.filter(entry => entry.status === DailyTimesheetStatus.Pending);
+  const isAllSelected = pendingTimesheets.length > 0 && pendingTimesheets.every((entry) => entry.isChecked);
+  const isIndeterminate = pendingTimesheets.some((entry) => entry.isChecked) && !isAllSelected;
 
   // Handle field changes
   const handleFieldChange = (id: string, field: keyof IEmpTimesheetEntry, value: string | number | BillableType) => {
@@ -155,6 +156,35 @@ const EmpTimesheetTable: React.FC = () => {
   const handleBillableTypeChange = (id: string, value: string) => {
     handleFieldChange(id, 'billableType', value as BillableType);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
+  // Show empty state
+  if (timesheetData.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography color="text.secondary">
+          No timesheets found for this employee.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -202,6 +232,7 @@ const EmpTimesheetTable: React.FC = () => {
                     size="small"
                     checked={entry.isChecked || false}
                     onChange={() => handleCheckboxChange(entry.id)}
+                    disabled={entry.status !== DailyTimesheetStatus.Pending}
                   />
                 </TableCell>
                 <TableCell>

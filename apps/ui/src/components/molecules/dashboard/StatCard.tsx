@@ -1,7 +1,5 @@
 import React from 'react';
 import { Card, CardContent, Box, Typography } from '@mui/material';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { IStatCard } from '../../../interfaces/dashboard/IDashboard';
 
 const StatCard: React.FC<IStatCard> = ({
@@ -13,7 +11,7 @@ const StatCard: React.FC<IStatCard> = ({
   color = 'primary',
 }) => {
   const isPositive = change && change > 0;
-  const isNegative = change && change < 0;
+  const isNegative = change && change < 0; 
 
   return (
     <Card

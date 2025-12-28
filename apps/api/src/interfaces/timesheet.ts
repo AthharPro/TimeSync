@@ -10,6 +10,9 @@ export interface ITimesheet extends Document {
   billable: string;
   description: string;
   hours: number;
+  approvalDate?: Date;
+  approvedBy?: mongoose.Types.ObjectId;
+  rejectionDate?: Date;
   createdAt: Date;
   updatedAt: Date;
   __v?: number;

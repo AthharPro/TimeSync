@@ -99,6 +99,13 @@ export const updateMyTimesheet = async (
     return null;
   }
 
+  // Only allow updating Draft timesheets
+  const isDraft = existingTimesheet.status === 'Draft' || existingTimesheet.status === '' || existingTimesheet.status === 'Default';
+  
+  if (!isDraft) {
+    throw new Error('Only Draft timesheets can be modified. This timesheet has been submitted and cannot be edited.');
+  }
+
   const updateData: any = {};
 
   if (date !== undefined) updateData.date = date;
@@ -115,8 +122,9 @@ export const updateMyTimesheet = async (
     }
   }
 
-  // Only update taskId if it's a valid, non-empty string
+  // Only update taskId if it's a valid, non-empty string (and only for Draft)
   if (taskId !== undefined) {
+
     if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
       updateData.taskId = new mongoose.Types.ObjectId(taskId);
     } else {
@@ -158,6 +166,14 @@ export const updateMyTimesheet = async (
 
     if (duplicate) {
       throw new Error('A timesheet entry with this project and task already exists for this date');
+
+    if (isDraft) {
+      if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
+        updateData.taskId = new mongoose.Types.ObjectId(taskId);
+      } else {
+        updateData.taskId = null;
+      }
+
     }
   }
 
@@ -227,5 +243,20 @@ export const submitTimesheets = async (
   return {
     updated: result.modifiedCount,
     timesheets: updatedTimesheets,
+  };
+};
+export const deleteTimesheets = async (
+  userId: string,
+  timesheetIds: string[]
+): Promise<{ deleted: number }> => {
+  // Only delete timesheets that belong to the user and are in draft status
+  const result = await Timesheet.deleteMany({
+    _id: { $in: timesheetIds.map(id => new mongoose.Types.ObjectId(id)) },
+    userId: new mongoose.Types.ObjectId(userId),
+    status: { $in: ['', 'Default', 'Draft'] }, // Only delete draft timesheets
+  });
+
+  return {
+    deleted: result.deletedCount,
   };
 };

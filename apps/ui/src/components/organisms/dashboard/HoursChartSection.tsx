@@ -5,9 +5,10 @@ import { ITimesheetSubmissionData } from '../../../interfaces/dashboard/IDashboa
 
 interface IHoursChartSectionProps {
   data: ITimesheetSubmissionData[];
+  totalUsers: number;
 }
 
-const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data }) => {
+const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data, totalUsers }) => {
   return (
     <Card elevation={2} sx={{ height: '100%' }}>
       <CardContent>
@@ -75,7 +76,7 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data }) => {
           </Box>
           <Box textAlign="center">
             <Typography variant="h5" fontWeight={600} color="error.main">
-              {data.reduce((acc, curr) => curr.submissions, 0)}
+              {totalUsers * 7 - data.reduce((acc, curr) => acc + curr.submissions, 0)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Not Submitted
