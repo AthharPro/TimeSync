@@ -7,6 +7,7 @@ import cors from 'cors';
 import cookieParser from "cookie-parser";
 import errorHandler from "./middleware/errorHandler";
 import {userRoutes,authRoutes,timesheetRoutes,projectRoutes,taskRoutes,teamRoutes,reportRoutes,reviewRoutes,dashboardRoutes} from "./routes";
+import { ensureInternalProject } from './utils/data/systemDataUtils';
 
 const port = Number(PORT);
 
@@ -42,6 +43,8 @@ app.use(errorHandler);
 server.listen(port, async () => {
   try {
     await connectDB();
+
+    await ensureInternalProject();
     
     console.log(`Server is running on port ${PORT} in ${NODE_ENV} environment`);
   } catch (error) {

@@ -358,3 +358,88 @@ export const rejectTimesheetsHandler: RequestHandler = async (req, res) => {
     });
   }
 };
+
+/**
+ * Update an employee's timesheet
+ * Allows supervisors to edit timesheets before approval
+ */
+export const updateEmployeeTimesheetHandler: RequestHandler = async (req, res) => {
+  const userRole = req.userRole as UserRole;
+  const supervisorId = req.userId as string;
+  const { timesheetId } = req.params;
+  const { taskId, description, hours, billable, projectId, date } = req.body;
+
+  appAssert(
+    [UserRole.Supervisor, UserRole.SupervisorAdmin, UserRole.Admin, UserRole.SuperAdmin].includes(userRole),
+    FORBIDDEN,
+    'Access denied. Only supervisors can update employee timesheets.'
+  );
+
+  try {
+    // Fetch the timesheet to verify permissions
+    const timesheet = await Timesheet.findById(timesheetId).populate('userId', '_id').lean();
+    
+    appAssert(timesheet, NOT_FOUND, 'Timesheet not found');
+
+    const employeeId = (timesheet.userId as any)._id.toString();
+
+    // Verify supervisor has permission to update this employee's timesheet
+    if (userRole !== UserRole.Admin && userRole !== UserRole.SupervisorAdmin && userRole !== UserRole.SuperAdmin) {
+      const supervisedUserIds = await getSupervisedUserIds(supervisorId);
+      appAssert(
+        supervisedUserIds.includes(employeeId),
+        FORBIDDEN,
+        'You do not have permission to update this employee\'s timesheet'
+      );
+    }
+
+    // Only allow updating Pending timesheets (submitted but not yet approved/rejected)
+    appAssert(
+      timesheet.status === DailyTimesheetStatus.Pending,
+      400,
+      'Only Pending timesheets can be edited. This timesheet has already been processed.'
+    );
+
+    // Build update object
+    const updateData: any = {};
+    
+    if (taskId !== undefined) {
+      if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
+        updateData.taskId = new mongoose.Types.ObjectId(taskId);
+      } else {
+        updateData.taskId = null;
+      }
+    }
+    
+    if (projectId !== undefined) {
+      if (projectId && mongoose.Types.ObjectId.isValid(projectId)) {
+        updateData.projectId = new mongoose.Types.ObjectId(projectId);
+      } else {
+        updateData.projectId = null;
+      }
+    }
+    
+    if (description !== undefined) updateData.description = description;
+    if (hours !== undefined) updateData.hours = Number(hours);
+    if (billable !== undefined) updateData.billable = billable;
+    if (date !== undefined) updateData.date = new Date(date);
+
+    // Update the timesheet
+    const updatedTimesheet = await Timesheet.findByIdAndUpdate(
+      timesheetId,
+      { $set: updateData },
+      { new: true }
+    )
+      .populate('projectId', 'projectName')
+      .populate('taskId', 'taskName')
+      .lean();
+
+    res.json(updatedTimesheet);
+  } catch (error) {
+    console.error('Error updating employee timesheet:', error);
+    res.status(500).json({
+      message: 'Failed to update timesheet',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

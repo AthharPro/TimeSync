@@ -23,6 +23,7 @@ export interface IProjectManager {
 export interface MyProject {
   _id: string;
   projectName: string;
+  isPublic?: boolean;
 }
 
 export interface MyProjectsState {

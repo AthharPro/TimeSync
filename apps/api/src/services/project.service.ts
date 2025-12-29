@@ -62,7 +62,14 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
 };
 
 export const listMyProjects = async (userId: string) => {
-  const projects = await ProjectModel.find({ status: true, employees: userId })
+  // Find projects where user is an employee (private projects) OR public projects
+  const projects = await ProjectModel.find({ 
+    status: true, 
+    $or: [
+      { employees: userId }, // Private projects where user is assigned
+      { isPublic: true }      // Public projects (all users can add time)
+    ]
+  })
     .sort({ createdAt: -1 })
   return { projects };
 };

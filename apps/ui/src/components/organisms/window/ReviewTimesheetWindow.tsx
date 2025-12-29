@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
@@ -7,21 +7,54 @@ import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
 import ThumbDownAltOutlinedIcon from '@mui/icons-material/ThumbDownAltOutlined';
 import RejectReasonDialog from '../dialog/RejectReasonDialog';
 import { useReviewTimesheet } from '../../../hooks/timesheet';
+import ReviewTimesheetFilterPopover, { ReviewTimesheetFilters } from '../popover/ReviewTimesheetFilterPopover';
+import dayjs from 'dayjs';
 
 function ReviewTimesheetWindow() {
   const { approveSelectedTimesheets, rejectSelectedTimesheets } = useReviewTimesheet();
   const [selectedTimesheetIds, setSelectedTimesheetIds] = useState<string[]>([]);
   const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
+
+  // Default filters: current month
+  const defaultFilters = useMemo(() => {
+    const now = dayjs();
+    const year = now.format('YYYY');
+    const month = now.format('YYYY-MM');
+    const startDate = now.startOf('month').format('YYYY-MM-DD');
+    const endDate = now.endOf('month').format('YYYY-MM-DD');
+    
+    return {
+      startDate,
+      endDate,
+      month,
+      year,
+      status: 'All' as const,
+      filterBy: 'all' as const,
+      projectId: 'All',
+      teamId: 'All',
+    };
+  }, []);
+
+  const [filters, setFilters] = useState<ReviewTimesheetFilters>(defaultFilters);
 
   const handleSelectedTimesheetsChange = useCallback((employeeId: string, timesheetIds: string[]) => {
     setSelectedTimesheetIds(timesheetIds);
     setCurrentEmployeeId(employeeId);
   }, []);
 
-  const handleFilter = () => {
-    // TODO: Implement filter functionality
-    console.log('Filter clicked');
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleApplyFilters = (newFilters: ReviewTimesheetFilters) => {
+    setFilters(newFilters);
+    // Filters will be passed to ReviewTimesheetTable component
   };
 
   const handleApprove = async () => {
@@ -99,7 +132,7 @@ function ReviewTimesheetWindow() {
     <BaseBtn
       variant="outlined"
       startIcon={<FilterAltOutlinedIcon />}
-      onClick={handleFilter}
+      onClick={handleFilterClick}
     >
       Filter
     </BaseBtn>
@@ -109,8 +142,19 @@ function ReviewTimesheetWindow() {
   return (
     <>
       <WindowLayout title="Review Timesheet" buttons={buttons}>
-        <ReviewTimesheetTable onSelectedTimesheetsChange={handleSelectedTimesheetsChange} />
+        <ReviewTimesheetTable 
+          onSelectedTimesheetsChange={handleSelectedTimesheetsChange}
+          filters={filters}
+        />
       </WindowLayout>
+
+      <ReviewTimesheetFilterPopover
+        anchorEl={filterAnchorEl}
+        open={Boolean(filterAnchorEl)}
+        onClose={handleFilterClose}
+        onApplyFilters={handleApplyFilters}
+        currentFilters={filters}
+      />
 
       <RejectReasonDialog
         open={rejectDialogOpen}

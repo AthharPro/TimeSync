@@ -127,12 +127,16 @@ const MyTimesheetCalendarTable = () => {
 
   // Group by project._id
   const groupedData = useMemo<ExtendedTimesheetRow[]>(() => {
+    // Separate private and public projects
+    const privateProjects = myProjects.filter(proj => !proj.isPublic);
+    const publicProjects = myProjects.filter(proj => proj.isPublic);
+    
     // Map from project _id to project object for easy lookup
-    const projectMap = new Map<string, { name: string; tasks: IMyTimesheetCalendarEntry[] }>();
+    const projectMap = new Map<string, { name: string; tasks: IMyTimesheetCalendarEntry[]; isPublic: boolean }>();
 
-    // Initialize all known projects
-    myProjects.forEach((proj) => {
-      projectMap.set(proj._id, { name: proj.projectName, tasks: [] });
+    // Initialize all known projects (private first, then public)
+    [...privateProjects, ...publicProjects].forEach((proj) => {
+      projectMap.set(proj._id, { name: proj.projectName, tasks: [], isPublic: proj.isPublic || false });
     });
 
     // Populate tasks from calendar data
@@ -143,7 +147,7 @@ const MyTimesheetCalendarTable = () => {
       if (matchingProject) {
         const key = matchingProject._id;
         if (!projectMap.has(key)) {
-          projectMap.set(key, { name: matchingProject.projectName, tasks: [] });
+          projectMap.set(key, { name: matchingProject.projectName, tasks: [], isPublic: matchingProject.isPublic || false });
         }
         
         // Map task ID to task name for display
@@ -160,14 +164,18 @@ const MyTimesheetCalendarTable = () => {
 
     const rows: ExtendedTimesheetRow[] = [];
 
-    projectMap.forEach((data, projectId) => {
+    // Process private projects first
+    privateProjects.forEach((proj) => {
+      const data = projectMap.get(proj._id);
+      if (!data) return;
+      
       const projectName = data.name;
 
       // Project header row
       rows.push({
-        id: `project-${projectId}`,
+        id: `project-${proj._id}`,
         project: projectName,
-        projectId,
+        projectId: proj._id,
         isProjectRow: true,
       });
 
@@ -176,7 +184,7 @@ const MyTimesheetCalendarTable = () => {
         rows.push({
           id: task.id,
           project: task.project,
-          projectId,
+          projectId: proj._id,
           task: task.task,
           billableType: task.billableType,
           myTimesheetEntriesIds: task.myTimesheetEntriesIds,
@@ -186,9 +194,47 @@ const MyTimesheetCalendarTable = () => {
 
       // Create task row
       rows.push({
-        id: `create-task-${projectId}`,
+        id: `create-task-${proj._id}`,
         project: projectName,
-        projectId,
+        projectId: proj._id,
+        isProjectRow: false,
+        isCreateTaskRow: true,
+      });
+    });
+
+    // Then process public projects
+    publicProjects.forEach((proj) => {
+      const data = projectMap.get(proj._id);
+      if (!data) return;
+      
+      const projectName = data.name;
+
+      // Project header row
+      rows.push({
+        id: `project-${proj._id}`,
+        project: projectName,
+        projectId: proj._id,
+        isProjectRow: true,
+      });
+
+      // Task rows
+      data.tasks.forEach((task) => {
+        rows.push({
+          id: task.id,
+          project: task.project,
+          projectId: proj._id,
+          task: task.task,
+          billableType: task.billableType,
+          myTimesheetEntriesIds: task.myTimesheetEntriesIds,
+          isProjectRow: false,
+        });
+      });
+
+      // Create task row
+      rows.push({
+        id: `create-task-${proj._id}`,
+        project: projectName,
+        projectId: proj._id,
         isProjectRow: false,
         isCreateTaskRow: true,
       });
