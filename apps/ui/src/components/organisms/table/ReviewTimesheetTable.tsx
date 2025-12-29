@@ -13,6 +13,7 @@ import EmpTimesheetTable from './EmpTimesheetTable';
 import DataTable from '../../templates/other/DataTable';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
 import { useReviewTimesheet } from '../../../hooks/timesheet';
+import { ReviewTimesheetFilters } from '../popover/ReviewTimesheetFilterPopover';
 
 // Interface for employee data
 interface IEmployee {
@@ -25,9 +26,13 @@ interface IEmployee {
 
 interface ReviewTimesheetTableProps {
   onSelectedTimesheetsChange?: (employeeId: string, timesheetIds: string[]) => void;
+  filters?: ReviewTimesheetFilters;
 }
 
-const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({ onSelectedTimesheetsChange }) => {
+const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({ 
+  onSelectedTimesheetsChange,
+  filters 
+}) => {
   const {
     employees,
     loading,
@@ -195,6 +200,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({ onSelectedT
                         <CloseIcon />
                       </IconButton>
                     </Box>
+                    
 
                     {/* Timesheet Content */}
                     <Box sx={{ mt: 0 }}>
@@ -203,6 +209,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({ onSelectedT
                         onSelectedTimesheetsChange={(timesheetIds) => 
                           handleTimesheetSelectionChange(employee.id, timesheetIds)
                         }
+                        filters={filters}
                       />
                     </Box>
                   </Box>

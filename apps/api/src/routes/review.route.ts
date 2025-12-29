@@ -5,7 +5,8 @@ import {
   getSupervisedEmployeesForReviewHandler, 
   getEmployeeTimesheetsForReviewHandler,
   approveTimesheetsHandler,
-  rejectTimesheetsHandler 
+  rejectTimesheetsHandler,
+  updateEmployeeTimesheetHandler
 } from '../controllers/review.controller';
 
 const reviewRoutes = Router();
@@ -17,6 +18,9 @@ reviewRoutes.get('/employees', authenticate(supervisorRoles), getSupervisedEmplo
 
 // Get timesheets for a specific employee
 reviewRoutes.get('/employees/:employeeId/timesheets', authenticate(supervisorRoles), getEmployeeTimesheetsForReviewHandler);
+
+// Update an employee's timesheet
+reviewRoutes.put('/timesheets/:timesheetId', authenticate(supervisorRoles), updateEmployeeTimesheetHandler);
 
 // Approve timesheets
 reviewRoutes.post('/timesheets/approve', authenticate(supervisorRoles), approveTimesheetsHandler);
