@@ -33,7 +33,6 @@ export class ProfessionalPDFComponents {
     subtitle?: string,
     
   ): void {
-    const startY = this.getCurrentY();
     
     // Header background
     this.doc.rect(0, 0, this.pageWidth, 120)
@@ -104,9 +103,6 @@ export class ProfessionalPDFComponents {
     const headerHeight = 35;
    
     this.checkPageBreak(headerHeight + 5 + rowHeight);
-
-    // Determine if we're starting table on first page with header
-    const isFirstPageTable = this.getIsFirstPage();
 
     // Table header
     let x = this.margin;

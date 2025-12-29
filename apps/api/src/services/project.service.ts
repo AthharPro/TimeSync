@@ -6,7 +6,7 @@ import { appAssert } from '../utils';
 import mongoose from 'mongoose';
 import {UserModel} from '../models/user.model';
 import TeamModel from '../models/team.model';
-export const createProject = async (data: CreateProjectParams, performedBy?: string) => {
+export const createProject = async (data: CreateProjectParams) => {
   const existingProject = await ProjectModel.exists({
     projectName: data.projectName,
   });
@@ -76,16 +76,11 @@ export const listMyProjects = async (userId: string) => {
 
 export const updateProjectStaff = async (
   projectId: string,
-  data: { employees?: string[]; supervisor?: string | null },
-  performedBy?: string
+  data: { employees?: string[]; supervisor?: string | null }
 ) => {
   //get the previous supervisor and employees
   const existing = await ProjectModel.findById(projectId).select('supervisor employees projectName');
   const update: any = {};
-  
-  // Track employee changes for history logging
-  const oldEmployeeIds = existing?.employees?.map(id => id.toString()) || [];
-  const newEmployeeIds = data.employees?.filter(id => !!id) || oldEmployeeIds;
   
   if (Array.isArray(data.employees)) {
     update.employees = data.employees
@@ -181,7 +176,7 @@ export const updateProjectStaff = async (
   return { project };
 };
 
-export const softDeleteProject = async (projectId: string, performedBy?: string) => {
+export const softDeleteProject = async (projectId: string) => {
   // Capture the current project data before deletion
   const existing = await ProjectModel.findById(projectId).select('supervisor employees projectName');
 

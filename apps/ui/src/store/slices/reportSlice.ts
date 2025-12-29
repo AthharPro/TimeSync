@@ -40,7 +40,7 @@ export const fetchReportMetadata = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getReportMetadata();
-      return response.metadata || response;
+      return response.data;
     } catch (error: any) {
       console.error('fetchReportMetadata - Error:', error);
       return rejectWithValue(
@@ -56,7 +56,7 @@ export const fetchSupervisedEmployees = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getSupervisedEmployees();
-      return response.employees || [];
+      return response.data.employees || [];
     } catch (error: any) {
       console.error('fetchSupervisedEmployees - Error:', error);
       return rejectWithValue(
@@ -71,7 +71,7 @@ export const generateDetailedReport = createAsyncThunk(
   'report/generateDetailed',
   async (params: GenerateReportParams, { rejectWithValue }) => {
     try {
-      const result = await generateDetailedTimesheetReport(params);
+      const result = await generateDetailedTimesheetReport(params.filter, params.format);
       return { data: result, params };
     } catch (error: any) {
       console.error('generateDetailedReport - Error:', error);
@@ -87,7 +87,7 @@ export const generateEntriesReport = createAsyncThunk(
   'report/generateEntries',
   async (params: GenerateReportParams, { rejectWithValue }) => {
     try {
-      const result = await generateTimesheetEntriesReport(params);
+      const result = await generateTimesheetEntriesReport(params.filter, params.format);
       return { data: result, params };
     } catch (error: any) {
       console.error('generateEntriesReport - Error:', error);

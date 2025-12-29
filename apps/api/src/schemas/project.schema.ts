@@ -1,8 +1,6 @@
-import { string, z } from 'zod';
+import { z } from 'zod';
 import { projectNameSchema } from './main.schema';
 import { BillableType } from '@tms/shared';
-import { de, is } from 'zod/v4/locales';
-import { start } from 'repl';
 
 
 export const createProjectFromUiSchema = z.object({

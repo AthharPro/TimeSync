@@ -257,15 +257,7 @@ function ProjectWindow() {
               gap: 2,
             }}
           >
-            <Typography color="error" variant="h6">
-              Error loading projects
-            </Typography>
-            <Typography color="text.secondary" variant="body2">
-              {error}
-            </Typography>
-            <BaseBtn onClick={loadProjects} variant="outlined">
-              Retry
-            </BaseBtn>
+            
           </Box>
         ) : projects.length === 0 ? (
           <Box

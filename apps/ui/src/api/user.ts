@@ -1,9 +1,9 @@
-import api from '../config/apiClient';
+import API  from "../config/apiClient";
 import { UserRole } from '@tms/shared';
 
 export const getUsers = async (roles?: UserRole[]) => {
   const query = roles && roles.length ? `?roles=${roles.join(',')}` : '';
-  const response = await api.get(`/api/user${query}`);
+  const response = await API.get(`/api/user${query}`);
   return response.data;
 };
 
@@ -15,6 +15,11 @@ export const updateUser = async (
     status?: boolean;
   }
 ) => {
-  const response = await api.put(`/api/user/${userId}`, data);
+  const response = await API.put(`/api/user/${userId}`, data);
   return response.data;
 };
+
+  export const getAllActiveUsers = async () => {
+    const response = await API.get("/api/user/active");
+    return response;
+  };

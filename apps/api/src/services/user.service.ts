@@ -1,7 +1,7 @@
-import { APP_ORIGIN, CONFLICT, INTERNAL_SERVER_ERROR } from '../constants';
+import { APP_ORIGIN, CONFLICT, INTERNAL_SERVER_ERROR ,UNAUTHORIZED} from '../constants';
 import {UserModel} from '../models';
 import { generateRandomPassword } from '../utils';
-import { CreateUserParams } from '../interfaces';
+import { CreateUserParams, ChangePasswordParams } from '../interfaces/user';
 import { appAssert } from '../utils';
 import { getWelcomeTmsTemplate, sendEmail } from '../utils/email';
 
@@ -72,5 +72,34 @@ export const updateUserById = async (
 
   return {
     user: user.omitPassword(),
+  };
+};
+
+//for components that need to show available users
+export const getAllActiveUsers = async () => {
+  const data = await UserModel.find({ status: true }).lean();
+  const users = data.map((user) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  });
+  return {
+    users,
+  };
+};
+
+export const changePassword = async (data: ChangePasswordParams) => {
+  const user = await UserModel.findById(data.userId);
+  appAssert(user, UNAUTHORIZED, 'User not found');
+
+  // Update password and set isChangedPwd to true
+  user.password = data.newPassword;
+  user.isChangedPwd = true;
+  
+  await user.save();
+
+  return {
+    user: user.omitPassword(),
+    message: 'Password changed successfully',
   };
 };

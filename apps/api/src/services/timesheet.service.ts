@@ -7,6 +7,7 @@ interface CreateTimesheetParams {
   userId: string;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours: number;
@@ -18,6 +19,7 @@ interface UpdateTimesheetParams {
   date?: Date;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours?: number;
@@ -46,6 +48,36 @@ export const createMyTimesheet = async (
     timesheetData.taskId = new mongoose.Types.ObjectId(params.taskId);
   } else {
     timesheetData.taskId = null;
+  }
+
+  // Only add teamId if it's a valid, non-empty string
+  if (params.teamId && mongoose.Types.ObjectId.isValid(params.teamId)) {
+    timesheetData.teamId = new mongoose.Types.ObjectId(params.teamId);
+  } else {
+    timesheetData.teamId = null;
+  }
+
+  // Check for duplicate project+task on same date (only if both projectId and taskId are set)
+  if (timesheetData.projectId && timesheetData.taskId) {
+    const startOfDay = new Date(params.date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(params.date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const duplicate = await Timesheet.findOne({
+      userId: timesheetData.userId,
+      projectId: timesheetData.projectId,
+      taskId: timesheetData.taskId,
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+
+    if (duplicate) {
+      throw new Error('A timesheet entry with this project and task already exists for this date');
+    }
   }
 
   const timesheet = new Timesheet(timesheetData);
@@ -92,12 +124,48 @@ export const updateMyTimesheet = async (
 
   // Only update taskId if it's a valid, non-empty string (and only for Draft)
   if (taskId !== undefined) {
-    if (isDraft) {
-      if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
-        updateData.taskId = new mongoose.Types.ObjectId(taskId);
-      } else {
-        updateData.taskId = null;
-      }
+
+    if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
+      updateData.taskId = new mongoose.Types.ObjectId(taskId);
+    } else {
+      updateData.taskId = null;
+    }
+  }
+
+  // Only update teamId if it's a valid, non-empty string
+  if (params.teamId !== undefined) {
+    if (params.teamId && mongoose.Types.ObjectId.isValid(params.teamId)) {
+      updateData.teamId = new mongoose.Types.ObjectId(params.teamId);
+    } else {
+      updateData.teamId = null;
+    }
+  }
+
+  // Check for duplicate project+task on same date (only if updating project or task)
+  const finalProjectId = updateData.projectId !== undefined ? updateData.projectId : existingTimesheet.projectId;
+  const finalTaskId = updateData.taskId !== undefined ? updateData.taskId : existingTimesheet.taskId;
+  const finalDate = updateData.date !== undefined ? updateData.date : existingTimesheet.date;
+
+  if (finalProjectId && finalTaskId && (projectId !== undefined || taskId !== undefined || date !== undefined)) {
+    const startOfDay = new Date(finalDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(finalDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const duplicate = await Timesheet.findOne({
+      _id: { $ne: new mongoose.Types.ObjectId(timesheetId) }, // Exclude current timesheet
+      userId: new mongoose.Types.ObjectId(userId),
+      projectId: finalProjectId,
+      taskId: finalTaskId,
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    });
+
+    if (duplicate) {
+      throw new Error('A timesheet entry with this project and task already exists for this date');
     }
   }
 

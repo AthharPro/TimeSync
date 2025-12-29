@@ -54,7 +54,8 @@
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": ["apps/ui/**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": ["apps/ui/**/*.{ts,tsx,js,jsx}"],
+        "maxWarnings": 200
       }
     }
   }

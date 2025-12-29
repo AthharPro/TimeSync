@@ -17,7 +17,7 @@
         "format": ["cjs"],
         "bundle": true,
         "thirdParty": true,
-        "external": ["bcrypt", "bcryptjs"]
+        "external": ["bcrypt", "bcryptjs", "pdfkit"]
       },
       "configurations": {
         "development": {},
@@ -54,7 +54,8 @@
     "lint": {
       "executor": "@nx/eslint:lint",
       "options": {
-        "lintFilePatterns": ["apps/api/**/*.ts"]
+        "lintFilePatterns": ["apps/api/**/*.ts"],
+        "maxWarnings": 200
       }
     },
     "test": {
