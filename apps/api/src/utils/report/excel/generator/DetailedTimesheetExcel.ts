@@ -327,7 +327,10 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
           rows: [],
         });
       }
-      map.get(key)!.rows.push(d);
+      const array = map.get(key);
+      if (array) {
+        array.rows.push(d);
+      }
     });
     return map;
   }
@@ -337,9 +340,9 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
     type SubTable = { title: string; includeWork: boolean; rows: SubRow[] };
     const tablesByTitle = new Map<string, SubTable>();
 
-    employeeWeeks.forEach((timesheetWeek) => {
-      timesheetWeek.categories.forEach((category) => {
-        category.items.forEach((item) => {
+    for (const timesheetWeek of employeeWeeks) {
+      for (const category of timesheetWeek.categories) {
+        for (const item of category.items) {
           const dailyHours = Array.isArray(item.dailyHours)
             ? item.dailyHours
             : [];
@@ -357,12 +360,13 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
           }
 
           // Skip items that don't belong to any specific category
-          if (!title) return;
+          if (!title) continue;
 
           if (!tablesByTitle.has(title)) {
             tablesByTitle.set(title, { title, includeWork, rows: [] });
           }
-          const table = tablesByTitle.get(title)!;
+          const table = tablesByTitle.get(title);
+          if (!table) continue;
 
           const weekStartRaw = new Date(timesheetWeek.weekStartDate as any);
           const weekEndRaw = new Date(weekStartRaw);
@@ -396,9 +400,9 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
             sortDate: weekStartRaw,
             cells: [...baseCells, ...workCells, ...dayCells],
           });
-        });
-      });
-    });
+        }
+      }
+    }
 
     // Sort table order
     const ordered = Array.from(tablesByTitle.values()).sort((a, b) => {

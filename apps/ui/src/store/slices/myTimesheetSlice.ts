@@ -97,6 +97,8 @@ const initialState: ITimesheetState = {
   myTimesheetData: [],
   myCalendarViewData: [],
   currentWeekStart: getWeekStart(new Date()).toISOString(),
+  loading: false,
+  error: null,
 };
 
 const myTimesheetSlice = createSlice({
@@ -169,6 +171,31 @@ const myTimesheetSlice = createSlice({
           myTimesheetEntriesIds: [data.id]
         };
         state.myCalendarViewData.unshift(newCalendarEntry);
+        
+        // Clean up: Remove any duplicate or empty calendar rows
+        // This prevents duplicate rows when creating a new task and adding hours to it
+        const seen = new Set<string>();
+        state.myCalendarViewData = state.myCalendarViewData.filter((entry, index) => {
+          // Create a unique key for deduplication
+          const entryKey = `${entry.project}|${entry.task}|${entry.billableType}`;
+          
+          // If we've seen this combination before, remove it (keep the first occurrence)
+          if (seen.has(entryKey)) {
+            return false;
+          }
+          seen.add(entryKey);
+          
+          // Also remove empty placeholder entries
+          if (entry.myTimesheetEntriesIds.length === 0) {
+            const isPlaceholder = 
+              entry.project === 'New Project' || 
+              entry.task === 'New Task' || 
+              entry.task === '';
+            return !isPlaceholder;
+          }
+          
+          return true;
+        });
       }
       
     },
@@ -380,6 +407,26 @@ const myTimesheetSlice = createSlice({
         state.myCalendarViewData.splice(calendarIndex, 1);
       }
     },
+
+    // Delete timesheets by IDs
+    deleteTimesheets: (state, action: PayloadAction<string[]>) => {
+      const timesheetIdsToDelete = action.payload;
+      
+      // Remove timesheets from table data
+      state.myTimesheetData = state.myTimesheetData.filter(
+        timesheet => !timesheetIdsToDelete.includes(timesheet.id)
+      );
+      
+      // Update calendar view - remove IDs from calendar rows
+      state.myCalendarViewData = state.myCalendarViewData
+        .map(calendarRow => ({
+          ...calendarRow,
+          myTimesheetEntriesIds: calendarRow.myTimesheetEntriesIds.filter(
+            id => !timesheetIdsToDelete.includes(id)
+          )
+        }))
+        .filter(calendarRow => calendarRow.myTimesheetEntriesIds.length > 0); // Remove empty calendar rows
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -465,5 +512,6 @@ export const {
   addCalendarViewRow,
   addEmptyCalendarRow,
   updateCalendarRow,
-  deleteCalendarRow
+  deleteCalendarRow,
+  deleteTimesheets
 } = myTimesheetSlice.actions;

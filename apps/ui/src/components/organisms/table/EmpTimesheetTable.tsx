@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -8,19 +8,29 @@ import {
   TableRow,
   Box,
   Checkbox,
+  CircularProgress,
+  Typography,
 } from '@mui/material';
 import { BillableType, DailyTimesheetStatus } from '@tms/shared';
 import { BaseTextField } from '../../atoms';
 import HoursField from '../../atoms/other/inputField/HoursField';
 import Dropdown from '../../atoms/other/inputField/Dropdown';
 import AutocompleteWithCreate from '../../atoms/other/inputField/AutocompleteWithCreate';
+import { useReviewTimesheet } from '../../../hooks/timesheet';
+import { useTasks } from '../../../hooks/task/useTasks';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../store/store';
+import api from '../../../config/apiClient';
+import { ReviewTimesheetFilters } from '../popover/ReviewTimesheetFilterPopover';
 
 // Interface for employee timesheet entry
 interface IEmpTimesheetEntry {
   id: string;
   date: string;
   project: string;
+  projectId?: string;
   task: string;
+  taskId?: string;
   description: string;
   hours: number;
   billableType: BillableType;
@@ -28,75 +38,11 @@ interface IEmpTimesheetEntry {
   isChecked?: boolean;
 }
 
-// Dummy data for employee timesheet
-const dummyEmpTimesheet: IEmpTimesheetEntry[] = [
-  {
-    id: '1',
-    date: '2025-12-09',
-    project: 'TimeSync Development',
-    task: 'Frontend Development',
-    description: 'Implemented review timesheet table with expandable rows and inline editing functionality',
-    hours: 8,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '2',
-    date: '2025-12-10',
-    project: 'TimeSync Development',
-    task: 'Backend API',
-    description: 'Created timesheet endpoints for employee review and approval workflow',
-    hours: 7.5,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '3',
-    date: '2025-12-11',
-    project: 'Internal Meeting',
-    task: 'Team Meeting',
-    description: 'Sprint planning meeting and retrospective for current iteration',
-    hours: 2,
-    billableType: BillableType.NonBillable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '4',
-    date: '2025-12-12',
-    project: 'TimeSync Development',
-    task: 'Testing',
-    description: 'Unit tests for timesheet module including API integration tests',
-    hours: 6,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-  {
-    id: '5',
-    date: '2025-12-13',
-    project: 'TimeSync Development',
-    task: 'Documentation',
-    description: 'API documentation update and inline code comments for better maintainability',
-    hours: 4,
-    billableType: BillableType.Billable,
-    status: DailyTimesheetStatus.Pending,
-    isChecked: false,
-  },
-];
-
-// Dummy task options
-const taskOptions = [
-  'Frontend Development',
-  'Backend API',
-  'Team Meeting',
-  'Testing',
-  'Documentation',
-  'Code Review',
-  'Bug Fixing',
-];
+interface EmpTimesheetTableProps {
+  employeeId: string;
+  onSelectedTimesheetsChange?: (timesheetIds: string[]) => void;
+  filters?: ReviewTimesheetFilters;
+}
 
 // Billable type options as Record
 const billableTypeOptions: Record<string, BillableType> = {
@@ -104,9 +50,132 @@ const billableTypeOptions: Record<string, BillableType> = {
   'Non-Billable': BillableType.NonBillable,
 };
 
-const EmpTimesheetTable: React.FC = () => {
+const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSelectedTimesheetsChange, filters }) => {
+  const {
+    loadEmployeeTimesheets,
+    getEmployeeTimesheets,
+    isEmployeeTimesheetsLoading,
+    getEmployeeTimesheetsError,
+  } = useReviewTimesheet();
+
+  const { loadTasks, createTask } = useTasks();
+
+  // Get all tasks from Redux store
+  const tasksByProject = useSelector((state: RootState) => state.tasks.tasksByProject);
+  
+  // Track which projects we've already loaded tasks for
+  const loadedProjectsRef = useRef<Set<string>>(new Set());
+  
+  // Debounce timer refs
+  const descriptionTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const hoursTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   // State to manage timesheet data
-  const [timesheetData, setTimesheetData] = useState<IEmpTimesheetEntry[]>(dummyEmpTimesheet);
+  const [timesheetData, setTimesheetData] = useState<IEmpTimesheetEntry[]>([]);
+
+  // Get data from Redux store
+  const timesheets = getEmployeeTimesheets(employeeId);
+  const loading = isEmployeeTimesheetsLoading(employeeId);
+  const error = getEmployeeTimesheetsError(employeeId);
+
+  // Fetch timesheet data when component mounts or employeeId/filters change
+  useEffect(() => {
+    if (filters && filters.startDate && filters.endDate) {
+      loadEmployeeTimesheets(employeeId, {
+        startDate: new Date(filters.startDate),
+        endDate: new Date(filters.endDate)
+      });
+    } else {
+      loadEmployeeTimesheets(employeeId);
+    }
+  }, [employeeId, filters?.startDate, filters?.endDate, loadEmployeeTimesheets]);
+
+  // Load tasks for projects in the timesheets
+  useEffect(() => {
+    if (timesheets) {
+      const projectIds = new Set<string>();
+      timesheets.forEach((ts: any) => {
+        if (ts.projectId && !loadedProjectsRef.current.has(ts.projectId)) {
+          projectIds.add(ts.projectId);
+        }
+      });
+      
+      // Load tasks for each project
+      projectIds.forEach(projectId => {
+        loadTasks(projectId);
+        loadedProjectsRef.current.add(projectId);
+      });
+    }
+  }, [timesheets, loadTasks]);
+
+  // Update local state when Redux data changes
+  useEffect(() => {
+    if (timesheets) {
+      const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => ({
+        id: ts.id,
+        date: ts.date,
+        project: ts.project,
+        projectId: ts.projectId,
+        task: ts.task,
+        taskId: ts.taskId,
+        description: ts.description,
+        hours: ts.hours,
+        billableType: ts.billableType as BillableType,
+        status: ts.status as DailyTimesheetStatus,
+        isChecked: false,
+      }));
+      setTimesheetData(transformedData);
+    }
+  }, [timesheets]);
+
+  // Apply client-side filters to timesheet data
+  const filteredTimesheetData = useMemo(() => {
+    if (!filters) return timesheetData;
+
+    return timesheetData.filter((entry) => {
+      // Filter by status
+      if (filters.status && filters.status !== 'All') {
+        if (entry.status !== filters.status) {
+          return false;
+        }
+      }
+
+      // Filter by project
+      if (filters.filterBy === 'project' && filters.projectId && filters.projectId !== 'All') {
+        if (entry.projectId !== filters.projectId) {
+          return false;
+        }
+      }
+
+      // Note: Team filtering would need to be done on the backend
+      // as we don't have team information in the timesheet entries
+
+      return true;
+    });
+  }, [timesheetData, filters]);
+
+  // Notify parent of selected timesheets when selection changes
+  useEffect(() => {
+    if (onSelectedTimesheetsChange) {
+      const selectedIds = timesheetData
+        .filter(entry => entry.isChecked && entry.status === DailyTimesheetStatus.Pending)
+        .map(entry => entry.id);
+      onSelectedTimesheetsChange(selectedIds);
+    }
+  }, [timesheetData, onSelectedTimesheetsChange]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all description timers
+      descriptionTimerRef.current.forEach((timer) => clearTimeout(timer));
+      descriptionTimerRef.current.clear();
+      
+      // Clear all hours timers
+      hoursTimerRef.current.forEach((timer) => clearTimeout(timer));
+      hoursTimerRef.current.clear();
+    };
+  }, []);
 
   // Handle checkbox change
   const handleCheckboxChange = (id: string) => {
@@ -118,43 +187,187 @@ const EmpTimesheetTable: React.FC = () => {
   // Handle select all checkbox
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     const checked = event.target.checked;
-    setTimesheetData((prev) => prev.map((entry) => ({ ...entry, isChecked: checked })));
+    // Only select Pending timesheets
+    setTimesheetData((prev) =>
+      prev.map((entry) => ({
+        ...entry,
+        isChecked: entry.status === DailyTimesheetStatus.Pending ? checked : entry.isChecked,
+      }))
+    );
   };
 
-  // Check if all entries are selected
-  const isAllSelected = timesheetData.length > 0 && timesheetData.every((entry) => entry.isChecked);
-  const isIndeterminate = timesheetData.some((entry) => entry.isChecked) && !isAllSelected;
+  // Check if all Pending entries are selected
+  const pendingTimesheets = timesheetData.filter(entry => entry.status === DailyTimesheetStatus.Pending);
+  const isAllSelected = pendingTimesheets.length > 0 && pendingTimesheets.every((entry) => entry.isChecked);
+  const isIndeterminate = pendingTimesheets.some((entry) => entry.isChecked) && !isAllSelected;
 
-  // Handle field changes
-  const handleFieldChange = (id: string, field: keyof IEmpTimesheetEntry, value: string | number | BillableType) => {
-    setTimesheetData((prev) =>
-      prev.map((entry) => (entry.id === id ? { ...entry, [field]: value } : entry))
-    );
-    // TODO: Add API call to save changes
-    console.log('Updated entry:', id, field, value);
+  // Get available tasks for a specific entry based on its project
+  const getAvailableTasksForEntry = (entry: IEmpTimesheetEntry): string[] => {
+    if (!entry.projectId) return [];
+    const projectTasks = tasksByProject[entry.projectId] || [];
+    return projectTasks.map(task => task.taskName);
   };
 
   // Handle task change
-  const handleTaskChange = (id: string, value: string | null) => {
+  const handleTaskChange = async (entry: IEmpTimesheetEntry, event: any, value: string | null) => {
     if (value) {
-      handleFieldChange(id, 'task', value);
+      // Get the project's tasks
+      const projectTasks = entry.projectId ? tasksByProject[entry.projectId] || [] : [];
+      
+      // Find the task ID from task name in the current project's tasks
+      const selectedTask = projectTasks.find(task => task.taskName === value);
+      
+      if (selectedTask) {
+        // Update UI with both task name (for display) and task ID
+        setTimesheetData((prev) =>
+          prev.map((item) => (item.id === entry.id ? { ...item, task: value, taskId: selectedTask._id } : item))
+        );
+        
+        // Persist to backend with task ID using review endpoint
+        try {
+          await api.put(`/api/review/timesheets/${entry.id}`, { taskId: selectedTask._id });
+          console.log('Task updated successfully in database');
+        } catch (error) {
+          console.error('Failed to update task in database:', error);
+        }
+      } else {
+        // If task not found, just update display name (will be created separately)
+        setTimesheetData((prev) =>
+          prev.map((item) => (item.id === entry.id ? { ...item, task: value } : item))
+        );
+      }
     }
   };
 
-  // Handle description change
-  const handleDescriptionChange = (id: string, value: string) => {
-    handleFieldChange(id, 'description', value);
+  // Handle create new task
+  const handleCreateNewTask = async (entry: IEmpTimesheetEntry, taskName: string) => {
+    const projectId = entry.projectId;
+    if (!projectId) {
+      console.error('No project ID for this entry');
+      return;
+    }
+
+    try {
+      console.log('Creating new task:', taskName, 'for project:', projectId);
+      const newTask: any = await createTask({ projectId, taskName });
+      
+      // Update UI with the new task
+      if (newTask && newTask._id) {
+        setTimesheetData((prev) =>
+          prev.map((item) => (item.id === entry.id ? { ...item, task: taskName, taskId: newTask._id } : item))
+        );
+        
+        // Persist to backend with new task ID using review endpoint
+        try {
+          await api.put(`/api/review/timesheets/${entry.id}`, { taskId: newTask._id });
+          console.log('Created and updated task successfully in database');
+        } catch (error) {
+          console.error('Failed to update timesheet with new task in database:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
   };
 
-  // Handle hours change
-  const handleHoursChange = (id: string, value: number) => {
-    handleFieldChange(id, 'hours', value);
-  };
+  // Handle description change with debouncing
+  const handleDescriptionChange = useCallback((id: string, value: string) => {
+    // Update UI immediately
+    setTimesheetData((prev) =>
+      prev.map((entry) => (entry.id === id ? { ...entry, description: value } : entry))
+    );
+    
+    // Clear existing timer for this entry
+    const existingTimer = descriptionTimerRef.current.get(id);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    
+    // Set new timer to persist to backend after 900ms using review endpoint
+    const timer = setTimeout(async () => {
+      try {
+        await api.put(`/api/review/timesheets/${id}`, { description: value });
+        console.log('Description updated successfully in database');
+      } catch (error) {
+        console.error('Failed to update description in database:', error);
+      }
+      descriptionTimerRef.current.delete(id);
+    }, 900);
+    
+    descriptionTimerRef.current.set(id, timer);
+  }, []);
 
-  // Handle billable type change
-  const handleBillableTypeChange = (id: string, value: string) => {
-    handleFieldChange(id, 'billableType', value as BillableType);
-  };
+  // Handle hours change with debouncing
+  const handleHoursChange = useCallback((id: string, value: number) => {
+    // Update UI immediately
+    setTimesheetData((prev) =>
+      prev.map((entry) => (entry.id === id ? { ...entry, hours: value } : entry))
+    );
+    
+    // Clear existing timer for this entry
+    const existingTimer = hoursTimerRef.current.get(id);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    
+    // Set new timer to persist to backend after 900ms using review endpoint
+    const timer = setTimeout(async () => {
+      try {
+        await api.put(`/api/review/timesheets/${id}`, { hours: value });
+        console.log('Hours updated successfully in database');
+      } catch (error) {
+        console.error('Failed to update hours in database:', error);
+      }
+      hoursTimerRef.current.delete(id);
+    }, 900);
+    
+    hoursTimerRef.current.set(id, timer);
+  }, []);
+
+  // Handle billable type change (immediate update, no debounce needed)
+  const handleBillableTypeChange = useCallback(async (id: string, value: string) => {
+    // Update UI
+    setTimesheetData((prev) =>
+      prev.map((entry) => (entry.id === id ? { ...entry, billableType: value as BillableType } : entry))
+    );
+    
+    // Persist to backend immediately using review endpoint
+    try {
+      await api.put(`/api/review/timesheets/${id}`, { billable: value });
+      console.log('Billable type updated successfully in database');
+    } catch (error) {
+      console.error('Failed to update billable type in database:', error);
+    }
+  }, []);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
+  // Show empty state
+  if (timesheetData.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography color="text.secondary">
+          No timesheets found for this employee.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -195,13 +408,14 @@ const EmpTimesheetTable: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {timesheetData.map((entry) => (
+            {filteredTimesheetData.map((entry) => (
               <TableRow key={entry.id} hover>
                 <TableCell padding="checkbox">
                   <Checkbox
                     size="small"
                     checked={entry.isChecked || false}
                     onChange={() => handleCheckboxChange(entry.id)}
+                    disabled={entry.status !== DailyTimesheetStatus.Pending}
                   />
                 </TableCell>
                 <TableCell>
@@ -214,9 +428,10 @@ const EmpTimesheetTable: React.FC = () => {
                 <TableCell>{entry.project}</TableCell>
                 <TableCell>
                   <AutocompleteWithCreate
-                    options={taskOptions}
+                    options={getAvailableTasksForEntry(entry)}
                     value={entry.task}
-                    onChange={(value) => handleTaskChange(entry.id, value)}
+                    onChange={(event, value) => handleTaskChange(entry, event, value)}
+                    onCreateNew={(taskName) => handleCreateNewTask(entry, taskName)}
                     placeholder="Select or create task"
                   />
                 </TableCell>

@@ -6,6 +6,7 @@ import { UserRole } from "@tms/shared";
 
 const authenticate = (requiredRoles?: UserRole[]): RequestHandler => {
   return (req, res, next) => {
+    try {
     let accessToken: string | undefined;
 
     // Try Authorization: Bearer <token>
@@ -39,7 +40,10 @@ const authenticate = (requiredRoles?: UserRole[]): RequestHandler => {
       appAssert(false, FORBIDDEN, "Access denied: insufficient permissions");
     }
 
-    next();
+    return next();
+  } catch (err) {
+      return next(err);
+  }
   };
 };
 

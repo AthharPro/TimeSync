@@ -7,6 +7,7 @@ interface CreateTimesheetParams {
   userId: string;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours: number;
@@ -18,6 +19,7 @@ interface UpdateTimesheetParams {
   date?: Date;
   projectId?: string;
   taskId?: string;
+  teamId?: string;
   billable?: string;
   description?: string;
   hours?: number;
@@ -46,6 +48,13 @@ export const createMyTimesheet = async (
     timesheetData.taskId = new mongoose.Types.ObjectId(params.taskId);
   } else {
     timesheetData.taskId = null;
+  }
+
+  // Only add teamId if it's a valid, non-empty string
+  if (params.teamId && mongoose.Types.ObjectId.isValid(params.teamId)) {
+    timesheetData.teamId = new mongoose.Types.ObjectId(params.teamId);
+  } else {
+    timesheetData.teamId = null;
   }
 
   // Check for duplicate project+task on same date (only if both projectId and taskId are set)
@@ -90,6 +99,13 @@ export const updateMyTimesheet = async (
     return null;
   }
 
+  // Only allow updating Draft timesheets
+  const isDraft = existingTimesheet.status === 'Draft' || existingTimesheet.status === '' || existingTimesheet.status === 'Default';
+  
+  if (!isDraft) {
+    throw new Error('Only Draft timesheets can be modified. This timesheet has been submitted and cannot be edited.');
+  }
+
   const updateData: any = {};
 
   if (date !== undefined) updateData.date = date;
@@ -106,12 +122,22 @@ export const updateMyTimesheet = async (
     }
   }
 
-  // Only update taskId if it's a valid, non-empty string
+  // Only update taskId if it's a valid, non-empty string (and only for Draft)
   if (taskId !== undefined) {
+
     if (taskId && mongoose.Types.ObjectId.isValid(taskId)) {
       updateData.taskId = new mongoose.Types.ObjectId(taskId);
     } else {
       updateData.taskId = null;
+    }
+  }
+
+  // Only update teamId if it's a valid, non-empty string
+  if (params.teamId !== undefined) {
+    if (params.teamId && mongoose.Types.ObjectId.isValid(params.teamId)) {
+      updateData.teamId = new mongoose.Types.ObjectId(params.teamId);
+    } else {
+      updateData.teamId = null;
     }
   }
 
@@ -209,5 +235,20 @@ export const submitTimesheets = async (
   return {
     updated: result.modifiedCount,
     timesheets: updatedTimesheets,
+  };
+};
+export const deleteTimesheets = async (
+  userId: string,
+  timesheetIds: string[]
+): Promise<{ deleted: number }> => {
+  // Only delete timesheets that belong to the user and are in draft status
+  const result = await Timesheet.deleteMany({
+    _id: { $in: timesheetIds.map(id => new mongoose.Types.ObjectId(id)) },
+    userId: new mongoose.Types.ObjectId(userId),
+    status: { $in: ['', 'Default', 'Draft'] }, // Only delete draft timesheets
+  });
+
+  return {
+    deleted: result.deletedCount,
   };
 };

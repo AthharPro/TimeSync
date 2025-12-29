@@ -1,8 +1,9 @@
 import { DividerProps } from '@mui/material';
+import type { ReactNode } from 'react';
 
 export interface IReportLayoutProps {
-  filterSection: React.ReactNode;
-  previewSection: React.ReactNode;
+  filterSection: ReactNode;
+  previewSection: ReactNode;
 }
 
 export interface IReportDividerProps extends DividerProps {
@@ -10,11 +11,12 @@ export interface IReportDividerProps extends DividerProps {
 }
 
 export interface IReportWindowProps {
-  onReset: () => void;
+  onReset?: () => void;
 }
 
 export interface IReportPreviewLayout {
-    reportType: React.ReactNode;
-    generateBtn: React.ReactNode;
-    preview: React.ReactNode;
+  reportType: ReactNode;
+  generateBtn: ReactNode;
+  preview: ReactNode;
 }
+

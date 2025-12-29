@@ -5,6 +5,8 @@ export interface ITimesheetState {
   myTimesheetData: IMyTimesheetTableEntry[];
   myCalendarViewData: IMyTimesheetCalendarEntry[];
   currentWeekStart: string; // ISO string of the week's start date (Sunday)
+  loading: boolean;
+  error: string | null;
 }
 
  export interface IAccountState{

@@ -14,6 +14,11 @@ const DatePickerField = ({
   variant = 'standard',
   size = 'small',
   sx = {},
+  label,
+  minDate,
+  views,
+  openTo,
+  disabled = false,
 }: DatePickerFieldProps) => {
   const handleDateChange = (newValue: unknown) => {
     // Convert Dayjs or other PickerValue types to Date
@@ -35,6 +40,11 @@ const DatePickerField = ({
         open={open}
         onOpen={onOpen}
         onClose={onClose}
+        minDate={minDate}
+        label={label}
+        views={views}
+        openTo={openTo}
+        disabled={disabled}
         slots={{
           openPickerIcon: () => null,
         }}
@@ -43,15 +53,21 @@ const DatePickerField = ({
             size,
             variant,
             InputProps: {
-              disableUnderline: true,
+              disableUnderline: variant === 'standard',
             },
             onClick: (e) => {
               e.stopPropagation();
-              onClick?.(e);
+              if (!disabled) {
+                onClick?.(e);
+              }
             },
             sx: {
               width,
               cursor: 'pointer',
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                color: 'rgba(0, 0, 0, 0.87)',
+              },
               ...sx,
             },
           },

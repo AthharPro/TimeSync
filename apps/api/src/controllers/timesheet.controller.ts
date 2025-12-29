@@ -2,27 +2,31 @@ import { catchErrors } from "../utils";
 import { CREATED, OK } from "../constants";
 import { createTimesheetSchema, updateTimesheetSchema, getTimesheetsSchema } from "../schemas";
 import { Request, Response } from "express";
-import { createMyTimesheet, updateMyTimesheet, getMyTimesheets, submitTimesheets } from "../services";
+import { createMyTimesheet, updateMyTimesheet, getMyTimesheets, submitTimesheets, deleteTimesheets } from "../services";
 import { BillableType } from "@tms/shared";
 
 export const createMyTimesheetHandler = catchErrors(async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const parsed = createTimesheetSchema.parse(req.body);
-  const {date} = parsed;
+
+  const { date, projectId, taskId, billable, description, hours ,teamId} = parsed;
+
 
   // Pass as strings; conversion to ObjectId happens in the service
-  const params= {
+  const params = {
     userId,
     date,
-    billable:BillableType.NonBillable,
-    description:"",
-    hours:0.0
+    projectId,
+    taskId,
+    teamId,
+    billable: billable || BillableType.NonBillable,
+    description: description || "",
+    hours: hours || 0.0
   };
 
   console.log("createMyTimesheetHandler - params:", params);
 
   const result = await createMyTimesheet(params);
-
 
   console.log("createMyTimesheetHandler - result:", result);
   return res.status(CREATED).json(result);
@@ -79,5 +83,21 @@ export const submitTimesheetsHandler = catchErrors(async (req: Request, res: Res
   const result = await submitTimesheets(userId, timesheetIds);
 
   console.log("submitTimesheetsHandler - result:", result);
+  return res.status(OK).json(result);
+});
+
+export const deleteTimesheetsHandler = catchErrors(async (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  const { timesheetIds } = req.body;
+
+  if (!Array.isArray(timesheetIds) || timesheetIds.length === 0) {
+    return res.status(400).json({ message: 'timesheetIds must be a non-empty array' });
+  }
+
+  console.log("deleteTimesheetsHandler - params:", { userId, timesheetIds });
+
+  const result = await deleteTimesheets(userId, timesheetIds);
+
+  console.log("deleteTimesheetsHandler - result:", result);
   return res.status(OK).json(result);
 });

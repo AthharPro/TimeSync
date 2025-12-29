@@ -6,7 +6,8 @@ import { APP_ORIGIN, NODE_ENV, PORT } from './constants';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import errorHandler from "./middleware/errorHandler";
-import {userRoutes,authRoutes,timesheetRoutes,projectRoutes,taskRoutes,teamRoutes,reportRoutes} from "./routes";
+import {userRoutes,authRoutes,timesheetRoutes,projectRoutes,taskRoutes,teamRoutes,reportRoutes,reviewRoutes,dashboardRoutes} from "./routes";
+import { ensureInternalProject } from './utils/data/systemDataUtils';
 
 const port = Number(PORT);
 
@@ -31,8 +32,9 @@ app.use("/api/timesheet", timesheetRoutes)
 app.use("/api/task",taskRoutes)
 app.use('/api/team', teamRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/review', reviewRoutes);
 // app.use('/api/notifications', notificationRoutes);
-// app.use('/api/dashboard', dashboardRoutes);
 // app.use('/api/history', historyRoutes);
 
 
@@ -41,6 +43,8 @@ app.use(errorHandler);
 server.listen(port, async () => {
   try {
     await connectDB();
+
+    await ensureInternalProject();
     
     console.log(`Server is running on port ${PORT} in ${NODE_ENV} environment`);
   } catch (error) {

@@ -12,7 +12,7 @@ import { updateUserTeamMemberships } from '../utils/data/assignmentUtils';
 import { CreateTeamParams } from '../interfaces/team';
 
 
-export const createTeam = async (data: CreateTeamParams, performedBy?: string) => {
+export const createTeam = async (data: CreateTeamParams) => {
   
   
   const exists = await TeamModel.exists({ teamName: data.teamName });
@@ -146,15 +146,10 @@ export const listAllSupervisedTeams = async (supervisorId: string) => {
 
 export const updateTeamStaff = async (
   teamId: string,
-  data: { members?: string[]; supervisor?: string | null },
-  performedBy?: string
+  data: { members?: string[]; supervisor?: string | null }
 ) => {
   const existing = await TeamModel.findById(teamId).select('supervisor members teamName');
   const update: any = {};
-  
-  // Track member changes for history logging
-  const oldMemberIds = existing?.members?.map(id => id.toString()) || [];
-  const newMemberIds = data.members?.filter(id => !!id) || oldMemberIds;
   
   if (Array.isArray(data.members)) {
     update.members = data.members
@@ -178,15 +173,7 @@ export const updateTeamStaff = async (
     
   appAssert(team, INTERNAL_SERVER_ERROR, 'Team update failed');
 
-  // Log member changes
-  if (performedBy && Array.isArray(data.members)) {
-    const addedMembers = newMemberIds.filter(id => !oldMemberIds.includes(id));
-    const removedMembers = oldMemberIds.filter(id => !newMemberIds.includes(id));
 
-   
-
-   
-  }
 
   if (data.supervisor !== undefined) {
     const previousSupervisorId = existing?.supervisor?.toString() || null;
@@ -205,16 +192,6 @@ export const updateTeamStaff = async (
           await UserModel.findByIdAndUpdate(newSupervisorId, {
             $set: { role: UserRole.Supervisor },
           });
-        }
-
-        // Log supervisor change/assignment
-        if (performedBy) {
-          const newSupervisor = {
-            id: newSupervisorId,
-            name: `${sup.firstName} ${sup.lastName}`,
-          };
-
-         
         }
       }
     }
@@ -263,7 +240,7 @@ export const updateTeamStaff = async (
   return { team };
 };
 
-export const deleteTeam = async (teamId: string, performedBy?: string) => {
+export const deleteTeam = async (teamId: string) => {
   const existing = await TeamModel.findById(teamId).select('supervisor members teamName');
 
   const team = await TeamModel.findByIdAndUpdate(

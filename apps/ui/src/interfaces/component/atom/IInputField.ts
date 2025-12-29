@@ -10,10 +10,11 @@ export interface AutocompleteTextProps<T> {
   options: T[];
   variant?: TextFieldVariants;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 export interface DatePickerFieldProps {
-  value: Date;
+  value: Date | null;
   onChange: (newDate: Date | null) => void;
   open?: boolean;
   onOpen?: () => void;
@@ -23,6 +24,11 @@ export interface DatePickerFieldProps {
   variant?: 'standard' | 'outlined' | 'filled';
   size?: 'small' | 'medium';
   sx?: SxProps<Theme>;
+  label?: string;
+  minDate?: Date;
+  views?: Array<'year' | 'month' | 'day'>;
+  openTo?: 'year' | 'month' | 'day';
+  disabled?: boolean;
 }
 
 export interface IDropdownProps<T extends string | number> {
@@ -34,6 +40,7 @@ export interface IDropdownProps<T extends string | number> {
   size?: 'small' | 'medium';
   variant?: 'standard' | 'outlined' | 'filled';
   sx?: SxProps<Theme>;
+  disabled?: boolean;
 }
 
 export interface IHoursFieldProps extends Omit<IBaseTextFieldProps, 'value' | 'onChange' | 'type'> {

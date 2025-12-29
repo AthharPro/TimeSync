@@ -22,7 +22,7 @@ const handleAppError = (res: Response, error: AppError) => {
   });
 };
 
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+const errorHandler: ErrorRequestHandler = (err, req, res) => {
   console.error(`PATH: ${req.path}`, err);
 
   if (req.path === "/auth/refresh") {

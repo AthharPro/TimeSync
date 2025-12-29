@@ -31,7 +31,10 @@ const StaffSelector: React.FC<IStaffSelectorProps> = ({
 
       <EmployeeList
         employees={availableEmployees.filter(
-          (e) => !selectedEmployees.some((se) => se.id === e.id)
+          (e) =>
+            !selectedEmployees.some(
+              (se) => (se._id || se.id) === (e._id || e.id)
+            )
         )}
         selectedEmployees={selectedEmployees}
         onEmployeeToggle={onEmployeeToggle}

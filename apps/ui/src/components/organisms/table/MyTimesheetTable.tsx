@@ -1,7 +1,7 @@
 import { Checkbox } from '@mui/material';
 import DataTable from '../../templates/other/DataTable';
 import { DataTableColumn } from '../../../interfaces';
-import { BillableType } from '@tms/shared';
+import { BillableType, DailyTimesheetStatus } from '@tms/shared';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useMyTimesheet } from '../../../hooks/timesheet/useMyTimesheet';
 import { useMyProjects } from '../../../hooks/project/useMyProject';
@@ -16,6 +16,7 @@ import HoursField from '../../atoms/other/inputField/HoursField';
 import Dropdown from '../../atoms/other/inputField/Dropdown';
 import { ITimesheetTableEntry } from '../../../interfaces/component/organism/ITable';
 import { IMyTimesheetTableEntry } from '../../../interfaces/layout/ITableProps';
+import { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
 
 // Optimized debounced update that delays both Redux and backend updates
 const createDebouncedUpdate = (
@@ -45,8 +46,12 @@ const createDebouncedUpdate = (
   };
 };
 
-const MyTimesheetTable = () => {
-  const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets, currentWeekDays, currentWeekStart } = useMyTimesheet();
+interface MyTimesheetTableProps {
+  filters?: TimesheetFilters;
+}
+
+const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
+  const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets } = useMyTimesheet();
 
   const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
     useMyProjects();
@@ -64,9 +69,6 @@ const MyTimesheetTable = () => {
   
   // Track which projects we've already loaded tasks for
   const loadedProjectsRef = useRef<Set<string>>(new Set());
-  
-  // Track if we've already loaded timesheets for the current week
-  const loadedWeekRef = useRef<string>('');
 
   // Create debounced update function (900ms delay)
   const debouncedUpdateRef = useRef(createDebouncedUpdate(updateTimesheet, syncUpdateTimesheet, 900));
@@ -76,32 +78,22 @@ const MyTimesheetTable = () => {
     loadMyProjects();
   }, [loadMyProjects]);
 
-  // Load timesheets for the current week
+  // Load timesheets based on filters (for table view)
   useEffect(() => {
-    const currentWeekStartStr = currentWeekStart.toISOString();
-    
-    console.log('MyTimesheetTable - useEffect triggered:', {
-      currentWeekDaysLength: currentWeekDays.length,
-      currentWeekStart: currentWeekStartStr,
-      loadedWeekRef: loadedWeekRef.current,
-      shouldLoad: currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current,
-    });
-    
-    if (currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current) {
-      const startDate = currentWeekDays[0].date;
-      const endDate = currentWeekDays[currentWeekDays.length - 1].date;
+    // Only load if filters are provided (table view should always have filters)
+    if (filters && filters.startDate && filters.endDate) {
+      const startDate = new Date(filters.startDate);
+      const endDate = new Date(filters.endDate);
       
-      console.log('MyTimesheetTable - Loading timesheets for week:', {
-        startDate,
-        endDate,
-        currentWeekStart: currentWeekStartStr,
+      console.log('MyTimesheetTable - Loading timesheets for filtered date range:', {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
       });
       
       loadTimesheets(startDate, endDate);
-      loadedWeekRef.current = currentWeekStartStr;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentWeekStart]); // Only depend on currentWeekStart to avoid infinite loop
+  }, [filters?.startDate, filters?.endDate]); // Load when filter dates change
 
   // Initialize selectedProjects with project IDs from timesheets and load tasks
   useEffect(() => {
@@ -141,7 +133,7 @@ const MyTimesheetTable = () => {
   }, [newTimesheets]); // Only depend on newTimesheets
 
   const timesheetData: ITimesheetTableEntry[] = useMemo(() => {
-    return newTimesheets.map((timesheet) => {
+    let filteredTimesheets = newTimesheets.map((timesheet) => {
       // Find project name from project ID
       const project = myProjects.find(p => p._id === timesheet.project);
       const projectName = project ? project.projectName : timesheet.project;
@@ -157,12 +149,46 @@ const MyTimesheetTable = () => {
         task: taskName, // Display task name instead of ID
       };
     });
-  }, [newTimesheets, myProjects, allTasks]);
 
-  // Calculate selection state
-  const selectedCount = timesheetData.filter((row) => row.isChecked).length;
-  const isAllSelected = timesheetData.length > 0 && selectedCount === timesheetData.length;
-  const isIndeterminate = selectedCount > 0 && selectedCount < timesheetData.length;
+    // Apply filters if provided
+    if (filters) {
+      filteredTimesheets = filteredTimesheets.filter((timesheet) => {
+        // Filter by date range
+        if (filters.startDate) {
+          const startDate = new Date(filters.startDate);
+          startDate.setHours(0, 0, 0, 0);
+          if (timesheet.date < startDate) return false;
+        }
+        
+        if (filters.endDate) {
+          const endDate = new Date(filters.endDate);
+          endDate.setHours(23, 59, 59, 999);
+          if (timesheet.date > endDate) return false;
+        }
+
+        // Filter by status
+        if (filters.status && filters.status !== 'All') {
+          if (timesheet.status !== filters.status) return false;
+        }
+
+        // Filter by project (comparing with original project ID from newTimesheets)
+        if (filters.project && filters.project !== 'All') {
+          const originalTimesheet = newTimesheets.find(t => t.id === timesheet.id);
+          if (originalTimesheet && originalTimesheet.project !== filters.project) return false;
+        }
+
+        return true;
+      });
+    }
+
+    return filteredTimesheets;
+  }, [newTimesheets, myProjects, allTasks, filters]);
+
+  // Calculate selection state (only count Draft timesheets)
+  const draftTimesheets = timesheetData.filter((row) => row.status === DailyTimesheetStatus.Draft);
+  const selectedDraftCount = draftTimesheets.filter((row) => row.isChecked).length;
+  const isAllSelected = draftTimesheets.length > 0 && selectedDraftCount === draftTimesheets.length;
+  const isIndeterminate = selectedDraftCount > 0 && selectedDraftCount < draftTimesheets.length;
 
   // Extract project names from backend data
   const availableProjectNames = useMemo<string[]>(() => {
@@ -186,8 +212,11 @@ const MyTimesheetTable = () => {
 
   const handleSelectAll = () => {
     const newCheckedState = !isAllSelected;
+    // Only select/deselect Draft timesheets
     timesheetData.forEach((row) => {
-      updateTimesheet(row.id, { isChecked: newCheckedState });
+      if (row.status === DailyTimesheetStatus.Draft) {
+        updateTimesheet(row.id, { isChecked: newCheckedState });
+      }
     });
   };
 
@@ -197,25 +226,6 @@ const MyTimesheetTable = () => {
       const selectedProject = myProjects.find(proj => proj.projectName === newProjectName);
       
       if (selectedProject) {
-        // Get current row data
-        const currentRow = timesheetData.find(row => row.id === id);
-        
-        if (currentRow) {
-          // Check for duplicate project+task on same date
-          const duplicate = timesheetData.find(row => 
-            row.id !== id && // Not the same row
-            row.date.toDateString() === currentRow.date.toDateString() && // Same date
-            row.project === newProjectName && // Same project
-            row.task === currentRow.task && // Same task (if task is already set)
-            currentRow.task !== '' // Only check if task is not empty
-          );
-
-          if (duplicate) {
-            alert('A timesheet entry with this project and task already exists for this date. Please use the existing entry or select a different task.');
-            return;
-          }
-        }
-        
         // Store the selected project ID for this row
         setSelectedProjects(prev => ({ ...prev, [id]: selectedProject._id }));
         
@@ -236,24 +246,6 @@ const MyTimesheetTable = () => {
       // Get the project ID for this row
       const projectId = selectedProjects[id];
       const projectTasks = projectId ? tasksByProject[projectId] || [] : [];
-      
-      // Get current row data
-      const currentRow = timesheetData.find(row => row.id === id);
-      
-      if (currentRow) {
-        // Check for duplicate project+task on same date
-        const duplicate = timesheetData.find(row => 
-          row.id !== id && // Not the same row
-          row.date.toDateString() === currentRow.date.toDateString() && // Same date
-          row.project === currentRow.project && // Same project
-          row.task === newTaskName // Same task
-        );
-
-        if (duplicate) {
-          alert('A timesheet entry with this project and task already exists for this date. Please use the existing entry.');
-          return;
-        }
-      }
       
       // Find the task ID from task name in the current project's tasks
       const selectedTask = projectTasks.find(task => task.taskName === newTaskName);
@@ -328,6 +320,7 @@ const MyTimesheetTable = () => {
           checked={row.isChecked || false}
           onChange={() => handleCheckboxChange(row.id)}
           onClick={(e) => e.stopPropagation()}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '2%',
@@ -349,9 +342,10 @@ const MyTimesheetTable = () => {
             })
           }
           onClick={() => setOpenPickers(new Set([row.id]))}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
-      width: '10%',
+      width: '6%',
     },
     {
       key: 'project',
@@ -362,9 +356,10 @@ const MyTimesheetTable = () => {
           placeholder="Select or enter project"
           onChange={(event, newValue) => handleProjectChange(row.id, newValue)}
           options={availableProjectNames}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
-      width: '14%',
+      width: '18%',
     },
     {
       key: 'task',
@@ -376,7 +371,7 @@ const MyTimesheetTable = () => {
           onChange={(event, newValue) => handleTaskChange(row.id, newValue)}
           options={getAvailableTasksForRow(row.id)}
           onCreateNew={async (taskName) => await handleCreateNewTask(row.id, taskName)}
-          disabled={!selectedProjects[row.id]}
+          disabled={!selectedProjects[row.id] || row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '30%',
@@ -392,12 +387,17 @@ const MyTimesheetTable = () => {
           onChange={(e) => handleDescriptionChange(row.id, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           variant="standard"
+          disabled={row.status !== DailyTimesheetStatus.Draft}
           sx={{
             width: '100%',
             '& .MuiInput-underline:before': { borderBottom: 'none' },
             '& .MuiInput-underline:after': { borderBottom: 'none' },
             '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
               borderBottom: 'none',
+            },
+            '& .MuiInputBase-input.Mui-disabled': {
+              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+              color: 'rgba(0, 0, 0, 0.87)',
             },
           }}
         />
@@ -412,6 +412,7 @@ const MyTimesheetTable = () => {
           value={row.hours}
           onChange={(newHours) => handleHoursChange(row.id, newHours)}
           onClick={(e) => e.stopPropagation()}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '7%',
@@ -427,6 +428,7 @@ const MyTimesheetTable = () => {
           }
           options={BillableType}
           onClick={(e) => e.stopPropagation()}
+          disabled={row.status !== DailyTimesheetStatus.Draft}
         />
       ),
       width: '10%',

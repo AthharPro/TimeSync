@@ -58,9 +58,7 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
 
     this.worksheet.addRow([]);
 
-    const entriesByProject = this.groupEntriesByProject(data);
-
-    if (entriesByProject.size === 0) {
+    if (data.length === 0) {
       this.worksheet.addRow(['No data available for the selected period.']).font = {
         italic: true,
         size: 10,
@@ -68,21 +66,79 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
       return;
     }
 
-    const sortedProjects = Array.from(entriesByProject.entries()).sort(([a], [b]) =>
-      a.localeCompare(b)
-    );
     let grandTotalHours = 0;
 
-    sortedProjects.forEach(([projectName, entries], idx) => {
-      if (idx > 0) this.worksheet.addRow([]);
+    // If multiple employees (project-wise or team-wise filter), show each employee with their own table
+    if (data.length > 1) {
+      data.forEach((employeeData, employeeIndex) => {
+        if (employeeIndex > 0) this.worksheet.addRow([]);
 
-      const projectTitle = this.worksheet.addRow([
-        `Timesheet Entries for the ${projectName}`,
-      ]);
-      this.worksheet.mergeCells(projectTitle.number, 1, projectTitle.number, totalColumns);
-      projectTitle.font = { bold: true, size: 12 };
+        // Employee title
+        const employeeTitle = this.worksheet.addRow([employeeData.employeeName]);
+        this.worksheet.mergeCells(employeeTitle.number, 1, employeeTitle.number, totalColumns);
+        employeeTitle.font = { bold: true, size: 12 };
 
-      const headers = ['Date', 'Employee', 'Description', 'Time Spent (Hours)'];
+        // Flatten all entries for this employee
+        const entries = this.flattenEmployeeEntries(employeeData);
+
+        // Add table headers
+        const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
+        this.addHeaderRow(headers);
+        const hdr = this.worksheet.lastRow;
+        if (hdr) {
+          hdr.font = { bold: true, size: 9 };
+          hdr.height = 14;
+        }
+
+        // Sort entries by date (newest first)
+        const sortedEntries = entries
+          .slice()
+          .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+
+        // Add data rows
+        sortedEntries.forEach((row) => {
+          const cells = [
+            this.formatDateForDisplay(row.date),
+            row.employeeName,
+            row.description || '-',
+            this.formatHoursToHHMM(row.hours),
+          ];
+          this.addDataRow(cells);
+        });
+
+        // Add total row for this employee
+        const employeeTotal = entries.reduce((sum, e) => sum + e.hours, 0);
+        grandTotalHours += employeeTotal;
+        const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(employeeTotal)]);
+        const totalCells = [
+          this.worksheet.getCell(totalRow.number, 3),
+          this.worksheet.getCell(totalRow.number, 4),
+        ];
+        totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
+      });
+
+      // Grand total row (only for multiple employees)
+      this.worksheet.addRow([]);
+      const grandRow = this.addDataRow(['', '', 'Grand Total (Hours)', this.formatHoursToHHMM(grandTotalHours)]);
+      const grandCells = [
+        this.worksheet.getCell(grandRow.number, 3),
+        this.worksheet.getCell(grandRow.number, 4),
+      ];
+      grandCells.forEach((cell) => (cell.font = { bold: true, size: 11 }));
+    } else {
+      // Single employee (individual user filter) - show all entries in one table
+      const employeeData = data[0];
+
+      // Employee title
+      const employeeTitle = this.worksheet.addRow([employeeData.employeeName]);
+      this.worksheet.mergeCells(employeeTitle.number, 1, employeeTitle.number, totalColumns);
+      employeeTitle.font = { bold: true, size: 12 };
+
+      // Flatten all entries for this employee
+      const entries = this.flattenEmployeeEntries(employeeData);
+
+      // Add table headers
+      const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
       this.addHeaderRow(headers);
       const hdr = this.worksheet.lastRow;
       if (hdr) {
@@ -90,15 +146,13 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
         hdr.height = 14;
       }
 
-      const sortedRows = entries
+      // Sort entries by date (newest first)
+      const sortedEntries = entries
         .slice()
-        .sort((a, b) => {
-          const dateDiff = b.rawDate.getTime() - a.rawDate.getTime();
-          if (dateDiff !== 0) return dateDiff;
-          return a.employeeName.localeCompare(b.employeeName);
-        });
+        .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
-      sortedRows.forEach((row) => {
+      // Add data rows
+      sortedEntries.forEach((row) => {
         const cells = [
           this.formatDateForDisplay(row.date),
           row.employeeName,
@@ -108,23 +162,46 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
         this.addDataRow(cells);
       });
 
-      const projectTotal = entries.reduce((sum, e) => sum + e.hours, 0);
-      grandTotalHours += projectTotal;
-      const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(projectTotal)]);
+      // Add total row
+      const employeeTotal = entries.reduce((sum, e) => sum + e.hours, 0);
+      const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(employeeTotal)]);
       const totalCells = [
         this.worksheet.getCell(totalRow.number, 3),
         this.worksheet.getCell(totalRow.number, 4),
       ];
       totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
+    }
+  }
+
+  private flattenEmployeeEntries(employeeData: {
+    employeeName: string;
+    employeeEmail: string;
+    tables: Array<{ title: string; rows: Array<{ date: string; description: string; status: string; quantity: string }> }>;  
+  }) {
+    type FlatEntry = {
+      employeeName: string;
+      date: string;
+      rawDate: Date;
+      description: string;
+      hours: number;
+    };
+
+    const entries: FlatEntry[] = [];
+
+    employeeData.tables.forEach((table) => {
+      table.rows.forEach((row) => {
+        const hours = this.parseHours(row.quantity);
+        entries.push({
+          employeeName: employeeData.employeeName,
+          date: row.date,
+          rawDate: new Date(row.date),
+          description: row.description,
+          hours,
+        });
+      });
     });
 
-    this.worksheet.addRow([]);
-    const grandRow = this.addDataRow(['', '', 'Grand Total (Hours)', this.formatHoursToHHMM(grandTotalHours)]);
-    const grandCells = [
-      this.worksheet.getCell(grandRow.number, 3),
-      this.worksheet.getCell(grandRow.number, 4),
-    ];
-    grandCells.forEach((cell) => (cell.font = { bold: true, size: 11 }));
+    return entries;
   }
 
   private groupEntriesByProject(data: TimesheetEntryData) {
@@ -156,7 +233,10 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
             description: row.description,
             hours,
           };
-          projectMap.get(projectName)!.push(entry);
+          const array = projectMap.get(projectName);
+          if (array) {
+            array.push(entry);
+          }
         });
       });
     });
