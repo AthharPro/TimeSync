@@ -1,5 +1,5 @@
 import { CREATED, OK } from '../constants';
-import { registerSchema } from '../schemas';
+import { userRegisterSchema } from '../schemas';
 import { catchErrors } from '../utils';
 import { createUser, getAllUsers, updateUserById ,getAllActiveUsers} from '../services';
 import { UserRole } from '@tms/shared';
@@ -7,7 +7,7 @@ import { Request, Response } from 'express';
 
 export const registerHandler = (role: UserRole) =>
   catchErrors(async (req: Request, res: Response) => {
-    const parsedRequest = registerSchema.parse({
+    const parsedRequest = userRegisterSchema.parse({
       ...req.body
     });
 

@@ -45,6 +45,15 @@ export const sendPasswordResetEmail = async (email: string) => {
   }
 };
 
+export const verifyPasswordResetLink = async (token: string, verificationCode: string) => {
+  try {
+    return await API.get(`/auth/password/reset?token=${token}&verificationCode=${verificationCode}`);
+  } catch (error) {
+    console.error("Password reset link verification failed:", error);
+    throw error;
+  }
+};
+
 export const verifyPasswordResetToken = async (token: string) => {
   try {
     return await API.post('/auth/password/reset/verify-token', {}, {

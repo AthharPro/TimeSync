@@ -4,6 +4,7 @@ import AdminPage from '../pages/AdminPage';
 import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/LoginPage';
 import ForgetPasswordPage from '../pages/ForgetPasswordPage';
+import PasswordResetPage from '../pages/PasswordResetPage';
 import FirstLoginPasswordResetPage from '../pages/FirstLoginPasswordResetPage';
 import PasswordChangePage from '../pages/PasswordChangePage';
 import UnauthorizedPage from '../pages/UnauthorizedPage';
@@ -17,6 +18,7 @@ const AppRoute: React.FC = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgotpassword" element={<ForgetPasswordPage />} />
+      <Route path="/password/reset" element={<PasswordResetPage />} />
       <Route
         path="/resetpasswordfirstlogin"
         element={<FirstLoginPasswordResetPage />}

@@ -7,13 +7,12 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import PasswordResetFormSchema from '../../../validations/auth/PasswordResetSchema';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
 import { IPasswordResetData } from '../../../interfaces/auth/IAuth';
+import { useAuth } from '../../../hooks/auth';
+import { useEffect } from 'react';
 
 const ForgetPassword: React.FC = () => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
+    const { sendPasswordResetEmail, loading, error, message, clearError, clearMessage } = useAuth();
     
     const {
       register,
@@ -24,21 +23,20 @@ const ForgetPassword: React.FC = () => {
       mode: 'onChange',
     });
 
+    // Clear error and message on unmount
+    useEffect(() => {
+      return () => {
+        clearError();
+        clearMessage();
+      };
+    }, [clearError, clearMessage]);
+
     const onSubmit = async (data: IPasswordResetData) => {
-      setIsLoading(true);
-      setError('');
-      setMessage('');
-      
       try {
-        // Handle password reset email submission logic here
-        setMessage('If an account with that email exists, a password reset link has been sent.');
-      
-      } catch {
-        // Handle error during password reset email submission
-        setError('An error occurred while sending the password reset email. Please try again later.');
-       
-      } finally {
-        setIsLoading(false);
+        await sendPasswordResetEmail(data.email);
+      } catch (err) {
+        // Error is handled by Redux
+        console.error('Password reset error:', err);
       }
     };
 
@@ -62,11 +60,11 @@ const ForgetPassword: React.FC = () => {
           <BaseBtn
             type="submit"
             sx={{ mb: 2 }}
-            disabled={!isValid || isSubmitting || isLoading}
+            disabled={!isValid || isSubmitting || loading}
             fullWidth
             
           >
-            {isLoading ? 'Sending...' : 'Confirm'}
+            {loading ? 'Sending...' : 'Confirm'}
           </BaseBtn>
           
           {message && (
