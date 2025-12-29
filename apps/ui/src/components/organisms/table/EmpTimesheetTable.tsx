@@ -80,8 +80,11 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
 
   // Fetch timesheet data when component mounts or employeeId/filters change
   useEffect(() => {
-    if (filters) {
-      loadEmployeeTimesheets(employeeId, filters.startDate, filters.endDate);
+    if (filters && filters.startDate && filters.endDate) {
+      loadEmployeeTimesheets(employeeId, {
+        startDate: new Date(filters.startDate),
+        endDate: new Date(filters.endDate)
+      });
     } else {
       loadEmployeeTimesheets(employeeId);
     }
