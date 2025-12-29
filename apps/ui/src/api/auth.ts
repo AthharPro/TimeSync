@@ -90,3 +90,10 @@ export const registerUser = async (
   }
 };
 
+export const bulkRegisterUsers = async (
+  users: any[],
+  role: UserRole
+) => {
+  return await API.post('/api/user/bulk', { users, role });
+};
+

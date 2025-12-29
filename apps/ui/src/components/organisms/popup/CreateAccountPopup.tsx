@@ -1,17 +1,17 @@
 import PopupLayout from '../../templates/popup/PopUpLayout';
 import { UserRole } from '@tms/shared';
 import { useEffect, useState } from 'react';
-import  CreateAccountFormSchema  from '../../../validations/auth/CreateAccountFormSchema';
+import CreateAccountFormSchema from '../../../validations/auth/CreateAccountFormSchema';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
-import {ICreateAccountData} from '../../../interfaces/auth/IAuth'
+import { ICreateAccountData } from '../../../interfaces/auth/IAuth';
 import { CreateAccountPopupProps } from '../../../interfaces/popup';
-import { registerUser } from '../../../api/auth';
+import { bulkRegisterUsers } from '../../../api/auth';
 import { CreateAccountForm, BulkAccountForm } from '../../molecules/account';
 import { useAccount } from '../../../hooks/account';
 
@@ -21,11 +21,16 @@ function CreateAccountPopUp({
   onClose,
   onSuccess,
 }: CreateAccountPopupProps) {
-  const title = `${role === UserRole.Admin ? 'Create Admin' : 'Create Employee'}`;
+  const title = `${
+    role === UserRole.Admin ? 'Create Admin' : 'Create Employee'
+  }`;
   const [tabValue, setTabValue] = useState<string>('1');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { createAccount } = useAccount();
+  const [bulkErrors, setBulkErrors] = useState<
+    { email: string; message: string }[]
+  >([]);
 
   const {
     register,
@@ -37,14 +42,12 @@ function CreateAccountPopUp({
     mode: 'onChange',
   });
 
-
   useEffect(() => {
     if (!open) {
       reset();
       setError(null);
       setTabValue('1');
     }
-   
   }, [open, reset]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
@@ -54,7 +57,7 @@ function CreateAccountPopUp({
   const onSubmit = async (data: ICreateAccountData) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       await createAccount(
         {
@@ -66,13 +69,16 @@ function CreateAccountPopUp({
         },
         role
       );
-      
+
       if (onSuccess) {
         onSuccess();
       }
       onClose();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to create account. Please try again.');
+      setError(
+        err?.response?.data?.message ||
+          'Failed to create account. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -85,35 +91,32 @@ function CreateAccountPopUp({
   const handleBulkSubmit = async (rows: any[]) => {
     setIsLoading(true);
     setError(null);
-    
-    try {
-      // Process each row and create accounts
-      const results = await Promise.allSettled(
-        rows.map((row) =>
-          registerUser(
-            {
-              email: row.email || '',
-              firstName: row.firstName || row['First Name'] || '',
-              lastName: row.lastName || row['Last Name'] || '',
-              designation: row.designation || row['Designation'] || '',
-              contactNumber: row.contactNumber || row['Contact Number'] || String(row['Contact Number'] || ''),
-            },
-            role
-          )
-        )
-      );
+    setBulkErrors([]);
 
-      const failed = results.filter((r) => r.status === 'rejected');
-      if (failed.length > 0) {
-        setError(`${failed.length} out of ${rows.length} accounts failed to create.`);
+    try {
+      const formattedRows = rows.map((row) => ({
+        email: row.email || row['Email'],
+        firstName: row.firstName || row['First Name'],
+        lastName: row.lastName || row['Last Name'],
+        designation: row.designation || row['Designation'],
+        contactNumber: String(row.contactNumber || row['Contact Number'] || ''),
+      }));
+
+      const res = await bulkRegisterUsers(formattedRows, role);
+
+      const { success, failed, errors } = res.data.results;
+
+      if (failed > 0) {
+        setError(
+          `${failed} account(s) failed. ${success} created successfully.`
+        );
+        setBulkErrors(errors);
       } else {
-        if (onSuccess) {
-          onSuccess();
-        }
+        onSuccess?.();
         onClose();
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to create bulk accounts. Please try again.');
+      setError(err?.response?.data?.message || 'Bulk creation failed');
     } finally {
       setIsLoading(false);
     }
@@ -124,10 +127,13 @@ function CreateAccountPopUp({
   };
 
   return (
-    <PopupLayout open={open} title={title} onClose={onClose} maxWidth='xs'>
+    <PopupLayout open={open} title={title} onClose={onClose} maxWidth="xs">
       <TabContext value={tabValue}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <TabList onChange={handleTabChange} aria-label="account creation tabs">
+          <TabList
+            onChange={handleTabChange}
+            aria-label="account creation tabs"
+          >
             <Tab label="Individual Creation" value="1" />
             <Tab label="Bulk Creation" value="2" />
           </TabList>
@@ -162,6 +168,37 @@ function CreateAccountPopUp({
               }}
             >
               {error}
+            </Box>
+          )}
+          {bulkErrors.length > 0 && (
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: 1,
+                bgcolor: 'error.lighter',
+                border: '1px solid',
+                borderColor: 'error.light',
+              }}
+            >
+              <Typography variant="subtitle2" color="error.main" mb={1}>
+                {bulkErrors.length} account(s) failed to create
+              </Typography>
+
+              <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                {bulkErrors.map((err, index) => (
+                  <Typography
+                    component="li"
+                    key={index}
+                    variant="body2"
+                    color="error.dark"
+                    sx={{ mb: 0.5 }}
+                  >
+                    <strong>{err.email || `Row ${index + 1}`}</strong> —{' '}
+                    {(err.message)}
+                  </Typography>
+                ))}
+              </Box>
             </Box>
           )}
         </TabPanel>

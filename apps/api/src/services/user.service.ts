@@ -1,8 +1,7 @@
 import { APP_ORIGIN, CONFLICT, INTERNAL_SERVER_ERROR } from '../constants';
 import {UserModel} from '../models';
-import { generateRandomPassword } from '../utils';
+import { generateRandomPassword,appAssert } from '../utils';
 import { CreateUserParams } from '../interfaces';
-import { appAssert } from '../utils';
 import { getWelcomeTmsTemplate, sendEmail } from '../utils/email';
 
 export const createUser = async (data: CreateUserParams) => {
