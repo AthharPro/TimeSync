@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 
 export interface IConfirmDialogProps {
   open: boolean;
+  close?: () => void;
   title?: string;
   message: string;
   confirmText?: string;

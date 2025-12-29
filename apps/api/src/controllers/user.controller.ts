@@ -1,7 +1,7 @@
 import { CREATED, OK } from '../constants';
 import { registerSchema } from '../schemas';
 import { catchErrors } from '../utils';
-import { createUser, getAllUsers, updateUserById } from '../services';
+import { createUser, getAllUsers, updateUserById ,getAllActiveUsers} from '../services';
 import { UserRole } from '@tms/shared';
 import { Request, Response } from 'express';
 
@@ -58,3 +58,9 @@ export const updateUserHandler = catchErrors(async (req: Request, res: Response)
 
   return res.status(OK).json(user);
 });
+
+export const getAllActiveUsersHandler = () =>
+  catchErrors(async (req: Request, res: Response) => {
+    const users = await getAllActiveUsers();
+    return res.status(OK).json(users);
+  });

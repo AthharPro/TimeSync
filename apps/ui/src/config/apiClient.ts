@@ -67,9 +67,10 @@ api.interceptors.response.use(
       url: res.config.url,
       status: res.status,
       hasData: !!res.data,
+      responseType: res.config.responseType,
     });
-    // Transform _id to id in response data
-    if (res.data) {
+    // Transform _id to id in response data, but skip for blob responses
+    if (res.data && res.config.responseType !== 'blob') {
       res.data = transformMongoResponse(res.data);
     }
     return res;

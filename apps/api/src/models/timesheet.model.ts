@@ -8,6 +8,7 @@ const timesheetSchema = new Schema<ITimesheetDocument>({
   date: { type: Date, required: true }, 
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project',default:null,required:false },
   taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task',default:null,required:false },
+  teamId: { type: mongoose.Schema.Types.ObjectId, ref: 'Team',default:null,required:false },
   billable:{type:String},
   description: { type: String },
   hours: { type: Number},
