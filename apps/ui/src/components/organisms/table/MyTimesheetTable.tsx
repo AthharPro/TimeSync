@@ -53,7 +53,7 @@ interface MyTimesheetTableProps {
 const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
   const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets } = useMyTimesheet();
 
-  const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
+  const { myProjects, myTeams, loading: projectsLoading, error: projectsError, loadMyProjects } =
     useMyProjects();
 
   const { loadTasks, createTask } = useTasks();
@@ -136,7 +136,9 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     let filteredTimesheets = newTimesheets.map((timesheet) => {
       // Find project name from project ID
       const project = myProjects.find(p => p._id === timesheet.project);
-      const projectName = project ? project.projectName : timesheet.project;
+      // If not a project, check if it's a team
+      const team = !project ? myTeams.find(t => t._id === timesheet.project) : null;
+      const projectName = project ? project.projectName : (team ? team.teamName : timesheet.project);
       
       // Find task name from task ID (search in all tasks from all projects)
       const task = allTasks.find(t => t._id === timesheet.task);
@@ -145,7 +147,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
       return {
         ...timesheet,
         date: new Date(timesheet.date),
-        project: projectName, // Display project name instead of ID
+        project: projectName, // Display project/team name instead of ID
         task: taskName, // Display task name instead of ID
       };
     });
@@ -182,18 +184,28 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     }
 
     return filteredTimesheets;
-  }, [newTimesheets, myProjects, allTasks, filters]);
+  }, [newTimesheets, myProjects, myTeams, allTasks, filters]);
 
-  // Calculate selection state (only count Draft timesheets)
-  const draftTimesheets = timesheetData.filter((row) => row.status === DailyTimesheetStatus.Draft);
-  const selectedDraftCount = draftTimesheets.filter((row) => row.isChecked).length;
-  const isAllSelected = draftTimesheets.length > 0 && selectedDraftCount === draftTimesheets.length;
-  const isIndeterminate = selectedDraftCount > 0 && selectedDraftCount < draftTimesheets.length;
+  // Helper function to check if a timesheet is editable (Draft or Rejected)
+  const isTimesheetEditable = (status: string) => {
+    return status === DailyTimesheetStatus.Draft || status === DailyTimesheetStatus.Rejected;
+  };
 
-  // Extract project names from backend data
+  // Calculate selection state (only count Draft and Rejected timesheets)
+  const editableTimesheets = timesheetData.filter((row) => isTimesheetEditable(row.status));
+  const selectedEditableCount = editableTimesheets.filter((row) => row.isChecked).length;
+  const isAllSelected = editableTimesheets.length > 0 && selectedEditableCount === editableTimesheets.length;
+  const isIndeterminate = selectedEditableCount > 0 && selectedEditableCount < editableTimesheets.length;
+
+  // Extract project and team names from backend data
   const availableProjectNames = useMemo<string[]>(() => {
-    return myProjects.map((proj) => proj.projectName);
-  }, [myProjects]);
+    const projectNames = myProjects.map((proj) => proj.projectName);
+    const teamNames = myTeams.map((team) => team.teamName);
+    console.log('MyTimesheetTable - Available projects:', projectNames);
+    console.log('MyTimesheetTable - Available teams:', teamNames);
+    console.log('MyTimesheetTable - Combined list:', [...projectNames, ...teamNames]);
+    return [...projectNames, ...teamNames];
+  }, [myProjects, myTeams]);
 
   // Get available task names for the currently selected project in each row
   const getAvailableTasksForRow = (rowId: string): string[] => {
@@ -212,9 +224,9 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
 
   const handleSelectAll = () => {
     const newCheckedState = !isAllSelected;
-    // Only select/deselect Draft timesheets
+    // Only select/deselect Draft and Rejected timesheets
     timesheetData.forEach((row) => {
-      if (row.status === DailyTimesheetStatus.Draft) {
+      if (isTimesheetEditable(row.status)) {
         updateTimesheet(row.id, { isChecked: newCheckedState });
       }
     });
@@ -224,6 +236,8 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     if (newProjectName !== null) {
       // Find the project ID from the project name
       const selectedProject = myProjects.find(proj => proj.projectName === newProjectName);
+      // If not a project, check if it's a team
+      const selectedTeam = !selectedProject ? myTeams.find(team => team.teamName === newProjectName) : null;
       
       if (selectedProject) {
         // Store the selected project ID for this row
@@ -235,8 +249,18 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
         // Update UI with project name and sync to backend with project ID
         updateTimesheet(id, { project: newProjectName });
         debouncedUpdateRef.current(id, { project: selectedProject._id });
+      } else if (selectedTeam) {
+        // Store the selected team ID for this row
+        setSelectedProjects(prev => ({ ...prev, [id]: selectedTeam._id }));
+        
+        // Load tasks for this team
+        loadTasks(selectedTeam._id);
+        
+        // Update UI with team name and sync to backend with team ID
+        updateTimesheet(id, { project: newProjectName });
+        debouncedUpdateRef.current(id, { project: selectedTeam._id });
       } else {
-        console.warn('Project not found for name:', newProjectName);
+        console.warn('Project or team not found for name:', newProjectName);
       }
     }
   };
@@ -320,7 +344,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           checked={row.isChecked || false}
           onChange={() => handleCheckboxChange(row.id)}
           onClick={(e) => e.stopPropagation()}
-          disabled={row.status !== DailyTimesheetStatus.Draft}
+          disabled={!isTimesheetEditable(row.status)}
         />
       ),
       width: '2%',
@@ -342,7 +366,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
             })
           }
           onClick={() => setOpenPickers(new Set([row.id]))}
-          disabled={row.status !== DailyTimesheetStatus.Draft}
+          disabled={!isTimesheetEditable(row.status)}
         />
       ),
       width: '6%',
@@ -356,7 +380,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           placeholder="Select or enter project"
           onChange={(event, newValue) => handleProjectChange(row.id, newValue)}
           options={availableProjectNames}
-          disabled={row.status !== DailyTimesheetStatus.Draft}
+          disabled={!isTimesheetEditable(row.status)}
         />
       ),
       width: '18%',
@@ -371,7 +395,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           onChange={(event, newValue) => handleTaskChange(row.id, newValue)}
           options={getAvailableTasksForRow(row.id)}
           onCreateNew={async (taskName) => await handleCreateNewTask(row.id, taskName)}
-          disabled={!selectedProjects[row.id] || row.status !== DailyTimesheetStatus.Draft}
+          disabled={!selectedProjects[row.id] || !isTimesheetEditable(row.status)}
         />
       ),
       width: '30%',
@@ -387,7 +411,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           onChange={(e) => handleDescriptionChange(row.id, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           variant="standard"
-          disabled={row.status !== DailyTimesheetStatus.Draft}
+          disabled={!isTimesheetEditable(row.status)}
           sx={{
             width: '100%',
             '& .MuiInput-underline:before': { borderBottom: 'none' },
@@ -412,7 +436,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           value={row.hours}
           onChange={(newHours) => handleHoursChange(row.id, newHours)}
           onClick={(e) => e.stopPropagation()}
-          disabled={row.status !== DailyTimesheetStatus.Draft}
+          disabled={!isTimesheetEditable(row.status)}
         />
       ),
       width: '7%',
@@ -428,7 +452,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
           }
           options={BillableType}
           onClick={(e) => e.stopPropagation()}
-          disabled={row.status !== DailyTimesheetStatus.Draft}
+          disabled={!isTimesheetEditable(row.status)}
         />
       ),
       width: '10%',

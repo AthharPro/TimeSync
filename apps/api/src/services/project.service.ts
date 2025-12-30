@@ -40,24 +40,47 @@ export const createProject = async (data: CreateProjectParams) => {
 export const listProjects = async (userId: string, userRole: UserRole) => {
   switch (userRole) {
     case UserRole.Emp:
-    case UserRole.Supervisor: {
-      const projects = await ProjectModel.find({ status: true, employees: userId })
+    case UserRole.Supervisor:
+    case UserRole.SupervisorAdmin: {
+      // For Emp/Supervisor/SupervisorAdmin: Return projects where user is assigned OR public projects
+      // This is used for review timesheet to determine which projects they can approve/reject
+      const projects = await ProjectModel.find({ 
+        status: true, 
+        $or: [
+          { employees: userId }, // Private projects where user is assigned
+          { isPublic: true }      // Public projects (all users can add time)
+        ]
+      })
         .sort({ createdAt: -1 })
         .populate({ path: 'employees', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
-      return { projects };
+      
+      // Also get teams where user is a member
+      const teams = await TeamModel.find({
+        status: true,
+        members: userId
+      })
+        .sort({ createdAt: -1 })
+        .select('_id teamName isDepartment');
+      
+      return { projects, teams };
     }
     case UserRole.Admin:
-    case UserRole.SupervisorAdmin:
     case UserRole.SuperAdmin: {
       const projects = await ProjectModel.find({ status: true })
         .sort({ createdAt: -1 })
         .populate({ path: 'employees', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
-      return { projects };
+      
+      // Admins can see all teams
+      const teams = await TeamModel.find({ status: true })
+        .sort({ createdAt: -1 })
+        .select('_id teamName isDepartment');
+      
+      return { projects, teams };
     }
     default:
-      return { projects: [] };
+      return { projects: [], teams: [] };
   }
 };
 
@@ -71,7 +94,16 @@ export const listMyProjects = async (userId: string) => {
     ]
   })
     .sort({ createdAt: -1 })
-  return { projects };
+  
+  // Also find teams where user is a member
+  const teams = await TeamModel.find({
+    status: true,
+    members: userId
+  })
+    .sort({ createdAt: -1 })
+    .select('_id teamName isDepartment');
+  
+  return { projects, teams };
 };
 
 export const updateProjectStaff = async (

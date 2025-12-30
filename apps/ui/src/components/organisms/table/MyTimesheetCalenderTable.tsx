@@ -75,7 +75,7 @@ const MyTimesheetCalendarTable = () => {
   // Track if we've already loaded timesheets for the current week
   const loadedWeekRef = useRef<string>('');
 
-  const { myProjects, loading: projectsLoading, error: projectsError, loadMyProjects } =
+  const { myProjects, myTeams, loading: projectsLoading, error: projectsError, loadMyProjects } =
     useMyProjects();
 
   const { loadTasks, createTask } = useTasks();
@@ -89,6 +89,12 @@ const MyTimesheetCalendarTable = () => {
   useEffect(() => {
     loadMyProjects();
   }, [loadMyProjects]);
+  
+  // Debug: Log when projects and teams are loaded
+  useEffect(() => {
+    console.log('MyTimesheetCalendarTable - Projects loaded:', myProjects);
+    console.log('MyTimesheetCalendarTable - Teams loaded:', myTeams);
+  }, [myProjects, myTeams]);
 
   // Load timesheets for the current week (only once per week)
   useEffect(() => {
@@ -110,20 +116,24 @@ const MyTimesheetCalendarTable = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWeekStart]); // Only depend on currentWeekStart to avoid infinite loop
 
-  // Load tasks for all projects that appear in calendar view
+  // Load tasks for all projects and teams that appear in calendar view
   useEffect(() => {
-    const projectIds = new Set<string>();
+    const entityIds = new Set<string>();
     myCalendarViewData.forEach((entry) => {
       const matchingProject = myProjects.find((p) => p.projectName === entry.project);
+      const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === entry.project) : null;
+      
       if (matchingProject) {
-        projectIds.add(matchingProject._id);
+        entityIds.add(matchingProject._id);
+      } else if (matchingTeam) {
+        entityIds.add(matchingTeam._id);
       }
     });
     
-    projectIds.forEach(projectId => {
-      loadTasks(projectId);
+    entityIds.forEach(entityId => {
+      loadTasks(entityId);
     });
-  }, [myCalendarViewData, myProjects, loadTasks]);
+  }, [myCalendarViewData, myProjects, myTeams, loadTasks]);
 
   // Group by project._id
   const groupedData = useMemo<ExtendedTimesheetRow[]>(() => {
@@ -132,22 +142,29 @@ const MyTimesheetCalendarTable = () => {
     const publicProjects = myProjects.filter(proj => proj.isPublic);
     
     // Map from project _id to project object for easy lookup
-    const projectMap = new Map<string, { name: string; tasks: IMyTimesheetCalendarEntry[]; isPublic: boolean }>();
+    const projectMap = new Map<string, { name: string; tasks: IMyTimesheetCalendarEntry[]; isPublic: boolean; isTeam?: boolean }>();
 
     // Initialize all known projects (private first, then public)
     [...privateProjects, ...publicProjects].forEach((proj) => {
-      projectMap.set(proj._id, { name: proj.projectName, tasks: [], isPublic: proj.isPublic || false });
+      projectMap.set(proj._id, { name: proj.projectName, tasks: [], isPublic: proj.isPublic || false, isTeam: false });
+    });
+    
+    // Initialize all known teams (they will appear after public projects)
+    myTeams.forEach((team) => {
+      projectMap.set(team._id, { name: team.teamName, tasks: [], isPublic: false, isTeam: true });
     });
 
     // Populate tasks from calendar data
     myCalendarViewData.forEach((entry) => {
       // Find which project this entry belongs to by matching project ID or name
       const matchingProject = myProjects.find((p) => p._id === entry.project || p.projectName === entry.project);
+      // Find which team this entry belongs to (if not a project)
+      const matchingTeam = !matchingProject ? myTeams.find((t) => t._id === entry.project || t.teamName === entry.project) : null;
 
       if (matchingProject) {
         const key = matchingProject._id;
         if (!projectMap.has(key)) {
-          projectMap.set(key, { name: matchingProject.projectName, tasks: [], isPublic: matchingProject.isPublic || false });
+          projectMap.set(key, { name: matchingProject.projectName, tasks: [], isPublic: matchingProject.isPublic || false, isTeam: false });
         }
         
         // Map task ID to task name for display
@@ -159,12 +176,27 @@ const MyTimesheetCalendarTable = () => {
           project: matchingProject.projectName, // Use project name for display
           task: taskName, // Use task name for display
         });
+      } else if (matchingTeam) {
+        const key = matchingTeam._id;
+        if (!projectMap.has(key)) {
+          projectMap.set(key, { name: matchingTeam.teamName, tasks: [], isPublic: false, isTeam: true });
+        }
+        
+        // Map task ID to task name for display
+        const task = allTasks.find(t => t._id === entry.task);
+        const taskName = task ? task.taskName : entry.task;
+        
+        projectMap.get(key)!.tasks.push({
+          ...entry,
+          project: matchingTeam.teamName, // Use team name for display
+          task: taskName, // Use task name for display
+        });
       }
     });
 
     const rows: ExtendedTimesheetRow[] = [];
 
-    // Process private projects first
+    // 1. Process private projects first
     privateProjects.forEach((proj) => {
       const data = projectMap.get(proj._id);
       if (!data) return;
@@ -201,8 +233,46 @@ const MyTimesheetCalendarTable = () => {
         isCreateTaskRow: true,
       });
     });
+    
+    // 2. Process teams second
+    myTeams.forEach((team) => {
+      const data = projectMap.get(team._id);
+      if (!data) return;
+      
+      const teamName = data.name;
 
-    // Then process public projects
+      // Team header row (similar to project header)
+      rows.push({
+        id: `team-${team._id}`,
+        project: teamName,
+        projectId: team._id,
+        isProjectRow: true,
+      });
+
+      // Task rows for team
+      data.tasks.forEach((task) => {
+        rows.push({
+          id: task.id,
+          project: task.project,
+          projectId: team._id,
+          task: task.task,
+          billableType: task.billableType,
+          myTimesheetEntriesIds: task.myTimesheetEntriesIds,
+          isProjectRow: false,
+        });
+      });
+
+      // Create task row for team
+      rows.push({
+        id: `create-task-${team._id}`,
+        project: teamName,
+        projectId: team._id,
+        isProjectRow: false,
+        isCreateTaskRow: true,
+      });
+    });
+
+    // 3. Process public projects last
     publicProjects.forEach((proj) => {
       const data = projectMap.get(proj._id);
       if (!data) return;
@@ -241,13 +311,17 @@ const MyTimesheetCalendarTable = () => {
     });
 
     return rows;
-  }, [myCalendarViewData, myProjects, allTasks]);
+  }, [myCalendarViewData, myProjects, myTeams, allTasks]);
 
   const handleCreateTask = (projectId: string) => {
     const project = myProjects.find((p) => p._id === projectId);
-    if (!project) return;
-
-    createEmptyCalendarRow(project.projectName, '', BillableType.Billable);
+    const team = !project ? myTeams.find((t) => t._id === projectId) : null;
+    
+    if (project) {
+      createEmptyCalendarRow(project.projectName, '', BillableType.Billable);
+    } else if (team) {
+      createEmptyCalendarRow(team.teamName, '', BillableType.Billable);
+    }
     // Note: createEmptyCalendarRow likely expects projectName, not _id
     // Adjust if your hook supports _id in the future
   };
@@ -262,14 +336,18 @@ const MyTimesheetCalendarTable = () => {
     const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
     if (!calendarRow) return;
 
-    // Find the project for this calendar row
+    // Find the project or team for this calendar row
     const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
-    if (!matchingProject) return;
+    const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === calendarRow.project || t._id === calendarRow.project) : null;
+    
+    if (!matchingProject && !matchingTeam) return;
 
     // Check if there's already a calendar row with the same project and task
     const duplicate = myCalendarViewData.find(row => 
       row.id !== calendarRowId && // Not the same row
-      (row.project === calendarRow.project || row.project === matchingProject.projectName) && // Same project
+      (row.project === calendarRow.project || 
+       (matchingProject && row.project === matchingProject.projectName) ||
+       (matchingTeam && row.project === matchingTeam.teamName)) && // Same project/team
       row.task === newTaskName // Same task
     );
 
@@ -278,8 +356,9 @@ const MyTimesheetCalendarTable = () => {
       return;
     }
 
-    // Get tasks for this project
-    const projectTasks = tasksByProject[matchingProject._id] || [];
+    // Get tasks for this project or team
+    const entityId = matchingProject ? matchingProject._id : matchingTeam!._id;
+    const projectTasks = tasksByProject[entityId] || [];
     
     // Find the task ID from task name
     const selectedTask = projectTasks.find(task => task.taskName === newTaskName);
@@ -344,19 +423,22 @@ const MyTimesheetCalendarTable = () => {
     const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
     if (!calendarRow || !calendarRow.task) return;
 
-    // Find the matching project to get project ID
+    // Find the matching project or team to get ID
     const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
-    if (!matchingProject) return;
+    const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === calendarRow.project || t._id === calendarRow.project) : null;
+    
+    if (!matchingProject && !matchingTeam) return;
 
     // Get the task ID (calendarRow.task might be either task ID or task name)
-    const projectTasks = tasksByProject[matchingProject._id] || [];
+    const entityId = matchingProject ? matchingProject._id : matchingTeam!._id;
+    const projectTasks = tasksByProject[entityId] || [];
     const taskObj = projectTasks.find(t => t.taskName === calendarRow.task || t._id === calendarRow.task);
     const taskId = taskObj ? taskObj._id : calendarRow.task;
 
     const existingTimesheet = newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
       return (
-        (ts.project === calendarRow.project || ts.project === matchingProject._id) &&
+        (ts.project === calendarRow.project || ts.project === entityId) &&
         ts.task === taskId &&
         ts.billableType === calendarRow.billableType &&
         tsDate.toDateString() === date.toDateString()
@@ -385,19 +467,22 @@ const MyTimesheetCalendarTable = () => {
     const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
     if (!calendarRow || !calendarRow.task) return;
 
-    // Find the matching project to get project ID
+    // Find the matching project or team to get ID
     const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
-    if (!matchingProject) return;
+    const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === calendarRow.project || t._id === calendarRow.project) : null;
+    
+    if (!matchingProject && !matchingTeam) return;
 
     // Get the task ID (calendarRow.task might be either task ID or task name)
-    const projectTasks = tasksByProject[matchingProject._id] || [];
+    const entityId = matchingProject ? matchingProject._id : matchingTeam!._id;
+    const projectTasks = tasksByProject[entityId] || [];
     const taskObj = projectTasks.find(t => t.taskName === calendarRow.task || t._id === calendarRow.task);
     const taskId = taskObj ? taskObj._id : calendarRow.task;
 
     const existingTimesheet = newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
       return (
-        (ts.project === calendarRow.project || ts.project === matchingProject._id) &&
+        (ts.project === calendarRow.project || ts.project === entityId) &&
         ts.task === taskId &&
         ts.billableType === calendarRow.billableType &&
         tsDate.toDateString() === date.toDateString()

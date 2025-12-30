@@ -61,6 +61,26 @@ export const getSupervisedUserIds = async (supervisorId: string): Promise<string
   );
 };
 
+/**
+ * Get the project IDs and team IDs that a supervisor supervises
+ * Used to verify if a supervisor has permission to approve/reject/edit specific timesheets
+ */
+export const getSupervisedProjectAndTeamIds = async (supervisorId: string): Promise<{
+  projectIds: string[];
+  teamIds: string[];
+}> => {
+  const supervisedProjects = await ProjectModel.find({ supervisor: supervisorId });
+  const projectIds = supervisedProjects.map(p => p._id.toString());
+
+  const supervisedTeams = await TeamModel.find({ supervisor: supervisorId });
+  const teamIds = supervisedTeams.map(t => t._id.toString());
+
+  return {
+    projectIds,
+    teamIds,
+  };
+};
+
 export const updateUserTeamMemberships = async (
   teamId: string, 
   newMembers: string[], 
