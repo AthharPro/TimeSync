@@ -11,6 +11,6 @@ export interface User {
   role: UserRole;
   status: boolean;
   email: string;
-  isChangedPassword: boolean;
+  isChangedPwd: boolean;
   password?:string;
 }

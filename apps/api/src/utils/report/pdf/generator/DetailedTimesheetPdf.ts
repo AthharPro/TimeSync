@@ -406,8 +406,8 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       .stroke('#E2E8F0')
       .lineWidth(1);
     this.currentY += 20;
-    // Group data into separate sub-tables similar to the preview 
-    // CRITICAL: Aggregate by BOTH week date AND project/team to avoid duplicate rows
+    // Group data into separate sub-tables - each project and team gets its own table
+    // CRITICAL: Each unique project/team must have a separate table
     type SubRow = { sortDate: Date; cells: string[] };
     type SubTable = { title: string; includeWork: boolean; rows: SubRow[] };
     const tablesByTitle = new Map<string, SubTable>();
@@ -420,12 +420,12 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     let hasLeave = false;
 
     // First pass: aggregate all data by week+title to handle duplicate weeks
-    type WeekTitleKey = string; // Format: "2025-12-01_Project: ProjectName"
+    type WeekTitleKey = string; // Format: "2025-12-01_Project: ProjectName" or "2025-12-01_Team: TeamName"
     type AggregatedWeekItem = {
       weekStartRaw: Date;
       weekStart: string;
       weekEnd: string;
-      title: string;
+      title: string; // e.g., "Project: Project Alpha" or "Team: Engineering"
       includeWork: boolean;
       work?: string;
       dailyHours: number[];
@@ -443,13 +443,19 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
 
           let title: string | null = null;
           let includeWork = false;
+          
+          // Each project gets its own table with unique title
           if (item.projectName) {
             title = `Project: ${item.projectName}`;
             hasProject = true;
-          } else if (item.teamName) {
+          } 
+          // Each team gets its own table with unique title
+          else if (item.teamName) {
             title = `Team: ${item.teamName}`;
             hasTeam = true;
-          } else if (category.category === 'Other') {
+          } 
+          // Leave/Other activities go into a single "Leave" table
+          else if (category.category === 'Other') {
             title = 'Leave';
             includeWork = true;
             hasLeave = true;
@@ -459,6 +465,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
           if (!title) return;
 
           // Create unique key combining week start date and title
+          // This ensures same project/team in different weeks are aggregated correctly
           const weekTitleKey: WeekTitleKey = `${weekStart}_${title}`;
 
           // Aggregate items with the same week+title combination
@@ -498,7 +505,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => sum + hours, 0);
       employeeGrandTotal += rowTotal;
 
-      // Ensure table container for this title
+      // Ensure table container for this title (each project/team gets separate table)
       if (!tablesByTitle.has(title)) {
         tablesByTitle.set(title, { title, includeWork, rows: [] });
       }

@@ -340,71 +340,117 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
     type SubTable = { title: string; includeWork: boolean; rows: SubRow[] };
     const tablesByTitle = new Map<string, SubTable>();
 
+    // First pass: aggregate all data by week+title to handle duplicate weeks
+    // This matches the PDF aggregation logic exactly
+    type WeekTitleKey = string; // Format: "2025-12-01_Project: ProjectName" or "2025-12-01_Team: TeamName"
+    type AggregatedWeekItem = {
+      weekStartRaw: Date;
+      weekStart: string;
+      weekEnd: string;
+      title: string; // e.g., "Project: Project Alpha" or "Team: Engineering"
+      includeWork: boolean;
+      work?: string;
+      dailyHours: number[];
+    };
+    const weekTitleMap = new Map<WeekTitleKey, AggregatedWeekItem>();
+
     for (const timesheetWeek of employeeWeeks) {
+      const weekStartRaw = new Date(timesheetWeek.weekStartDate as any);
+      const weekStart = this.formatDate(weekStartRaw);
+      // Calculate week end as Friday (Monday + 4 days) to match PDF
+      const weekEndRaw = new Date(weekStartRaw);
+      weekEndRaw.setDate(weekStartRaw.getDate() + 4);
+      const weekEnd = this.formatDate(weekEndRaw);
+
       for (const category of timesheetWeek.categories) {
         for (const item of category.items) {
-          const dailyHours = Array.isArray(item.dailyHours)
-            ? item.dailyHours
-            : [];
+          const dailyHours = Array.isArray(item.dailyHours) ? item.dailyHours : [];
 
           let title: string | null = null;
           let includeWork = false;
 
-          if (category.category === 'Other') {
+          // Each project gets its own table with unique title
+          if (item.projectName) {
+            title = `Project: ${item.projectName}`;
+          }
+          // Each team gets its own table with unique title
+          else if (item.teamName) {
+            title = `Team: ${item.teamName}`;
+          }
+          // Leave/Other activities go into a single "Leave" table
+          else if (category.category === 'Other') {
             title = 'Leave';
             includeWork = true;
-          } else if (item.projectName) {
-            title = `Project: ${item.projectName}`;
-          } else if (item.teamName) {
-            title = `Team: ${item.teamName}`;
           }
 
           // Skip items that don't belong to any specific category
           if (!title) continue;
 
-          if (!tablesByTitle.has(title)) {
-            tablesByTitle.set(title, { title, includeWork, rows: [] });
+          // Create unique key combining week start date and title
+          // This ensures same project/team in different weeks are aggregated correctly
+          const weekTitleKey: WeekTitleKey = `${weekStart}_${title}`;
+
+          // Aggregate items with the same week+title combination
+          if (!weekTitleMap.has(weekTitleKey)) {
+            weekTitleMap.set(weekTitleKey, {
+              weekStartRaw,
+              weekStart,
+              weekEnd,
+              title,
+              includeWork,
+              work: includeWork ? (item.work || '') : undefined,
+              dailyHours: [0, 0, 0, 0, 0, 0, 0]
+            });
           }
-          const table = tablesByTitle.get(title);
-          if (!table) continue;
 
-          const weekStartRaw = new Date(timesheetWeek.weekStartDate as any);
-          const weekEndRaw = new Date(weekStartRaw);
-          weekEndRaw.setDate(weekStartRaw.getDate() + 6);
-
-          const rowTotal = dailyHours
-            .slice(0, 5)
-            .reduce((sum: number, hours) => {
-              const n =
-                typeof hours === 'string' ? parseFloat(hours) : hours || 0;
-              return sum + (isNaN(n) ? 0 : n);
-            }, 0);
-
-          const baseCells: (string | number)[] = [
-            this.formatDate(weekStartRaw),
-            this.formatDate(weekEndRaw),
-          ];
-          const workCells: (string | number)[] = includeWork
-            ? [item.work || '']
-            : [];
-          const dayCells: (string | number)[] = [
-            this.formatHoursForDisplay(dailyHours[0]),
-            this.formatHoursForDisplay(dailyHours[1]),
-            this.formatHoursForDisplay(dailyHours[2]),
-            this.formatHoursForDisplay(dailyHours[3]),
-            this.formatHoursForDisplay(dailyHours[4]),
-            this.formatHoursForDisplay(rowTotal),
-          ];
-
-          table.rows.push({
-            sortDate: weekStartRaw,
-            cells: [...baseCells, ...workCells, ...dayCells],
-          });
+          const aggregatedItem = weekTitleMap.get(weekTitleKey);
+          if (aggregatedItem) {
+            // Sum up the hours for each day
+            dailyHours.forEach((hours, index) => {
+              const numHours = typeof hours === 'string' ? parseFloat(hours) : (hours || 0);
+              aggregatedItem.dailyHours[index] += isNaN(numHours) ? 0 : numHours;
+            });
+          }
         }
       }
     }
 
-    // Sort table order
+    // Second pass: create rows from aggregated data
+    weekTitleMap.forEach((aggregatedItem) => {
+      const { weekStartRaw, weekStart, weekEnd, title, includeWork, work, dailyHours } = aggregatedItem;
+
+      // Ensure table container for this title (each project/team gets separate table)
+      if (!tablesByTitle.has(title)) {
+        tablesByTitle.set(title, { title, includeWork, rows: [] });
+      }
+      const table = tablesByTitle.get(title);
+      if (!table) return;
+
+      // Calculate row total from Mon-Fri (indices 0-4)
+      const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => sum + hours, 0);
+
+      // Build row - one row per unique week+project/team combination
+      const baseCells: (string | number)[] = [
+        weekStart,
+        weekEnd,
+      ];
+      const workCells: (string | number)[] = includeWork ? [work || ''] : [];
+      const dayCells: (string | number)[] = [
+        this.formatHoursForDisplay(dailyHours[0]),
+        this.formatHoursForDisplay(dailyHours[1]),
+        this.formatHoursForDisplay(dailyHours[2]),
+        this.formatHoursForDisplay(dailyHours[3]),
+        this.formatHoursForDisplay(dailyHours[4]),
+        this.formatHoursForDisplay(rowTotal),
+      ];
+
+      table.rows.push({
+        sortDate: weekStartRaw,
+        cells: [...baseCells, ...workCells, ...dayCells],
+      });
+    });
+
+    // Sort tables by priority: Projects first, then Teams, then Leave
     const ordered = Array.from(tablesByTitle.values()).sort((a, b) => {
       const rank = (t: string) =>
         t.startsWith('Project:')

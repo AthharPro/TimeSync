@@ -166,9 +166,9 @@ const buildTimesheetQuery = async (supervisorId: string, userRole: UserRole, par
     query.status = { $in: list.filter(Boolean) };
   }
 
-  // Only filter by projectId in timesheet data if NOT filtering by project members
-  // When filtering by project members, we want ALL their timesheets, not just ones for this project
-  if (projectIds && !filterByProjectMembers) {
+  // Filter by projectId when projectIds are specified
+  // This ensures only timesheets for the selected projects are included
+  if (projectIds) {
     const list = Array.isArray(projectIds) ? projectIds : [projectIds];
     if (list.length) {
       // Convert string IDs to ObjectIds for MongoDB query
@@ -185,7 +185,11 @@ const buildTimesheetQuery = async (supervisorId: string, userRole: UserRole, par
     selectedTeamIdsList = list;
     console.log('Team filtering - teamIds received:', list);
     if (list.length) {
-      // Check if selected teams include non-department teams
+      // Convert string IDs to ObjectIds for MongoDB query
+      const teamObjectIds = list.map(id => new mongoose.Types.ObjectId(id));
+      query.teamId = { $in: teamObjectIds };
+      
+      // Check if selected teams include non-department teams for display purposes
       const selectedTeams = await TeamModel.find({ _id: { $in: list } }).select('_id isDepartment').lean();
       console.log('Team filtering - Teams found in DB:', selectedTeams.length, selectedTeams);
       const hasNonDept = selectedTeams.some((t: any) => t.isDepartment === false);
@@ -193,16 +197,10 @@ const buildTimesheetQuery = async (supervisorId: string, userRole: UserRole, par
       
       if (hasNonDept && !hasDept) {
         teamFilterMode = 'non-department';
-        // For non-department teams, we don't filter by teamId in the query
-        // Instead, we get team members and filter by userId (handled in ensureSupervisorScope)
       } else if (hasNonDept && hasDept) {
         teamFilterMode = 'mixed';
-        // For mixed teams, we don't filter by teamId in the query
-        // Instead, we get team members and filter by userId (handled in ensureSupervisorScope)
       } else {
         teamFilterMode = 'department';
-        // For department teams, we don't filter by teamId in the query
-        // Instead, we get team members and filter by userId (handled in ensureSupervisorScope)
       }
     }
   }
@@ -469,15 +467,33 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
   // Transform daily entries into weekly aggregated format for reporting
   const weeklyTimesheets = transformDailyToWeekly(timesheets as any[]);
   
-  // Preload teams for isDepartment filtering if needed
-  let teamDeptMap = new Map<string, boolean>();
-  if (!workType || workType === 'both' || workType === 'team') {
-    const allTeamIds = Array.from(new Set((weeklyTimesheets as any[]).flatMap((t: any) => (t.data || []).flatMap((c: any) => (c.items || []).map((it: any) => it.teamId).filter(Boolean)))));
-    if (allTeamIds.length) {
-      const teams = await TeamModel.find({ _id: { $in: allTeamIds } }).select('_id isDepartment').lean();
-      teamDeptMap = new Map<string, boolean>(teams.map((t: any) => [String(t._id), Boolean(t.isDepartment)] as [string, boolean]));
-    }
-  }
+  // Get all unique project and team IDs from timesheets
+  const allProjectIds = Array.from(new Set(weeklyTimesheets.flatMap((t: any) => 
+    (t.data || []).flatMap((cat: any) => 
+      (cat.items || []).map((item: any) => item.projectId ? String(item.projectId) : null).filter(Boolean)
+    )
+  )));
+  const allTeamIds = Array.from(new Set(weeklyTimesheets.flatMap((t: any) => 
+    (t.data || []).flatMap((cat: any) => 
+      (cat.items || []).map((item: any) => item.teamId ? String(item.teamId) : null).filter(Boolean)
+    )
+  )));
+
+  console.log('Timesheet Entries Report - All Project IDs:', allProjectIds);
+  console.log('Timesheet Entries Report - All Team IDs:', allTeamIds);
+
+  // Fetch project and team names (and team isDepartment)
+  const [projects, teams] = await Promise.all([
+    allProjectIds.length ? ProjectModel.find({ _id: { $in: allProjectIds } }).select('_id projectName').lean() : [],
+    allTeamIds.length ? TeamModel.find({ _id: { $in: allTeamIds } }).select('_id teamName isDepartment').lean() : [],
+  ]);
+  
+  console.log('Timesheet Entries Report - Projects found:', projects.length, projects.map((p: any) => ({ id: String(p._id), name: p.projectName })));
+  console.log('Timesheet Entries Report - Teams found:', teams.length, teams.map((t: any) => ({ id: String(t._id), name: t.teamName })));
+  
+  const projectMap = new Map<string, string>(projects.map((p: any) => [String(p._id), p.projectName] as [string, string]));
+  const teamMap = new Map<string, string>(teams.map((t: any) => [String(t._id), t.teamName] as [string, string]));
+  const teamDeptMap = new Map<string, boolean>(teams.map((t: any) => [String(t._id), Boolean(t.isDepartment)] as [string, boolean]));
   
   // Check if any selected team filter is a non-department team
   const hasNonDeptTeamFilter = teamFilterMode === 'non-department' || teamFilterMode === 'mixed';
@@ -497,7 +513,12 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     const weekStart = new Date(t.weekStartDate);
     // Resolve bounds once per timesheet for per-day filtering
     const startBound = startDate ? new Date(startDate as any) : null;
-    const endBound = endDate ? new Date(endDate as any) : null;
+    const endBound = endDate ? (() => {
+      const end = new Date(endDate as any);
+      // Set to end of day to include all entries on the last day
+      end.setHours(23, 59, 59, 999);
+      return end;
+    })() : null;
     (t.data || [])
       .filter((cat: any) => {
         if (!workType || workType === 'both') return true;
@@ -523,11 +544,31 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
           return true;
         })
         .forEach((it: any) => {
-        const title = cat.category === 'Project' ? `Project: ${it.work || it.projectName || 'Project'}` : cat.category === 'Team' ? `Team: ${it.work || it.teamName || 'Team'}` : cat.category === 'Other' ? 'Leave' : cat.category;
+        // Create unique title using projectId/teamId to ensure each project/team gets its own table
+        let title: string;
+        if (cat.category === 'Project') {
+          const projectIdStr = it.projectId ? String(it.projectId) : null;
+          const projectName = projectIdStr ? projectMap.get(projectIdStr) || `Unknown Project (${projectIdStr})` : 'Project';
+          title = `Project: ${projectName}`;
+          console.log(`Creating title for project - ProjectID: ${projectIdStr}, ProjectName: ${projectName}, Title: ${title}`);
+        } else if (cat.category === 'Team') {
+          const teamIdStr = it.teamId ? String(it.teamId) : null;
+          const teamName = teamIdStr ? teamMap.get(teamIdStr) || `Unknown Team (${teamIdStr})` : 'Team';
+          title = `Team: ${teamName}`;
+          console.log(`Creating title for team - TeamID: ${teamIdStr}, TeamName: ${teamName}, Title: ${title}`);
+        } else if (cat.category === 'Other') {
+          title = 'Leave';
+        } else {
+          title = cat.category;
+        }
+        
         let table = dataByEmployee[employeeKey].tables.find((tb) => tb.title === title);
         if (!table) {
+          console.log(`Creating new table with title: "${title}" for employee: ${employeeKey}`);
           table = { title, rows: [] };
           dataByEmployee[employeeKey].tables.push(table);
+        } else {
+          console.log(`Found existing table with title: "${title}" for employee: ${employeeKey}`);
         }
         const hours: any[] = Array.isArray(it.hours) ? it.hours : [];
         const descriptions: any[] = Array.isArray(it.descriptions) ? it.descriptions : [];

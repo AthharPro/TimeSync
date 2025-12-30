@@ -194,7 +194,10 @@ export const getMyTimesheets = async (
       query.date.$gte = startDate;
     }
     if (endDate) {
-      query.date.$lte = endDate;
+      // Set to end of day to include all entries on the last day
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query.date.$lte = end;
     }
   }
 

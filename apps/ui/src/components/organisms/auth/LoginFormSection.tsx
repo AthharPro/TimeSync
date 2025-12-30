@@ -26,10 +26,15 @@ const LoginFormSection: React.FC = () => {
   const onSubmit = async (data: ILoginData) => {
     console.log(data);
     const res = await login(data.email, data.password);
-    if (res.success) {
-          navigate('/admin', { replace: true });
+    if (res.success && res.user) {
+          // Check if user needs to change password on first login
+          if (!res.user.isChangedPwd) {
+            navigate('/resetpasswordfirstlogin', { replace: true });
+            return;
+          }
 
-          switch(user?.role) {
+          // Redirect based on user role
+          switch(res.user.role) {
             case UserRole.SuperAdmin:
               navigate('/super-admin', { replace: true });
               break;

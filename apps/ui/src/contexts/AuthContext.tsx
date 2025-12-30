@@ -17,7 +17,7 @@ interface AuthContextProps {
   login: (
     email: string,
     password: string
-  ) => Promise<{ success: boolean; error?: any }>;
+  ) => Promise<{ success: boolean; user?: User; error?: any }>;
   logout: () => void;
   updateAccessToken: (token: string | null) => void;
   updateUser: (user: User | null) => void;
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Persist only user (token stays in memory)
       localStorage.setItem("user", JSON.stringify(user));
 
-      return { success: true };
+      return { success: true, user };
     } catch (err) {
       return { success: false, error: err };
     } finally {

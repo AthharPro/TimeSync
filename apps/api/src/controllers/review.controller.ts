@@ -121,7 +121,10 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
         query.date.$gte = new Date(startDate);
       }
       if (endDate) {
-        query.date.$lte = new Date(endDate);
+        const end = new Date(endDate);
+        // Set to end of day to include all entries on the last day
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
       }
     }
     

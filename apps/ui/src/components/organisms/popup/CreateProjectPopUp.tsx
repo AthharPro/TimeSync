@@ -117,7 +117,6 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
         onClose={handleCloseEmployeeDialog}
         onSave={handleSaveEmployees}
         initialSelectedEmployees={selectedEmployees}
-        roles={[UserRole.Emp, UserRole.Supervisor]}
       />
     </>
   );
