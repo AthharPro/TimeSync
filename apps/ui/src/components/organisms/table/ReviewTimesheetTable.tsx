@@ -27,11 +27,15 @@ interface IEmployee {
 interface ReviewTimesheetTableProps {
   onSelectedTimesheetsChange?: (employeeId: string, timesheetIds: string[]) => void;
   filters?: ReviewTimesheetFilters;
+  supervisedProjectIds?: string[];
+  supervisedTeamIds?: string[];
 }
 
 const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({ 
   onSelectedTimesheetsChange,
-  filters 
+  filters,
+  supervisedProjectIds = [],
+  supervisedTeamIds = []
 }) => {
   const {
     employees,
@@ -200,7 +204,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
                         <CloseIcon />
                       </IconButton>
                     </Box>
-                    
+
 
                     {/* Timesheet Content */}
                     <Box sx={{ mt: 0 }}>
@@ -210,6 +214,8 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
                           handleTimesheetSelectionChange(employee.id, timesheetIds)
                         }
                         filters={filters}
+                        supervisedProjectIds={supervisedProjectIds}
+                        supervisedTeamIds={supervisedTeamIds}
                       />
                     </Box>
                   </Box>

@@ -106,13 +106,16 @@ const HoursField: React.FC<IHoursFieldProps> = ({ value = 0, onChange, ...rest }
         '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
           borderBottom: 'none',
         },
+        '& .MuiInput-underline.Mui-disabled:before': {
+          borderBottom: 'none !important',
+        },
         '& .MuiInputBase-input': {
           padding: '4px 2px',
           textAlign: 'center',
         },
         '& .MuiInputBase-input.Mui-disabled': {
-          WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-          color: 'rgba(0, 0, 0, 0.87)',
+          WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
+          color: 'rgba(0, 0, 0, 0.6)',
         },
         ...rest.sx,
       }}

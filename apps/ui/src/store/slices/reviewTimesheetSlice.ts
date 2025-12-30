@@ -29,6 +29,7 @@ interface IReviewTimesheet {
   projectId?: string;
   task: string;
   taskId?: string;
+  teamId?: string;
   description: string;
   hours: number;
   billableType: string;
@@ -191,21 +192,30 @@ const reviewTimesheetSlice = createSlice({
       })
       .addCase(fetchEmployeeTimesheets.fulfilled, (state, action) => {
         const { employeeId, timesheets } = action.payload;
+        console.log('ReviewTimesheetSlice - Raw timesheets from API:', timesheets);
         const employee = state.employees.find(emp => emp.id === employeeId);
         if (employee) {
           employee.timesheetsLoading = false;
-          employee.timesheets = timesheets.map((ts: EmployeeTimesheet) => ({
-            id: ts._id,
-            date: ts.date,
-            project: ts.projectId?.projectName || 'No Project',
-            projectId: ts.projectId?._id,
-            task: ts.taskId?.taskName || 'No Task',
-            taskId: ts.taskId?._id,
-            description: ts.description || '',
-            hours: ts.hours || 0,
-            billableType: ts.billable || 'NonBillable',
-            status: ts.status,
-          }));
+          employee.timesheets = timesheets.map((ts: EmployeeTimesheet) => {
+            console.log('Processing timesheet:', ts);
+            console.log('  projectId:', ts.projectId);
+            console.log('  teamId:', ts.teamId);
+            const project = ts.projectId?.projectName || ts.teamId?.teamName || 'No Project';
+            console.log('  Resolved project/team name:', project);
+            return {
+              id: ts._id,
+              date: ts.date,
+              project: project,
+              projectId: ts.projectId?._id,
+              task: ts.taskId?.taskName || 'No Task',
+              taskId: ts.taskId?._id,
+              teamId: ts.teamId?._id,
+              description: ts.description || '',
+              hours: ts.hours || 0,
+              billableType: ts.billable || 'NonBillable',
+              status: ts.status,
+            };
+          });
         }
       })
       .addCase(fetchEmployeeTimesheets.rejected, (state, action) => {

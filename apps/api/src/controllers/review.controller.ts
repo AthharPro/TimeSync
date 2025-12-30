@@ -2,10 +2,13 @@ import { RequestHandler } from 'express';
 import { UserModel } from '../models/user.model';
 import { Timesheet } from '../models/timesheet.model';
 import { TimesheetRejection } from '../models/rejectionReason.model';
+import TeamModel from '../models/team.model';
+import ProjectModel from '../models/project.model';
+import { Task } from '../models/task.model';
 import appAssert from '../utils/validation/appAssert';
 import { FORBIDDEN, NOT_FOUND } from '../constants/http';
 import { UserRole, DailyTimesheetStatus } from '@tms/shared';
-import { getSupervisedUserIds } from '../utils/data/assignmentUtils';
+import { getSupervisedUserIds, getSupervisedProjectAndTeamIds } from '../utils/data/assignmentUtils';
 import mongoose from 'mongoose';
 
 /**
@@ -27,8 +30,8 @@ export const getSupervisedEmployeesForReviewHandler: RequestHandler = async (req
   try {
     let employees;
     
-    if (userRole === UserRole.Admin || userRole === UserRole.SupervisorAdmin || userRole === UserRole.SuperAdmin) {
-      // Admin, SupervisorAdmin, and SuperAdmin can see all users except SuperAdmin
+    if (userRole === UserRole.Admin || userRole === UserRole.SuperAdmin) {
+      // Admin and SuperAdmin can see all users except SuperAdmin
       employees = await UserModel.find({ 
         role: { $in: [UserRole.Emp, UserRole.Supervisor, UserRole.SupervisorAdmin, UserRole.Admin] }
       })
@@ -36,7 +39,7 @@ export const getSupervisedEmployeesForReviewHandler: RequestHandler = async (req
         .sort({ firstName: 1, lastName: 1 })
         .lean();
     } else {
-      // Regular Supervisor can only see their supervised employees
+      // Regular Supervisor and SupervisorAdmin can only see their supervised employees
       // Get employee IDs from projects and teams where this supervisor is assigned
       const supervisedUserIds = await getSupervisedUserIds(supervisorId);
       
@@ -121,16 +124,69 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
         query.date.$lte = new Date(endDate);
       }
     }
+    
+    // Note: Supervisor can see ALL timesheets of the employee, not just supervised projects/teams
+    // Permission checks for approve/reject/edit will be done in those specific handlers
 
-    // Fetch timesheets with populated project and task data
-    const timesheets = await Timesheet.find(query)
-      .populate('projectId', 'projectName')
-      .populate('taskId', 'taskName')
+    // Fetch timesheets WITHOUT population first
+    const rawTimesheets = await Timesheet.find(query)
       .sort({ date: -1 })
       .lean();
 
+    // Manually populate and check if projectId is actually a team
+    const enrichedTimesheets = await Promise.all(
+      rawTimesheets.map(async (ts: any) => {
+        // Try to populate as project first
+        if (ts.projectId) {
+          const projectData = await ProjectModel.findById(ts.projectId).select('projectName').lean();
+          if (projectData) {
+            ts.projectId = {
+              _id: ts.projectId,
+              projectName: projectData.projectName
+            };
+          } else {
+            // If not found as project, try as team
+            const teamData = await TeamModel.findById(ts.projectId).select('teamName').lean();
+            if (teamData) {
+              ts.projectId = {
+                _id: ts.projectId,
+                projectName: teamData.teamName // Use teamName in projectName field for consistency
+              };
+            } else {
+              // Neither project nor team found
+              ts.projectId = null;
+            }
+          }
+        }
+        
+        // Populate task
+        if (ts.taskId) {
+          const taskData = await Task.findById(ts.taskId).select('taskName').lean();
+          if (taskData) {
+            ts.taskId = {
+              _id: ts.taskId,
+              taskName: taskData.taskName
+            };
+          }
+        }
+        
+        // Populate team (if teamId field is used)
+        if (ts.teamId) {
+          const teamData = await TeamModel.findById(ts.teamId).select('teamName').lean();
+          if (teamData) {
+            ts.teamId = {
+              _id: ts.teamId,
+              teamName: teamData.teamName
+            };
+          }
+        }
+        
+        return ts;
+      })
+    );
+
     // Get rejection reasons for rejected timesheets
-    const timesheetIds = timesheets.map(ts => ts._id);
+    const timesheetIds = enrichedTimesheets.map(ts => ts._id);
     const rejectionRecords = await TimesheetRejection.find({
       timesheetId: { $in: timesheetIds }
     })
@@ -152,7 +208,7 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
     });
 
     // Add rejection reasons to timesheets
-    const timesheetsWithRejections = timesheets.map(ts => {
+    const timesheetsWithRejections = enrichedTimesheets.map(ts => {
       const rejection = rejectionMap.get(ts._id.toString());
       return {
         ...ts,
@@ -208,15 +264,25 @@ export const approveTimesheetsHandler: RequestHandler = async (req, res) => {
     appAssert(timesheets.length > 0, NOT_FOUND, 'No timesheets found');
 
     // Verify supervisor has permission to approve these timesheets
-    if (userRole !== UserRole.Admin && userRole !== UserRole.SupervisorAdmin && userRole !== UserRole.SuperAdmin) {
-      const supervisedUserIds = await getSupervisedUserIds(supervisorId);
+    // Check based on the project or team associated with each timesheet
+    // Note: SupervisorAdmin should also check permissions (only Admin and SuperAdmin can approve any timesheet)
+    if (userRole !== UserRole.Admin && userRole !== UserRole.SuperAdmin) {
+      const { projectIds, teamIds } = await getSupervisedProjectAndTeamIds(supervisorId);
       
       for (const timesheet of timesheets) {
-        const employeeId = (timesheet.userId as any)._id.toString();
+        const timesheetProjectId = timesheet.projectId?.toString();
+        const timesheetTeamId = timesheet.teamId?.toString();
+        
+        // Check if the supervisor supervises the project or team of this timesheet
+        // Note: Team timesheets store team ID in projectId field (not teamId)
+        const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
+        const hasTeamPermissionViaTeamId = timesheetTeamId && teamIds.includes(timesheetTeamId);
+        const hasTeamPermissionViaProjectId = timesheetProjectId && teamIds.includes(timesheetProjectId);
+        
         appAssert(
-          supervisedUserIds.includes(employeeId),
+          hasProjectPermission || hasTeamPermissionViaTeamId || hasTeamPermissionViaProjectId,
           FORBIDDEN,
-          `You do not have permission to approve timesheets for this employee`
+          `You do not have permission to approve this timesheet. You can only approve timesheets for projects or teams you supervise.`
         );
       }
     }
@@ -297,15 +363,25 @@ export const rejectTimesheetsHandler: RequestHandler = async (req, res) => {
     appAssert(timesheets.length > 0, NOT_FOUND, 'No timesheets found');
 
     // Verify supervisor has permission to reject these timesheets
-    if (userRole !== UserRole.Admin && userRole !== UserRole.SupervisorAdmin && userRole !== UserRole.SuperAdmin) {
-      const supervisedUserIds = await getSupervisedUserIds(supervisorId);
+    // Check based on the project or team associated with each timesheet
+    // Note: SupervisorAdmin should also check permissions (only Admin and SuperAdmin can reject any timesheet)
+    if (userRole !== UserRole.Admin && userRole !== UserRole.SuperAdmin) {
+      const { projectIds, teamIds } = await getSupervisedProjectAndTeamIds(supervisorId);
       
       for (const timesheet of timesheets) {
-        const employeeId = (timesheet.userId as any)._id.toString();
+        const timesheetProjectId = timesheet.projectId?.toString();
+        const timesheetTeamId = timesheet.teamId?.toString();
+        
+        // Check if the supervisor supervises the project or team of this timesheet
+        // Note: Team timesheets store team ID in projectId field (not teamId)
+        const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
+        const hasTeamPermissionViaTeamId = timesheetTeamId && teamIds.includes(timesheetTeamId);
+        const hasTeamPermissionViaProjectId = timesheetProjectId && teamIds.includes(timesheetProjectId);
+        
         appAssert(
-          supervisedUserIds.includes(employeeId),
+          hasProjectPermission || hasTeamPermissionViaTeamId || hasTeamPermissionViaProjectId,
           FORBIDDEN,
-          `You do not have permission to reject timesheets for this employee`
+          `You do not have permission to reject this timesheet. You can only reject timesheets for projects or teams you supervise.`
         );
       }
     }
@@ -383,13 +459,22 @@ export const updateEmployeeTimesheetHandler: RequestHandler = async (req, res) =
 
     const employeeId = (timesheet.userId as any)._id.toString();
 
-    // Verify supervisor has permission to update this employee's timesheet
+    // Verify supervisor has permission to update this timesheet
+    // Check based on the project or team associated with the timesheet
     if (userRole !== UserRole.Admin && userRole !== UserRole.SupervisorAdmin && userRole !== UserRole.SuperAdmin) {
-      const supervisedUserIds = await getSupervisedUserIds(supervisorId);
+      const { projectIds, teamIds } = await getSupervisedProjectAndTeamIds(supervisorId);
+      
+      const timesheetProjectId = timesheet.projectId?.toString();
+      const timesheetTeamId = timesheet.teamId?.toString();
+      
+      // Check if the supervisor supervises the project or team of this timesheet
+      const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
+      const hasTeamPermission = timesheetTeamId && teamIds.includes(timesheetTeamId);
+      
       appAssert(
-        supervisedUserIds.includes(employeeId),
+        hasProjectPermission || hasTeamPermission,
         FORBIDDEN,
-        'You do not have permission to update this employee\'s timesheet'
+        'You do not have permission to update this timesheet. You can only update timesheets for projects or teams you supervise.'
       );
     }
 

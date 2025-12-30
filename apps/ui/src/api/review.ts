@@ -25,6 +25,10 @@ export interface EmployeeTimesheet {
     _id: string;
     taskName: string;
   } | null;
+  teamId?: {
+    _id: string;
+    teamName: string;
+  } | null;
   billable?: string;
   description?: string;
   hours?: number;
