@@ -34,16 +34,16 @@ const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
         borderRadius: 3,
         borderColor: isSelected
           ? theme.palette.secondary.main
-          : theme.palette.secondary.main,
+          : theme.palette.text.secondary,
         backgroundColor: isSelected
           ? 'rgba(1, 50, 130, 0.05)'
-          : theme.palette.background.default,
+          : theme.palette.background.paper,
         p: 2,
         '&:hover': {
           backgroundColor: isSelected
             ? 'rgba(1, 50, 130, 0.08)'
-            : theme.palette.background.paper,
-          borderColor: theme.palette.text.secondary,
+            : theme.palette.background.default,
+          borderColor: theme.palette.secondary.main,
         },
       }}
     >

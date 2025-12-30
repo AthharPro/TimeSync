@@ -97,7 +97,7 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
 
   return (
    <>
-      <PopupLayout open={open} title="Create Project" onClose={handleCancel} maxWidth='xs'>
+      <PopupLayout open={open} title="Create Project" onClose={handleCancel} maxWidth='md'>
         <CreateProjectForm
           control={control}
           errors={errors}

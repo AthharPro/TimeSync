@@ -16,7 +16,7 @@ const ProjectTeamViewPopUp: React.FC<ITeamViewModalProps> = ({ open, onClose, pr
       onClose={onClose}
       title={`Team Members - ${project.projectName}`}
       subtitle={`View all team members and project manager (${totalMembers})`}
-      maxWidth="lg"
+      maxWidth="md"
     >
       <Box>
         {/* Project Manager Section */}
