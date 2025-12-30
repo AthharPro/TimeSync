@@ -26,6 +26,18 @@ export const useReportPreview = ({
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
+  // Helper function to calculate week end date (Friday = Monday + 4 days)
+  const calculateWeekEndDate = (weekStartDate: string): string => {
+    try {
+      const startDate = new Date(weekStartDate);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 4); // Friday (Mon + 4 days)
+      return endDate.toISOString().slice(0, 10);
+    } catch {
+      return weekStartDate;
+    }
+  };
+
   const loadPreview = async () => {
     if (!reportType || !isFilterValid) return;
     
@@ -41,14 +53,17 @@ export const useReportPreview = ({
         const rawData = await previewDetailedTimesheet(filter);
         console.log('Preview rawData received:', rawData);
         
-        // Filter the data first - rawData is already transformed to flat rows
-        const filteredData = (rawData || []).filter((row: any) => {
-          if (!row || !row.employeeName || !row.employeeEmail) return false;
+        // rawData is array of employee weeks with categories structure:
+        // [{ employeeName, employeeEmail, weekStartDate, categories: [{ category, items: [{ projectName, teamName, dailyHours, ... }] }] }]
+        
+        // Filter valid data
+        const filteredData = (rawData || []).filter((weekData: any) => {
+          if (!weekData || !weekData.employeeName || !weekData.employeeEmail) return false;
           return true;
         });
 
         // Check if multiple employees are selected
-        const uniqueEmployees = new Set(filteredData.map((row: any) => `${row.employeeName}|${row.employeeEmail}`));
+        const uniqueEmployees = new Set(filteredData.map((weekData: any) => `${weekData.employeeName}|${weekData.employeeEmail}`));
         const hasMultipleEmployees = uniqueEmployees.size > 1;
         
         // Check if filtering by project - if so, show separate tables for each user
@@ -60,6 +75,30 @@ export const useReportPreview = ({
         // Only combine into single table when multiple employees are selected AND it's NOT project-wise filter AND it's NOT team-wise filter
         if (hasMultipleEmployees && !isProjectWiseFilter && !isTeamWiseFilter) {
           // Combine all data into a single table for multiple employees (only when NOT filtering by project)
+          // Flatten categories into rows for combined view
+          const flatRows: any[] = [];
+          
+          filteredData.forEach((weekData: any) => {
+            (weekData.categories || []).forEach((cat: any) => {
+              (cat.items || []).forEach((item: any) => {
+                const dailyHours = item.dailyHours || [];
+                const total = dailyHours.slice(0, 5).reduce((sum: number, h: any) => sum + (parseFloat(h) || 0), 0);
+                
+                flatRows.push({
+                  employeeName: weekData.employeeName,
+                  weekStartDate: weekData.weekStartDate,
+                  work: item.projectName || item.teamName || item.work || cat.category,
+                  mon: dailyHours[0] ? parseFloat(dailyHours[0]).toFixed(2) : '',
+                  tue: dailyHours[1] ? parseFloat(dailyHours[1]).toFixed(2) : '',
+                  wed: dailyHours[2] ? parseFloat(dailyHours[2]).toFixed(2) : '',
+                  thu: dailyHours[3] ? parseFloat(dailyHours[3]).toFixed(2) : '',
+                  fri: dailyHours[4] ? parseFloat(dailyHours[4]).toFixed(2) : '',
+                  total: total.toFixed(2)
+                });
+              });
+            });
+          });
+          
           const singleTableData: {
             [key: string]: {
               employeeName: string;
@@ -87,7 +126,7 @@ export const useReportPreview = ({
                   { key: 'fri', header: 'Fri' },
                   { key: 'total', header: 'Total' },
                 ],
-                rows: filteredData
+                rows: flatRows
               }]
             }
           };
@@ -110,26 +149,143 @@ export const useReportPreview = ({
             };
           } = {};
 
-          filteredData.forEach((row: any) => {
-            const employeeKey = `${row.employeeName}|${row.employeeEmail}`;
+          // First pass: Aggregate data by employee, week, and project/team (matching PDF logic)
+          // This prevents duplicate rows when multiple items exist for same week+project/team
+          type WeekTitleKey = string; // Format: "2025-12-01_Project: ProjectName"
+          type EmployeeWeekData = {
+            [employeeKey: string]: {
+              employeeName: string;
+              employeeEmail: string;
+              weekTitleMap: Map<WeekTitleKey, {
+                weekStartDate: string;
+                weekEndDate: string;
+                title: string;
+                isLeave: boolean;
+                status: string;
+                work?: string;
+                mon: number;
+                tue: number;
+                wed: number;
+                thu: number;
+                fri: number;
+              }>;
+            };
+          };
+          
+          const employeeWeekData: EmployeeWeekData = {};
+
+          // Aggregate hours by employee, week, and project/team from raw categories structure
+          filteredData.forEach((weekData: any) => {
+            const employeeKey = `${weekData.employeeName}|${weekData.employeeEmail}`;
             
-            if (!groupedData[employeeKey]) {
-              groupedData[employeeKey] = {
-                employeeName: row.employeeName,
-                employeeEmail: row.employeeEmail,
-                tables: []
+            if (!employeeWeekData[employeeKey]) {
+              employeeWeekData[employeeKey] = {
+                employeeName: weekData.employeeName,
+                employeeEmail: weekData.employeeEmail,
+                weekTitleMap: new Map()
               };
             }
 
-            // Use the category as the table title
-            const tableTitle = row.category;
-            const isLeave = tableTitle.toLowerCase().includes('leave') || tableTitle === 'Leave';
+            // Process categories and items from raw API data
+            (weekData.categories || []).forEach((category: any) => {
+              (category.items || []).forEach((item: any) => {
+                // Determine table title based on project/team
+                let tableTitle = category.category;
+                if (item.projectName) {
+                  tableTitle = `Project: ${item.projectName}`;
+                } else if (item.teamName) {
+                  tableTitle = `Team: ${item.teamName}`;
+                } else if (category.category === 'Other' || category.category.toLowerCase().includes('leave')) {
+                  tableTitle = 'Leave';
+                }
+                
+                const isLeave = tableTitle.toLowerCase().includes('leave') || tableTitle === 'Leave';
+                
+                // Create unique key: weekStartDate + tableTitle
+                const weekTitleKey: WeekTitleKey = `${weekData.weekStartDate}_${tableTitle}`;
+                
+                const weekDataMap = employeeWeekData[employeeKey].weekTitleMap;
+                
+                if (!weekDataMap.has(weekTitleKey)) {
+                  weekDataMap.set(weekTitleKey, {
+                    weekStartDate: weekData.weekStartDate,
+                    weekEndDate: calculateWeekEndDate(weekData.weekStartDate),
+                    title: tableTitle,
+                    isLeave: isLeave,
+                    status: weekData.status || 'Draft',
+                    work: isLeave ? (item.work || '') : undefined,
+                    mon: 0,
+                    tue: 0,
+                    wed: 0,
+                    thu: 0,
+                    fri: 0
+                  });
+                }
+                
+                const aggregated = weekDataMap.get(weekTitleKey)!;
+                const dailyHours = item.dailyHours || [];
+                
+                // Sum up hours for each day (indices 0-4 for Mon-Fri)
+                aggregated.mon += parseFloat(dailyHours[0]?.toString() || '0') || 0;
+                aggregated.tue += parseFloat(dailyHours[1]?.toString() || '0') || 0;
+                aggregated.wed += parseFloat(dailyHours[2]?.toString() || '0') || 0;
+                aggregated.thu += parseFloat(dailyHours[3]?.toString() || '0') || 0;
+                aggregated.fri += parseFloat(dailyHours[4]?.toString() || '0') || 0;
+              });
+            });
+          });
+
+          // Second pass: Create tables from aggregated data
+          Object.keys(employeeWeekData).forEach(employeeKey => {
+            const empData = employeeWeekData[employeeKey];
             
-            // Find existing table for this category or create new one
-            let existingTable = groupedData[employeeKey].tables.find(t => t.title === tableTitle);
-            if (!existingTable) {
-              // Define columns based on category type (Mon-Fri only, no Sat/Sun)
-              const columns = isLeave 
+            groupedData[employeeKey] = {
+              employeeName: empData.employeeName,
+              employeeEmail: empData.employeeEmail,
+              tables: []
+            };
+            
+            // Group aggregated weeks by table title
+            const tablesByTitle = new Map<string, any[]>();
+            
+            empData.weekTitleMap.forEach((weekData) => {
+              if (!tablesByTitle.has(weekData.title)) {
+                tablesByTitle.set(weekData.title, []);
+              }
+              
+              const total = weekData.mon + weekData.tue + weekData.wed + weekData.thu + weekData.fri;
+              
+              const rowData = {
+                weekStartDate: weekData.weekStartDate,
+                weekEndDate: weekData.weekEndDate,
+                status: weekData.status,
+                ...(weekData.isLeave && weekData.work ? { work: weekData.work } : {}),
+                mon: weekData.mon ? weekData.mon.toFixed(2) : '',
+                tue: weekData.tue ? weekData.tue.toFixed(2) : '',
+                wed: weekData.wed ? weekData.wed.toFixed(2) : '',
+                thu: weekData.thu ? weekData.thu.toFixed(2) : '',
+                fri: weekData.fri ? weekData.fri.toFixed(2) : '',
+                total: total ? total.toFixed(2) : ''
+              };
+              
+              tablesByTitle.get(weekData.title)!.push(rowData);
+            });
+            
+            // Create tables sorted by priority: Projects first, then Teams, then Leave
+            const sortedTitles = Array.from(tablesByTitle.keys()).sort((a, b) => {
+              const rank = (t: string) => (t.startsWith('Project:') ? 0 : t.startsWith('Team:') ? 1 : t === 'Leave' ? 2 : 3);
+              const rA = rank(a);
+              const rB = rank(b);
+              if (rA !== rB) return rA - rB;
+              return a.localeCompare(b);
+            });
+            
+            sortedTitles.forEach(title => {
+              const rows = tablesByTitle.get(title)!;
+              const isLeave = title.toLowerCase().includes('leave') || title === 'Leave';
+              
+              // Define columns based on whether it's a leave table
+              const columns = isLeave
                 ? [
                     { key: 'weekStartDate', header: 'Week Start' },
                     { key: 'weekEndDate', header: 'Week End' },
@@ -154,16 +310,15 @@ export const useReportPreview = ({
                     { key: 'total', header: 'Total' },
                   ];
               
-              existingTable = {
-                title: tableTitle,
-                columns: columns,
-                rows: []
-              };
-              groupedData[employeeKey].tables.push(existingTable);
-            }
-
-            // Add row to the appropriate table
-            existingTable.rows.push(row);
+              // Sort rows by week start date
+              rows.sort((a, b) => new Date(a.weekStartDate).getTime() - new Date(b.weekStartDate).getTime());
+              
+              groupedData[employeeKey].tables.push({
+                title,
+                columns,
+                rows
+              });
+            });
           });
 
           console.log('Grouped preview data (project-wise, team-wise, or individual):', groupedData);
@@ -171,6 +326,29 @@ export const useReportPreview = ({
         }
         
         // For backward compatibility, also set the original format
+        // Flatten the grouped data for backward compatibility
+        const backwardCompatRows: any[] = [];
+        filteredData.forEach((weekData: any) => {
+          (weekData.categories || []).forEach((cat: any) => {
+            (cat.items || []).forEach((item: any) => {
+              const dailyHours = item.dailyHours || [];
+              const total = dailyHours.slice(0, 5).reduce((sum: number, h: any) => sum + (parseFloat(h) || 0), 0);
+              backwardCompatRows.push({
+                employeeName: weekData.employeeName,
+                employeeEmail: weekData.employeeEmail,
+                weekStartDate: weekData.weekStartDate,
+                status: weekData.status || 'Draft',
+                mon: dailyHours[0] ? parseFloat(dailyHours[0]).toFixed(2) : '',
+                tue: dailyHours[1] ? parseFloat(dailyHours[1]).toFixed(2) : '',
+                wed: dailyHours[2] ? parseFloat(dailyHours[2]).toFixed(2) : '',
+                thu: dailyHours[3] ? parseFloat(dailyHours[3]).toFixed(2) : '',
+                fri: dailyHours[4] ? parseFloat(dailyHours[4]).toFixed(2) : '',
+                total: total.toFixed(2)
+              });
+            });
+          });
+        });
+        
         setPreviewColumns([
           { key: 'employeeName', header: 'Employee' },
           { key: 'employeeEmail', header: 'Email' },
@@ -183,7 +361,7 @@ export const useReportPreview = ({
           { key: 'fri', header: 'Fri' },
           { key: 'total', header: 'Total' },
         ]);
-        setPreviewRows(rawData);
+        setPreviewRows(backwardCompatRows);
       } else if (reportType === 'timesheet-entries') {
         const rawEntries = await previewDetailedTimesheetRaw(filter);
         
@@ -222,8 +400,9 @@ export const useReportPreview = ({
         const hasMultipleEmployees = filteredEmployees.length > 1;
 
         // For individual user, project-wise, or team-wise filter:
-        // Always create separate tables for each employee with columns: date, responsible, description, Time Spent (Hours)
-        // When multiple employees: create one table per employee
+        // Create separate tables for each project/team when user works on multiple projects/teams
+        // When employee has single project/team: create one table
+        // When employee has multiple projects/teams: create separate table for each
         if (isIndividualUserFilter || isProjectWiseFilter || isTeamWiseFilter) {
           const groupedData: {
             [employeeKey: string]: {
@@ -248,49 +427,212 @@ export const useReportPreview = ({
               };
             }
             
-            // Collect all rows from all tables for this employee
-            const allEmployeeRows: any[] = [];
-            
+            // Collect all unique project/team titles from employee's tables
+            const allTitles = new Set<string>();
             (employee.tables || []).forEach((table: any) => {
-              const isProjectTable = table.title?.includes('Project:');
-              const isTeamTable = table.title?.includes('Team:');
-              const isLeaveTable = table.title?.includes('Leave');
-              
-              // Apply workType filtering
-              if (filter.workType && !isLeaveTable) {
-                if (filter.workType === 'project' && !isProjectTable) {
-                  return;
-                }
-                if (filter.workType === 'team' && !isTeamTable) {
-                  return;
-                }
+              if (table.title) {
+                allTitles.add(table.title);
               }
+            });
+            
+            const titlesArray = Array.from(allTitles);
+            const projectTitles = titlesArray.filter(t => t.includes('Project:'));
+            const teamTitles = titlesArray.filter(t => t.includes('Team:'));
+            
+            // Check if user has ONLY ONE project (and NO teams)
+            if (projectTitles.length === 1 && teamTitles.length === 0) {
+              // Single project only - combine all entries into one table
+              const allEmployeeRows: any[] = [];
               
-              // Add rows from this table to the employee's collection
-              (table.rows || []).forEach((row: any) => {
-                allEmployeeRows.push({
-                  date: row.date,
-                  responsible: employee.employeeName,
-                  description: row.description || '',
-                  quantity: parseFloat(row.quantity || 0).toFixed(2)
+              (employee.tables || []).forEach((table: any) => {
+                const isProjectTable = table.title?.includes('Project:');
+                const isTeamTable = table.title?.includes('Team:');
+                const isLeaveTable = table.title?.includes('Leave');
+                
+                // Apply workType filtering
+                if (filter.workType && !isLeaveTable) {
+                  if (filter.workType === 'project' && !isProjectTable) {
+                    return;
+                  }
+                  if (filter.workType === 'team' && !isTeamTable) {
+                    return;
+                  }
+                }
+                
+                // Add rows from this table to the employee's collection
+                (table.rows || []).forEach((row: any) => {
+                  allEmployeeRows.push({
+                    date: row.date,
+                    responsible: employee.employeeName,
+                    description: row.description || '',
+                    quantity: parseFloat(row.quantity || 0).toFixed(2)
+                  });
                 });
               });
-            });
-            
-            // Sort all rows by date
-            allEmployeeRows.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            
-            // Create a single table for this employee with all their entries
-            groupedData[employeeKey].tables.push({
-              title: 'Timesheet Entries',
-              columns: [
-                { key: 'date', header: 'Date', width: '15%' },
-                { key: 'responsible', header: 'Responsible', width: '20%' },
-                { key: 'description', header: 'Description', width: '40%' },
-                { key: 'quantity', header: 'Time Spent (Hours)', width: '25%' },
-              ],
-              rows: allEmployeeRows
-            });
+              
+              // Sort all rows by date
+              allEmployeeRows.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              
+              // Create a single table for this employee
+              const projectName = projectTitles[0].replace('Project: ', '').trim();
+              groupedData[employeeKey].tables.push({
+                title: `Timesheet Entries for ${projectName}`,
+                columns: [
+                  { key: 'date', header: 'Date', width: '15%' },
+                  { key: 'responsible', header: 'Responsible', width: '20%' },
+                  { key: 'description', header: 'Description', width: '40%' },
+                  { key: 'quantity', header: 'Time Spent (Hours)', width: '25%' },
+                ],
+                rows: allEmployeeRows
+              });
+            }
+            // Check if user has ONLY ONE team (and NO projects)
+            else if (teamTitles.length === 1 && projectTitles.length === 0) {
+              // Single team only - combine all entries into one table
+              const allEmployeeRows: any[] = [];
+              
+              (employee.tables || []).forEach((table: any) => {
+                const isProjectTable = table.title?.includes('Project:');
+                const isTeamTable = table.title?.includes('Team:');
+                const isLeaveTable = table.title?.includes('Leave');
+                
+                // Apply workType filtering
+                if (filter.workType && !isLeaveTable) {
+                  if (filter.workType === 'project' && !isProjectTable) {
+                    return;
+                  }
+                  if (filter.workType === 'team' && !isTeamTable) {
+                    return;
+                  }
+                }
+                
+                // Add rows from this table to the employee's collection
+                (table.rows || []).forEach((row: any) => {
+                  allEmployeeRows.push({
+                    date: row.date,
+                    responsible: employee.employeeName,
+                    description: row.description || '',
+                    quantity: parseFloat(row.quantity || 0).toFixed(2)
+                  });
+                });
+              });
+              
+              // Sort all rows by date
+              allEmployeeRows.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              
+              // Create a single table for this employee
+              const teamName = teamTitles[0].replace('Team: ', '').trim();
+              groupedData[employeeKey].tables.push({
+                title: `Timesheet Entries for ${teamName}`,
+                columns: [
+                  { key: 'date', header: 'Date', width: '15%' },
+                  { key: 'responsible', header: 'Responsible', width: '20%' },
+                  { key: 'description', header: 'Description', width: '40%' },
+                  { key: 'quantity', header: 'Time Spent (Hours)', width: '25%' },
+                ],
+                rows: allEmployeeRows
+              });
+            }
+            // User has multiple projects/teams or mixed entries - show separate tables for each
+            else if (titlesArray.length > 1) {
+              // Create separate table for each project/team
+              (employee.tables || []).forEach((table: any) => {
+                const isProjectTable = table.title?.includes('Project:');
+                const isTeamTable = table.title?.includes('Team:');
+                const isLeaveTable = table.title?.includes('Leave');
+                
+                // Apply workType filtering
+                if (filter.workType && !isLeaveTable) {
+                  if (filter.workType === 'project' && !isProjectTable) {
+                    return;
+                  }
+                  if (filter.workType === 'team' && !isTeamTable) {
+                    return;
+                  }
+                }
+                
+                // Create rows for this specific project/team
+                const tableRows: any[] = [];
+                (table.rows || []).forEach((row: any) => {
+                  tableRows.push({
+                    date: row.date,
+                    responsible: employee.employeeName,
+                    description: row.description || '',
+                    quantity: parseFloat(row.quantity || 0).toFixed(2)
+                  });
+                });
+                
+                // Sort rows by date
+                tableRows.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                
+                // Extract clean project/team name from title
+                let cleanTitle = table.title;
+                if (isProjectTable) {
+                  const projectName = table.title.replace('Project: ', '').trim();
+                  cleanTitle = `Timesheet Entries for ${projectName}`;
+                } else if (isTeamTable) {
+                  const teamName = table.title.replace('Team: ', '').trim();
+                  cleanTitle = `Timesheet Entries for ${teamName}`;
+                }
+                
+                // Create separate table for this project/team
+                groupedData[employeeKey].tables.push({
+                  title: cleanTitle,
+                  columns: [
+                    { key: 'date', header: 'Date', width: '15%' },
+                    { key: 'responsible', header: 'Responsible', width: '20%' },
+                    { key: 'description', header: 'Description', width: '40%' },
+                    { key: 'quantity', header: 'Time Spent (Hours)', width: '25%' },
+                  ],
+                  rows: tableRows
+                });
+              });
+            }
+            // Fallback - no clear project/team info
+            else {
+              const allEmployeeRows: any[] = [];
+              
+              (employee.tables || []).forEach((table: any) => {
+                const isProjectTable = table.title?.includes('Project:');
+                const isTeamTable = table.title?.includes('Team:');
+                const isLeaveTable = table.title?.includes('Leave');
+                
+                // Apply workType filtering
+                if (filter.workType && !isLeaveTable) {
+                  if (filter.workType === 'project' && !isProjectTable) {
+                    return;
+                  }
+                  if (filter.workType === 'team' && !isTeamTable) {
+                    return;
+                  }
+                }
+                
+                // Add rows from this table to the employee's collection
+                (table.rows || []).forEach((row: any) => {
+                  allEmployeeRows.push({
+                    date: row.date,
+                    responsible: employee.employeeName,
+                    description: row.description || '',
+                    quantity: parseFloat(row.quantity || 0).toFixed(2)
+                  });
+                });
+              });
+              
+              // Sort all rows by date
+              allEmployeeRows.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              
+              // Create a single table
+              groupedData[employeeKey].tables.push({
+                title: 'Timesheet Entries',
+                columns: [
+                  { key: 'date', header: 'Date', width: '15%' },
+                  { key: 'responsible', header: 'Responsible', width: '20%' },
+                  { key: 'description', header: 'Description', width: '40%' },
+                  { key: 'quantity', header: 'Time Spent (Hours)', width: '25%' },
+                ],
+                rows: allEmployeeRows
+              });
+            }
           });
           
           console.log('Grouped preview data (individual/project-wise/team-wise):', groupedData);

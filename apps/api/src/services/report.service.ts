@@ -42,7 +42,10 @@ export class ReportService {
         query.date.$gte = new Date(filter.startDate);
       }
       if (filter.endDate) {
-        query.date.$lte = new Date(filter.endDate);
+        const end = new Date(filter.endDate);
+        // Set to end of day to include all entries on the last day
+        end.setHours(23, 59, 59, 999);
+        query.date.$lte = end;
       }
     }
 

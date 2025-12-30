@@ -8,6 +8,8 @@ export const createWeekOverlapQuery = (startDate?: string | Date, endDate?: stri
   if (startDate && endDate) {
     const start = new Date(startDate);
     const end = new Date(endDate);
+    // Set end date to end of day (23:59:59.999) to include all entries on that date
+    end.setHours(23, 59, 59, 999);
     
     // Query timesheets where date is between startDate and endDate (inclusive)
     query.date = {
@@ -21,6 +23,8 @@ export const createWeekOverlapQuery = (startDate?: string | Date, endDate?: stri
     query.date = { $gte: start };
   } else if (endDate) {
     const end = new Date(endDate);
+    // Set end date to end of day (23:59:59.999) to include all entries on that date
+    end.setHours(23, 59, 59, 999);
     // Include timesheets on or before the end date
     query.date = { $lte: end };
   }
