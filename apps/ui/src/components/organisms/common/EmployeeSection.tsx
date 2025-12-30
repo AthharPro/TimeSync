@@ -176,6 +176,23 @@ const EmployeeSection: React.FC<IEmployeeSectionProps> = ({
                           {employee.email}
                         </Typography>
                       )}
+                      <Box sx={{ height: 4 }} >
+                      {/* Show employee allocation if available */}
+                      {employee.allocation !== undefined && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: theme.palette.text.secondary,
+                            fontSize: '0.7rem',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Allocation: {employee.allocation}%
+                        </Typography>
+                      )}
+                      </Box>
                     </Box>
                   </Box>
                 </Paper>

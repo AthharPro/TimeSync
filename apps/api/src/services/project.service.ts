@@ -13,6 +13,19 @@ export const createProject = async (data: CreateProjectParams) => {
 
   appAssert(!existingProject, CONFLICT, 'Project already exists');
 
+  const employeesArray = (data.employees || []).map((emp) => {
+    const rawAlloc = (emp as any).allocation;
+    const allocation = typeof rawAlloc !== 'undefined' && rawAlloc !== null ? Number(rawAlloc) : undefined;
+    const mapped: any = {
+      user: new mongoose.Types.ObjectId((emp as any).user ?? emp),
+    };
+    if (typeof allocation === 'number' && !Number.isNaN(allocation)) mapped.allocation = allocation;
+    return mapped;
+  });
+
+  // eslint-disable-next-line no-console
+  console.debug('createProject - mapped employees:', employeesArray);
+
   const project = await ProjectModel.create({
     projectName: data.projectName,
     startDate: data.startDate ?? null,
@@ -23,7 +36,7 @@ export const createProject = async (data: CreateProjectParams) => {
     projectType: data.projectType,
     isPublic: data.isPublic,
     billable: data.billable,
-    employees: data.employees?.map((emp) => new mongoose.Types.ObjectId(emp)),
+    employees: employeesArray,
     supervisor: data.supervisor ? new mongoose.Types.ObjectId(data.supervisor) : null,
     status: data.status ?? true,
   });
@@ -41,9 +54,9 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
   switch (userRole) {
     case UserRole.Emp:
     case UserRole.Supervisor: {
-      const projects = await ProjectModel.find({ status: true, employees: userId })
+      const projects = await ProjectModel.find({ status: true, 'employees.user': userId })
         .sort({ createdAt: -1 })
-        .populate({ path: 'employees', select: 'firstName lastName email designation' })
+        .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       return { projects };
     }
@@ -52,7 +65,7 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     case UserRole.SuperAdmin: {
       const projects = await ProjectModel.find({ status: true })
         .sort({ createdAt: -1 })
-        .populate({ path: 'employees', select: 'firstName lastName email designation' })
+        .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       return { projects };
     }
@@ -66,7 +79,7 @@ export const listMyProjects = async (userId: string) => {
   const projects = await ProjectModel.find({ 
     status: true, 
     $or: [
-      { employees: userId }, // Private projects where user is assigned
+      { 'employees.user': userId }, // Private projects where user is assigned
       { isPublic: true }      // Public projects (all users can add time)
     ]
   })
@@ -76,7 +89,7 @@ export const listMyProjects = async (userId: string) => {
 
 export const updateProjectStaff = async (
   projectId: string,
-  data: { employees?: string[]; supervisor?: string | null }
+  data: { employees?: { user: string; allocation?: number }[]; supervisor?: string | null }
 ) => {
   //get the previous supervisor and employees
   const existing = await ProjectModel.findById(projectId).select('supervisor employees projectName');
@@ -84,8 +97,19 @@ export const updateProjectStaff = async (
   
   if (Array.isArray(data.employees)) {
     update.employees = data.employees
-      .filter((id) => !!id)
-      .map((id) => new mongoose.Types.ObjectId(id));
+      .filter((e) => !!e && ((e as any).user || e))
+      .map((e) => {
+        const rawAlloc = (e as any).allocation;
+        const allocation = typeof rawAlloc !== 'undefined' && rawAlloc !== null ? Number(rawAlloc) : undefined;
+        const mapped: any = {
+          user: new mongoose.Types.ObjectId((e as any).user ?? e),
+        };
+        if (typeof allocation === 'number' && !Number.isNaN(allocation)) mapped.allocation = allocation;
+        return mapped;
+      });
+    // debug log: mapped employees
+    // eslint-disable-next-line no-console
+    console.debug('updateProjectStaff - mapped employees:', update.employees);
   }
   if (data.supervisor !== undefined) {
     update.supervisor = data.supervisor
@@ -97,7 +121,7 @@ export const updateProjectStaff = async (
     { $set: update },
     { new: true }
   )
-    .populate({ path: 'employees', select: 'firstName lastName email' })
+    .populate({ path: 'employees.user', select: 'firstName lastName email' })
     .populate({ path: 'supervisor', select: 'firstName lastName email' });
   appAssert(project, INTERNAL_SERVER_ERROR, 'Project update failed');
 
@@ -237,8 +261,9 @@ export const softDeleteProject = async (projectId: string) => {
 
   // Remove project from all users' teams array
   if (existing?.employees && existing.employees.length > 0) {
+    const userIds = existing.employees.map((e: any) => ((e && e.user) ? e.user : e));
     await UserModel.updateMany(
-      { _id: { $in: existing.employees } },
+      { _id: { $in: userIds } },
       { $pull: { teams: new mongoose.Types.ObjectId(projectId) } }
     );
   }

@@ -6,5 +6,6 @@ export interface IEmployee{
   lastName: string;
   email: string;
   designation?: string;
+  allocation?: number;
 
 }

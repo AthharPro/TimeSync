@@ -12,6 +12,7 @@ export interface ISearchFieldProps {
 export interface ISelectedEmployeeChipsProps {
   employees: IEmployee[];
  onRemove: (employeeId: string) => void;
+  onAllocationChange?: (employeeId: string, allocation: number) => void;
   title?: string;
   sx?: object;
 }
@@ -27,6 +28,7 @@ export interface EmployeePickerProps {
   selected: IEmployee[];
   onToggle: (employee: IEmployee) => void;
   onRemove: (employeeId: string) => void;
+  onAllocationChange?: (employeeId: string, allocation: number) => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
 }

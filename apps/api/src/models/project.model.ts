@@ -15,7 +15,12 @@ const projectSchema = new mongoose.Schema<IProjectDocument>(
     costCenter: { type: String},
     projectType: { type: String},
     billable: { type: String, enum: Object.values(BillableType)},
-    employees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] }],
+    employees: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        allocation: { type: Number, default: 0 },
+      },
+    ],
     status: { type: Boolean, default: true },
     supervisor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, 
   },

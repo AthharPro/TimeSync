@@ -124,6 +124,12 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
     );
   };
 
+  const handleAllocationChange = (employeeId: string, allocation: number) => {
+    setSelectedEmployees((prev) =>
+      prev.map((e) => (e.id === employeeId || e._id === employeeId ? { ...e, allocation } : e))
+    );
+  };
+
   const handleCancel = () => {
     setSelectedEmployees(initialSelectedEmployees);
     setSearchTerm('');
@@ -156,6 +162,7 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
           selected={selectedEmployees}
           onToggle={handleEmployeeToggle}
           onRemove={handleRemoveEmployee}
+          onAllocationChange={handleAllocationChange}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />

@@ -11,6 +11,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
   selected,
   onToggle,
   onRemove,
+  onAllocationChange,
   searchTerm,
   onSearchChange,
 }) => {
@@ -62,6 +63,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
             <SelectedEmployeeChips
               employees={selected}
               onRemove={onRemove}
+              onAllocationChange={onAllocationChange}
               title=""
               sx={{ mb: 0 }}
             />

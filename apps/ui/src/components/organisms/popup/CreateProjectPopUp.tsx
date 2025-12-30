@@ -74,7 +74,7 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
         billable: data.billable === 'yes' ? 'Billable' : 'Non Billable',
         costCenter: data.costCenter,
         projectType: data.projectType,
-        employees: selectedEmployees.map((emp) => emp.id),
+        employees: selectedEmployees.map((emp) => ({ user: emp.id, allocation: emp.allocation ?? 0 })),
         supervisor: data.supervisor || null,
         description: data.description,
         isPublic: data.projectVisibility === 'Public',

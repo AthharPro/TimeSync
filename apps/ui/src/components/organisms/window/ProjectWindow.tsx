@@ -318,7 +318,8 @@ function ProjectWindow() {
           initialEmployees={projectToEdit.teamMembers.map(member => ({
             id: member.id,
             name: member.name,
-            designation: member.role
+            designation: member.role,
+            allocation: member.allocation ?? 0,
           }))}
           initialSupervisor={projectToEditInitialSupervisor}
           onSaved={handleStaffSaved}

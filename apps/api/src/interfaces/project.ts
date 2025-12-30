@@ -11,7 +11,7 @@ export interface IProject extends Document {
   clientName: string;
   projectType: string;
   billable: BillableType;
-  employees: mongoose.Types.ObjectId[];
+  employees: { user: mongoose.Types.ObjectId; allocation?: number }[];
   status: boolean;
   supervisor?: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -31,7 +31,7 @@ export interface ICreateProjectParams {
   projectType: string;
   isPublic: boolean;
   billable: BillableType;
-  employees?: mongoose.Types.ObjectId[];
+  employees?: { user: mongoose.Types.ObjectId; allocation?: number }[];
   status?: boolean;
   supervisor?: mongoose.Types.ObjectId;
 }
@@ -52,7 +52,7 @@ export interface CreateProjectParams {
   costCenter: string;
   projectType: string;
   billable: BillableType;
-  employees?: string[];
+  employees?: { user: string; allocation?: number }[];
   supervisor?: string | null;
   status?: boolean;
 }

@@ -13,7 +13,14 @@ export const createProjectFromUiSchema = z.object({
   projectType: z.string().min(1, 'Project type is required'),
  isPublic: z.string().min(1, 'Project visibility is required'),
   billable: z.enum(BillableType),
-  employees: z.array(z.string()).default([]),
+  employees: z
+    .array(
+      z.object({
+        user: z.string(),
+        allocation: z.number().min(0).max(100).optional().default(0),
+      })
+    )
+    .default([]),
   supervisor: z.string().nullable().optional(),
 });
 
@@ -28,7 +35,14 @@ export const createProjectNormalizedSchema = z.object({
   projectType: z.string().min(1, 'Project type is required'),
   isPublic: z.boolean(),
   billable: z.enum(BillableType),
-  employees: z.array(z.string()).default([]),
+  employees: z
+    .array(
+      z.object({
+        user: z.string(),
+        allocation: z.number().min(0).max(100).optional().default(0),
+      })
+    )
+    .default([]),
   supervisor: z.string().nullable().optional(),
 });
 
