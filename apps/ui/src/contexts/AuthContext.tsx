@@ -9,6 +9,7 @@ import React, {
 import api from "../config/apiClient"; // axios instance
 import { setAccessToken as setApiAccessToken } from "../config/apiClient";
 import { User } from "@tms/shared";
+import { initializeSocket, disconnectSocket } from "../services/socketService";
 
 interface AuthContextProps {
   user: User | null;
@@ -54,7 +55,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const storedUser = localStorage.getItem("user");
 
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+
+      // Initialize socket connection if user is already logged in
+      const userId = parsedUser._id || parsedUser.id;
+      if (userId) {
+        console.log('🔌 Reconnecting socket for existing user:', userId);
+        initializeSocket(userId);
+      }
     }
 
     setLoading(false);
@@ -76,6 +85,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Persist only user (token stays in memory)
       localStorage.setItem("user", JSON.stringify(user));
 
+      // Initialize Socket.io connection for real-time notifications
+      const userId = user._id || user.id;
+      if (userId) {
+        console.log('🔌 Initializing socket connection for user:', userId);
+        initializeSocket(userId);
+      }
+
       return { success: true, user };
     } catch (err) {
       return { success: false, error: err };
@@ -86,6 +102,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   // 🚪 Logout
   const logout = () => {
+    // Disconnect socket before logging out
+    console.log('🔌 Disconnecting socket on logout');
+    disconnectSocket();
+
     setUser(null);
     updateAccessToken(null);
 

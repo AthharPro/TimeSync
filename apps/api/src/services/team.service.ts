@@ -10,9 +10,11 @@ import { filterValidIds } from '../utils/data/arrayUtils';
 import { updateUserRoleOnSupervisorAssignment } from '../utils/auth';
 import { updateUserTeamMemberships } from '../utils/data/assignmentUtils';
 import { CreateTeamParams } from '../interfaces/team';
+import { createHistoryLog, generateHistoryDescription } from '../utils/history';
+import { HistoryActionType, HistoryEntityType } from '../interfaces/history';
 
 
-export const createTeam = async (data: CreateTeamParams) => {
+export const createTeam = async (data: CreateTeamParams, createdBy?: string) => {
   
   
   const exists = await TeamModel.exists({ teamName: data.teamName });
@@ -46,6 +48,33 @@ export const createTeam = async (data: CreateTeamParams) => {
   appAssert(team, INTERNAL_SERVER_ERROR, 'Team creation failed');
 
   // Log history
+  try {
+    // Get the user who created this team (authenticated user)
+    const creator = createdBy ? await UserModel.findById(createdBy) : null;
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'System';
+    const creatorEmail = creator ? creator.email : 'system@timesync.com';
+    
+    await createHistoryLog({
+      actionType: HistoryActionType.TEAM_CREATED,
+      entityType: HistoryEntityType.TEAM,
+      entityId: team._id,
+      entityName: team.teamName,
+      performedBy: createdBy || team._id,
+      performedByName: creatorName,
+      performedByEmail: creatorEmail,
+      description: generateHistoryDescription(
+        HistoryActionType.TEAM_CREATED,
+        team.teamName
+      ),
+      metadata: {
+        supervisor: data.supervisor ? (await UserModel.findById(data.supervisor))?.firstName + ' ' + (await UserModel.findById(data.supervisor))?.lastName : 'None',
+        memberCount: validMemberIds.length,
+        isDepartment: team.isDepartment,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to create history log for team creation:', error);
+  }
 
   try {
     // Update supervisor role if supervisor is assigned
@@ -146,10 +175,17 @@ export const listAllSupervisedTeams = async (supervisorId: string) => {
 
 export const updateTeamStaff = async (
   teamId: string,
-  data: { members?: string[]; supervisor?: string | null }
+  data: { members?: string[]; supervisor?: string | null },
+  performedBy?: string
 ) => {
-  const existing = await TeamModel.findById(teamId).select('supervisor members teamName');
+  const existing = await TeamModel.findById(teamId)
+    .select('supervisor members teamName')
+    .populate('supervisor', 'firstName lastName')
+    .populate('members', 'firstName lastName');
   const update: any = {};
+  
+  const oldMemberIds = existing?.members?.map((m: any) => m._id.toString()) || [];
+  const newMemberIds = data.members?.filter((id) => !!id) || [];
   
   if (Array.isArray(data.members)) {
     update.members = data.members

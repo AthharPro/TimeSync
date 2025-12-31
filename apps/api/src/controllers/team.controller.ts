@@ -17,7 +17,7 @@ export const createTeamHandler = catchErrors(async (req, res) => {
 
 
 
-  const team = await createTeam(normalized);
+  const team = await createTeam(normalized, req.userId);
   
   
   
