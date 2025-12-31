@@ -52,19 +52,7 @@ export interface ReportPreviewTableProps<T = any> {
   getRowKey?: (row: T) => string | number;
 }
 
-export interface DataTableColumn<T> {
-  label: string;
-  render: (row: T) => React.ReactNode;
-  key: string;
-  width?: string | number;
-}
-
-export interface DataTableProps<T> {
-  columns: DataTableColumn<T>[];
-  rows: T[];
-  getRowKey: (row: T) => string | number;
-  onRowClick?: (row: T) => void;
-}
+// DataTableColumn and DataTableProps are exported from './layout/ITableProps' to avoid duplication
 
 export interface ReportGroupedPreviewProps {
   groupedPreviewData: {
@@ -162,4 +150,23 @@ export interface UseReportPreviewReturn {
   isLoadingPreview: boolean;
   previewError: string | null;
   loadPreview: () => Promise<void>;
+}
+
+export interface DetailedTimesheetPreviewRow {
+  employeeName: string;
+  employeeEmail: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  status: string;
+  category: string;
+  work: string;
+  projectName: string;
+  mon: string;
+  tue: string;
+  wed: string;
+  thu: string;
+  fri: string;
+  sat: string;
+  sun: string;
+  total: string;
 }
