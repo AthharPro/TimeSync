@@ -71,9 +71,8 @@ export const createProject = async (data: CreateProjectParams, createdBy?: strin
 export const listProjects = async (userId: string, userRole: UserRole) => {
   switch (userRole) {
     case UserRole.Emp:
-    case UserRole.Supervisor:
-    case UserRole.SupervisorAdmin: {
-      // For Emp/Supervisor/SupervisorAdmin: Return projects where user is assigned OR public projects
+    case UserRole.Supervisor: {
+      // For Emp/Supervisor: Return projects where user is assigned OR public projects
       // This is used for review timesheet to determine which projects they can approve/reject
       const projects = await ProjectModel.find({ 
         $or: [
@@ -94,15 +93,16 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
       
       return { projects, teams };
     }
+    case UserRole.SupervisorAdmin:
     case UserRole.Admin:
     case UserRole.SuperAdmin: {
-      // Admins can see ALL projects including inactive ones (status: false)
+      // SupervisorAdmin/Admin/SuperAdmin can see ALL projects including inactive ones (status: false)
       const projects = await ProjectModel.find({})
         .sort({ createdAt: -1 })
         .populate({ path: 'employees', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       
-      // Admins can see all teams including inactive ones
+      // They can see all teams including inactive ones
       const teams = await TeamModel.find({})
         .sort({ createdAt: -1 })
         .select('_id teamName isDepartment');
