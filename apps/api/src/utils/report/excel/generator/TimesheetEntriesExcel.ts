@@ -27,36 +27,6 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
     // Company header to mirror PDF (logo + address)
     const logoId = this.tryAddLogoImage();
     this.addCompanyHeader(totalColumns, logoId);
-    
-    const titleRow = this.worksheet.addRow(['Timesheet Entries Report']);
-    this.worksheet.mergeCells(titleRow.number, 1, titleRow.number, totalColumns);
-    titleRow.font = { bold: true, size: 14 };
-    titleRow.alignment = { horizontal: 'center' };
-    titleRow.height = 17;
-
-    const subtitleRow = this.worksheet.addRow([
-      'Daily entry view grouped by project with employee time spent'
-    ]);
-    this.worksheet.mergeCells(subtitleRow.number, 1, subtitleRow.number, totalColumns);
-    subtitleRow.font = { size: 9 };
-    subtitleRow.alignment = { horizontal: 'center' };
-    subtitleRow.height = 14;
-
-    const start = filters?.startDate ? new Date(filters.startDate) : undefined;
-    const end = filters?.endDate ? new Date(filters.endDate) : undefined;
-    const startStr = start ? start.toISOString().slice(0, 10) : undefined;
-    const endStr = end ? end.toISOString().slice(0, 10) : undefined;
-    const periodText = startStr || endStr
-      ? `Period: ${startStr ?? '...'} to ${endStr ?? '...'}`
-      : 'Period: All time';
-
-    const periodRow = this.worksheet.addRow([periodText]);
-    this.worksheet.mergeCells(periodRow.number, 1, periodRow.number, totalColumns);
-    periodRow.font = { size: 8, italic: true };
-    periodRow.alignment = { horizontal: 'center' };
-    periodRow.height = 13;
-
-    this.worksheet.addRow([]);
 
     if (data.length === 0) {
       this.worksheet.addRow(['No data available for the selected period.']).font = {
@@ -126,50 +96,223 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
       ];
       grandCells.forEach((cell) => (cell.font = { bold: true, size: 11 }));
     } else {
-      // Single employee (individual user filter) - show all entries in one table
+      // Single employee (individual user filter) - show entries grouped by project/team
       const employeeData = data[0];
 
-      // Employee title
-      const employeeTitle = this.worksheet.addRow([employeeData.employeeName]);
-      this.worksheet.mergeCells(employeeTitle.number, 1, employeeTitle.number, totalColumns);
-      employeeTitle.font = { bold: true, size: 12 };
-
-      // Flatten all entries for this employee
-      const entries = this.flattenEmployeeEntries(employeeData);
-
-      // Add table headers
-      const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
-      this.addHeaderRow(headers);
-      const hdr = this.worksheet.lastRow;
-      if (hdr) {
-        hdr.font = { bold: true, size: 9 };
-        hdr.height = 14;
-      }
-
-      // Sort entries by date (newest first)
-      const sortedEntries = entries
-        .slice()
-        .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
-
-      // Add data rows
-      sortedEntries.forEach((row) => {
-        const cells = [
-          this.formatDateForDisplay(row.date),
-          row.employeeName,
-          row.description || '-',
-          this.formatHoursToHHMM(row.hours),
-        ];
-        this.addDataRow(cells);
+      // Collect all unique project/team names from all tables
+      const allTitles = new Set<string>();
+      employeeData.tables.forEach(table => {
+        allTitles.add(table.title);
       });
+      
+      const titlesArray = Array.from(allTitles);
+      const projectTitles = titlesArray.filter(t => t.includes('Project:'));
+      const teamTitles = titlesArray.filter(t => t.includes('Team:'));
+      
+      // Check if user has ONLY ONE project (and NO teams)
+      if (projectTitles.length === 1 && teamTitles.length === 0) {
+        // Single project only - combine all entries into one table
+        const projectName = projectTitles[0].replace('Project: ', '').trim();
+        
+        // Project title
+        const projectTitle = this.worksheet.addRow([`Timesheet Entries for ${projectName}`]);
+        this.worksheet.mergeCells(projectTitle.number, 1, projectTitle.number, totalColumns);
+        projectTitle.font = { bold: true, size: 12 };
 
-      // Add total row
-      const employeeTotal = entries.reduce((sum, e) => sum + e.hours, 0);
-      const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(employeeTotal)]);
-      const totalCells = [
-        this.worksheet.getCell(totalRow.number, 3),
-        this.worksheet.getCell(totalRow.number, 4),
-      ];
-      totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
+        // Flatten all entries for this employee
+        const entries = this.flattenEmployeeEntries(employeeData);
+
+        // Add table headers
+        const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
+        this.addHeaderRow(headers);
+        const hdr = this.worksheet.lastRow;
+        if (hdr) {
+          hdr.font = { bold: true, size: 9 };
+          hdr.height = 14;
+        }
+
+        // Sort entries by date (newest first)
+        const sortedEntries = entries
+          .slice()
+          .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+
+        // Add data rows
+        sortedEntries.forEach((row) => {
+          const cells = [
+            this.formatDateForDisplay(row.date),
+            row.employeeName,
+            row.description || '-',
+            this.formatHoursToHHMM(row.hours),
+          ];
+          this.addDataRow(cells);
+        });
+
+        // Add total row
+        const employeeTotal = entries.reduce((sum, e) => sum + e.hours, 0);
+        const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(employeeTotal)]);
+        const totalCells = [
+          this.worksheet.getCell(totalRow.number, 3),
+          this.worksheet.getCell(totalRow.number, 4),
+        ];
+        totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
+      }
+      // Check if user has ONLY ONE team (and NO projects)
+      else if (teamTitles.length === 1 && projectTitles.length === 0) {
+        // Single team only - combine all entries into one table
+        const teamName = teamTitles[0].replace('Team: ', '').trim();
+        
+        // Team title
+        const teamTitle = this.worksheet.addRow([`Timesheet Entries for ${teamName}`]);
+        this.worksheet.mergeCells(teamTitle.number, 1, teamTitle.number, totalColumns);
+        teamTitle.font = { bold: true, size: 12 };
+
+        // Flatten all entries for this employee
+        const entries = this.flattenEmployeeEntries(employeeData);
+
+        // Add table headers
+        const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
+        this.addHeaderRow(headers);
+        const hdr = this.worksheet.lastRow;
+        if (hdr) {
+          hdr.font = { bold: true, size: 9 };
+          hdr.height = 14;
+        }
+
+        // Sort entries by date (newest first)
+        const sortedEntries = entries
+          .slice()
+          .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+
+        // Add data rows
+        sortedEntries.forEach((row) => {
+          const cells = [
+            this.formatDateForDisplay(row.date),
+            row.employeeName,
+            row.description || '-',
+            this.formatHoursToHHMM(row.hours),
+          ];
+          this.addDataRow(cells);
+        });
+
+        // Add total row
+        const employeeTotal = entries.reduce((sum, e) => sum + e.hours, 0);
+        const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(employeeTotal)]);
+        const totalCells = [
+          this.worksheet.getCell(totalRow.number, 3),
+          this.worksheet.getCell(totalRow.number, 4),
+        ];
+        totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
+      }
+      // User has multiple projects/teams or mixed entries - show separate tables for each
+      else if (titlesArray.length > 1) {
+        // Create separate table for each project/team
+        let isFirstTable = true;
+        
+        employeeData.tables.forEach((table) => {
+          if (!isFirstTable) {
+            this.worksheet.addRow([]);
+          }
+          isFirstTable = false;
+          
+          // Extract clean project/team name from title
+          let cleanTitle = table.title;
+          const isProjectTable = table.title?.includes('Project:');
+          const isTeamTable = table.title?.includes('Team:');
+          
+          if (isProjectTable) {
+            const projectName = table.title.replace('Project: ', '').trim();
+            cleanTitle = `Timesheet Entries for ${projectName}`;
+          } else if (isTeamTable) {
+            const teamName = table.title.replace('Team: ', '').trim();
+            cleanTitle = `Timesheet Entries for ${teamName}`;
+          }
+          
+          // Table title
+          const tableTitle = this.worksheet.addRow([cleanTitle]);
+          this.worksheet.mergeCells(tableTitle.number, 1, tableTitle.number, totalColumns);
+          tableTitle.font = { bold: true, size: 12 };
+
+          // Add table headers
+          const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
+          this.addHeaderRow(headers);
+          const hdr = this.worksheet.lastRow;
+          if (hdr) {
+            hdr.font = { bold: true, size: 9 };
+            hdr.height = 14;
+          }
+
+          // Sort rows by date (newest first)
+          const sortedRows = table.rows
+            .slice()
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+          // Add data rows
+          let tableTotal = 0;
+          sortedRows.forEach((row) => {
+            const hours = this.parseHours(row.quantity);
+            tableTotal += hours;
+            const cells = [
+              this.formatDateForDisplay(row.date),
+              employeeData.employeeName,
+              row.description || '-',
+              this.formatHoursToHHMM(hours),
+            ];
+            this.addDataRow(cells);
+          });
+
+          // Add total row for this project/team
+          const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(tableTotal)]);
+          const totalCells = [
+            this.worksheet.getCell(totalRow.number, 3),
+            this.worksheet.getCell(totalRow.number, 4),
+          ];
+          totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
+        });
+      }
+      // Fallback - no clear project/team info
+      else {
+        // Employee title
+        const employeeTitle = this.worksheet.addRow([employeeData.employeeName]);
+        this.worksheet.mergeCells(employeeTitle.number, 1, employeeTitle.number, totalColumns);
+        employeeTitle.font = { bold: true, size: 12 };
+
+        // Flatten all entries for this employee
+        const entries = this.flattenEmployeeEntries(employeeData);
+
+        // Add table headers
+        const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
+        this.addHeaderRow(headers);
+        const hdr = this.worksheet.lastRow;
+        if (hdr) {
+          hdr.font = { bold: true, size: 9 };
+          hdr.height = 14;
+        }
+
+        // Sort entries by date (newest first)
+        const sortedEntries = entries
+          .slice()
+          .sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+
+        // Add data rows
+        sortedEntries.forEach((row) => {
+          const cells = [
+            this.formatDateForDisplay(row.date),
+            row.employeeName,
+            row.description || '-',
+            this.formatHoursToHHMM(row.hours),
+          ];
+          this.addDataRow(cells);
+        });
+
+        // Add total row
+        const employeeTotal = entries.reduce((sum, e) => sum + e.hours, 0);
+        const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(employeeTotal)]);
+        const totalCells = [
+          this.worksheet.getCell(totalRow.number, 3),
+          this.worksheet.getCell(totalRow.number, 4),
+        ];
+        totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
+      }
     }
   }
 

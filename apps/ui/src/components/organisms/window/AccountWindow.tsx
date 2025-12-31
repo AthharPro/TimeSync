@@ -79,7 +79,7 @@ function AccountWindow() {
       contactNumber: row.contactNumber,
       role: row.role as UserRole || UserRole.Emp,
       status: row.status === 'Active',
-      isChangedPassword: true,
+      isChangedPwd: true,
     };
     setSelectedUserProfile(userProfile);
     setIsProfilePopupOpen(true);

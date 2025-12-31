@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout';
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
@@ -7,15 +7,42 @@ import ThumbUpAltOutlinedIcon from '@mui/icons-material/ThumbUpAltOutlined';
 import ThumbDownAltOutlinedIcon from '@mui/icons-material/ThumbDownAltOutlined';
 import RejectReasonDialog from '../dialog/RejectReasonDialog';
 import { useReviewTimesheet } from '../../../hooks/timesheet';
+import { useMyProjects } from '../../../hooks/project/useMyProject';
+import { useTeam } from '../../../hooks/team';
 import ReviewTimesheetFilterPopover, { ReviewTimesheetFilters } from '../popover/ReviewTimesheetFilterPopover';
 import dayjs from 'dayjs';
+import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
 
 function ReviewTimesheetWindow() {
   const { approveSelectedTimesheets, rejectSelectedTimesheets } = useReviewTimesheet();
+  const { myProjects, loadMyProjects } = useMyProjects();
+  const { allSupervisedTeams, loadAllSupervisedTeams } = useTeam();
+  const { reviewTimesheetParams, setReviewTimesheetParams } = useWindowNavigation();
+  
   const [selectedTimesheetIds, setSelectedTimesheetIds] = useState<string[]>([]);
   const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
+  const [initialEmployeeId, setInitialEmployeeId] = useState<string | null>(null);
+
+  // Load projects and teams on mount
+  useEffect(() => {
+    loadMyProjects();
+    loadAllSupervisedTeams();
+  }, [loadMyProjects, loadAllSupervisedTeams]);
+
+  // Get supervised project and team IDs
+  const supervisedProjectIds = useMemo(() => {
+    const ids = myProjects.map(p => p._id);
+    console.log('Supervised Project IDs:', ids);
+    return ids;
+  }, [myProjects]);
+  
+  const supervisedTeamIds = useMemo(() => {
+    const ids = allSupervisedTeams.map(t => t.id);
+    console.log('Supervised Team IDs:', ids);
+    return ids;
+  }, [allSupervisedTeams]);
 
   // Default filters: current month
   const defaultFilters = useMemo(() => {
@@ -38,6 +65,40 @@ function ReviewTimesheetWindow() {
   }, []);
 
   const [filters, setFilters] = useState<ReviewTimesheetFilters>(defaultFilters);
+
+  // Handle navigation from notification
+  useEffect(() => {
+    if (reviewTimesheetParams) {
+      const { employeeId, month, status } = reviewTimesheetParams;
+      
+      // Set initial employee ID to auto-open drawer
+      if (employeeId) {
+        setInitialEmployeeId(employeeId);
+      }
+      
+      // Apply filters based on notification params
+      if (month || status) {
+        const newFilters = { ...filters };
+        
+        if (month) {
+          const monthDate = dayjs(month, 'YYYY-MM');
+          newFilters.month = month;
+          newFilters.year = monthDate.format('YYYY');
+          newFilters.startDate = monthDate.startOf('month').format('YYYY-MM-DD');
+          newFilters.endDate = monthDate.endOf('month').format('YYYY-MM-DD');
+        }
+        
+        if (status) {
+          newFilters.status = status as any;
+        }
+        
+        setFilters(newFilters);
+      }
+      
+      // Clear the params after processing
+      setReviewTimesheetParams(null);
+    }
+  }, [reviewTimesheetParams, setReviewTimesheetParams]);
 
   const handleSelectedTimesheetsChange = useCallback((employeeId: string, timesheetIds: string[]) => {
     setSelectedTimesheetIds(timesheetIds);
@@ -145,6 +206,9 @@ function ReviewTimesheetWindow() {
         <ReviewTimesheetTable 
           onSelectedTimesheetsChange={handleSelectedTimesheetsChange}
           filters={filters}
+          supervisedProjectIds={supervisedProjectIds}
+          supervisedTeamIds={supervisedTeamIds}
+          initialEmployeeId={initialEmployeeId}
         />
       </WindowLayout>
 

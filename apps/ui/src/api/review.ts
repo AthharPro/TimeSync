@@ -7,6 +7,7 @@ export interface ReviewEmployee {
   lastName: string;
   email: string;
   designation?: string;
+  pendingTimesheetCount?: number;
 }
 
 export interface GetSupervisedEmployeesForReviewResponse {
@@ -24,6 +25,10 @@ export interface EmployeeTimesheet {
   taskId?: {
     _id: string;
     taskName: string;
+  } | null;
+  teamId?: {
+    _id: string;
+    teamName: string;
   } | null;
   billable?: string;
   description?: string;

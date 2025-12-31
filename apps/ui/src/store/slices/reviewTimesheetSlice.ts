@@ -16,6 +16,7 @@ interface IReviewEmployee {
   name: string;
   email: string;
   designation?: string;
+  pendingTimesheetCount?: number;
   timesheets?: IReviewTimesheet[];
   timesheetsLoading?: boolean;
   timesheetsError?: string | null;
@@ -29,6 +30,7 @@ interface IReviewTimesheet {
   projectId?: string;
   task: string;
   taskId?: string;
+  teamId?: string;
   description: string;
   hours: number;
   billableType: string;
@@ -169,6 +171,7 @@ const reviewTimesheetSlice = createSlice({
           name: `${emp.firstName} ${emp.lastName}`,
           email: emp.email,
           designation: emp.designation,
+          pendingTimesheetCount: emp.pendingTimesheetCount || 0,
           timesheets: undefined,
           timesheetsLoading: false,
           timesheetsError: null,
@@ -191,21 +194,30 @@ const reviewTimesheetSlice = createSlice({
       })
       .addCase(fetchEmployeeTimesheets.fulfilled, (state, action) => {
         const { employeeId, timesheets } = action.payload;
+        console.log('ReviewTimesheetSlice - Raw timesheets from API:', timesheets);
         const employee = state.employees.find(emp => emp.id === employeeId);
         if (employee) {
           employee.timesheetsLoading = false;
-          employee.timesheets = timesheets.map((ts: EmployeeTimesheet) => ({
-            id: ts._id,
-            date: ts.date,
-            project: ts.projectId?.projectName || 'No Project',
-            projectId: ts.projectId?._id,
-            task: ts.taskId?.taskName || 'No Task',
-            taskId: ts.taskId?._id,
-            description: ts.description || '',
-            hours: ts.hours || 0,
-            billableType: ts.billable || 'NonBillable',
-            status: ts.status,
-          }));
+          employee.timesheets = timesheets.map((ts: EmployeeTimesheet) => {
+            console.log('Processing timesheet:', ts);
+            console.log('  projectId:', ts.projectId);
+            console.log('  teamId:', ts.teamId);
+            const project = ts.projectId?.projectName || ts.teamId?.teamName || 'No Project';
+            console.log('  Resolved project/team name:', project);
+            return {
+              id: ts._id,
+              date: ts.date,
+              project: project,
+              projectId: ts.projectId?._id,
+              task: ts.taskId?.taskName || 'No Task',
+              taskId: ts.taskId?._id,
+              teamId: ts.teamId?._id,
+              description: ts.description || '',
+              hours: ts.hours || 0,
+              billableType: ts.billable || 'NonBillable',
+              status: ts.status,
+            };
+          });
         }
       })
       .addCase(fetchEmployeeTimesheets.rejected, (state, action) => {
@@ -229,6 +241,10 @@ const reviewTimesheetSlice = createSlice({
               ? { ...ts, status: DailyTimesheetStatus.Approved }
               : ts
           );
+          // Decrease pending count
+          if (employee.pendingTimesheetCount !== undefined) {
+            employee.pendingTimesheetCount = Math.max(0, employee.pendingTimesheetCount - timesheetIds.length);
+          }
         }
       })
       .addCase(approveTimesheetsThunk.rejected, (state, action) => {
@@ -247,6 +263,10 @@ const reviewTimesheetSlice = createSlice({
               ? { ...ts, status: DailyTimesheetStatus.Rejected }
               : ts
           );
+          // Decrease pending count
+          if (employee.pendingTimesheetCount !== undefined) {
+            employee.pendingTimesheetCount = Math.max(0, employee.pendingTimesheetCount - timesheetIds.length);
+          }
         }
       })
       .addCase(rejectTimesheetsThunk.rejected, (state, action) => {

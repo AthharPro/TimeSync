@@ -16,7 +16,7 @@ export const registerHandler = (role: UserRole) =>
       role,
     };
 
-    const user = await createUser(requestWithRole);
+    const user = await createUser(requestWithRole, req.userId);
 
     return res.status(CREATED).json(user);
   });
@@ -82,7 +82,7 @@ export const bulkCreateUsers = async (req: Request, res: Response) => {
           designation: user.designation,
           contactNumber: user.contactNumber,
           role,
-        });
+        }, req.userId);
 
         results.success++;
       } catch (err: any) {

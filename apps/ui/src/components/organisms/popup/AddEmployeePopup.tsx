@@ -23,7 +23,7 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
   const [filteredEmployees, setFilteredEmployees] = useState<IEmployee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const roleFilters = useMemo(() => roles || [], [roles]);
+  const roleFilters = useMemo(() => roles && roles.length > 0 ? roles : undefined, [roles.length]);
 
   // Normalize backend user shape into the frontend IEmployee shape
   const mapUserToEmployee = (user: any): IEmployee => {

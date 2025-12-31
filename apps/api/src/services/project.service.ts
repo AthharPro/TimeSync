@@ -6,7 +6,9 @@ import { appAssert } from '../utils';
 import mongoose from 'mongoose';
 import {UserModel} from '../models/user.model';
 import TeamModel from '../models/team.model';
-export const createProject = async (data: CreateProjectParams) => {
+import { createHistoryLog, generateHistoryDescription } from '../utils/history';
+import { HistoryActionType, HistoryEntityType } from '../interfaces/history';
+export const createProject = async (data: CreateProjectParams, createdBy?: string) => {
   const existingProject = await ProjectModel.exists({
     projectName: data.projectName,
   });
@@ -43,6 +45,35 @@ export const createProject = async (data: CreateProjectParams) => {
 
   appAssert(project, INTERNAL_SERVER_ERROR, 'Project creation failed');
 
+  // Create history log
+  try {
+    // Get the user who created this project (authenticated user)
+    const creator = createdBy ? await UserModel.findById(createdBy) : null;
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'System';
+    const creatorEmail = creator ? creator.email : 'system@timesync.com';
+    
+    await createHistoryLog({
+      actionType: HistoryActionType.PROJECT_CREATED,
+      entityType: HistoryEntityType.PROJECT,
+      entityId: project._id,
+      entityName: project.projectName,
+      performedBy: createdBy || project._id,
+      performedByName: creatorName,
+      performedByEmail: creatorEmail,
+      description: generateHistoryDescription(
+        HistoryActionType.PROJECT_CREATED,
+        project.projectName
+      ),
+      metadata: {
+        isPublic: project.isPublic,
+        supervisor: data.supervisor ? (await UserModel.findById(data.supervisor))?.firstName + ' ' + (await UserModel.findById(data.supervisor))?.lastName : 'None',
+        employeeCount: data.employees?.length || 0,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to create history log for project creation:', error);
+  }
+
 
   return {
     project,
@@ -58,19 +89,47 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
         .sort({ createdAt: -1 })
         .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
-      return { projects };
+      return { projects, teams: [] };
     }
-    case UserRole.Admin:
-    case UserRole.SupervisorAdmin:
-    case UserRole.SuperAdmin: {
-      const projects = await ProjectModel.find({ status: true })
+    case UserRole.SupervisorAdmin: {
+      // For Emp/Supervisor/SupervisorAdmin: Return projects where user is assigned OR public projects
+      // This is used for review timesheet to determine which projects they can approve/reject
+      const projects = await ProjectModel.find({ 
+        $or: [
+          { employees: userId }, // Private projects where user is assigned
+          { isPublic: true }      // Public projects (all users can add time)
+        ]
+      })
         .sort({ createdAt: -1 })
         .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
-      return { projects };
+      
+      // Also get teams where user is a member
+      const teams = await TeamModel.find({
+        members: userId
+      })
+        .sort({ createdAt: -1 })
+        .select('_id teamName isDepartment');
+      
+      return { projects, teams };
+    }
+    case UserRole.Admin:
+    case UserRole.SuperAdmin: {
+      // Admins can see ALL projects including inactive ones (status: false)
+      const projects = await ProjectModel.find({})
+        .sort({ createdAt: -1 })
+        .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
+        .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
+      
+      // Admins can see all teams including inactive ones
+      const teams = await TeamModel.find({})
+        .sort({ createdAt: -1 })
+        .select('_id teamName isDepartment');
+      
+      return { projects, teams };
     }
     default:
-      return { projects: [] };
+      return { projects: [], teams: [] };
   }
 };
 
@@ -84,17 +143,33 @@ export const listMyProjects = async (userId: string) => {
     ]
   })
     .sort({ createdAt: -1 })
-  return { projects };
+  
+  // Also find teams where user is a member
+  const teams = await TeamModel.find({
+    status: true,
+    members: userId
+  })
+    .sort({ createdAt: -1 })
+    .select('_id teamName isDepartment');
+  
+  return { projects, teams };
 };
 
 export const updateProjectStaff = async (
   projectId: string,
-  data: { employees?: { user: string; allocation?: number }[]; supervisor?: string | null }
+  data: { employees?: { user: string; allocation?: number }[]; supervisor?: string | null },
+  performedBy?: string
 ) => {
   //get the previous supervisor and employees
-  const existing = await ProjectModel.findById(projectId).select('supervisor employees projectName');
+  const existing = await ProjectModel.findById(projectId)
+    .select('supervisor employees projectName')
+    .populate('supervisor', 'firstName lastName')
+    .populate('employees', 'firstName lastName');
   const update: any = {};
   
+  const oldEmployeeIds = existing?.employees?.map((e: any) => e._id.toString()) || [];
+  const newEmployeeIds = data.employees?.filter((id) => !!id) || [];
+
   if (Array.isArray(data.employees)) {
     update.employees = data.employees
       .filter((e) => !!e && ((e as any).user || e))
@@ -124,6 +199,97 @@ export const updateProjectStaff = async (
     .populate({ path: 'employees.user', select: 'firstName lastName email' })
     .populate({ path: 'supervisor', select: 'firstName lastName email' });
   appAssert(project, INTERNAL_SERVER_ERROR, 'Project update failed');
+
+  // Create history logs
+  try {
+    const actor = performedBy ? await UserModel.findById(performedBy) : null;
+    const actorId = performedBy || project._id;
+    const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'System';
+    const actorEmail = actor ? actor.email : 'system@timesync.com';
+
+    // Log supervisor change
+    if (data.supervisor !== undefined) {
+      const previousSupervisorId = existing?.supervisor?.toString() || null;
+      const newSupervisorId = project.supervisor
+        ? (project.supervisor as any)._id?.toString?.() || project.supervisor.toString()
+        : null;
+
+      if (previousSupervisorId !== newSupervisorId) {
+        const newSupervisor = newSupervisorId ? await UserModel.findById(newSupervisorId) : null;
+        const newSupervisorName = newSupervisor ? `${newSupervisor.firstName} ${newSupervisor.lastName}` : 'None';
+
+        await createHistoryLog({
+          actionType: HistoryActionType.PROJECT_SUPERVISOR_CHANGED,
+          entityType: HistoryEntityType.PROJECT,
+          entityId: project._id,
+          entityName: project.projectName,
+          performedBy: actorId,
+          performedByName: actorName,
+          performedByEmail: actorEmail,
+          description: generateHistoryDescription(
+            HistoryActionType.PROJECT_SUPERVISOR_CHANGED,
+            project.projectName,
+            { newSupervisorName }
+          ),
+          metadata: {
+            oldSupervisorId: previousSupervisorId,
+            newSupervisorId,
+            newSupervisorName,
+          },
+        });
+      }
+    }
+
+    // Log employee additions
+    if (Array.isArray(data.employees)) {
+      const addedEmployees = newEmployeeIds.filter((id) => !oldEmployeeIds.includes(id));
+      for (const empId of addedEmployees) {
+        const employee = await UserModel.findById(empId);
+        if (employee) {
+          await createHistoryLog({
+            actionType: HistoryActionType.PROJECT_EMPLOYEE_ADDED,
+            entityType: HistoryEntityType.PROJECT,
+            entityId: project._id,
+            entityName: project.projectName,
+            performedBy: actorId,
+            performedByName: actorName,
+            performedByEmail: actorEmail,
+            description: generateHistoryDescription(
+              HistoryActionType.PROJECT_EMPLOYEE_ADDED,
+              project.projectName,
+              { employeeName: `${employee.firstName} ${employee.lastName}` }
+            ),
+            metadata: { employeeId: empId, employeeName: `${employee.firstName} ${employee.lastName}` },
+          });
+        }
+      }
+
+      // Log employee removals
+      const removedEmployees = oldEmployeeIds.filter((id) => !newEmployeeIds.includes(id));
+      for (const empId of removedEmployees) {
+        const employee = await UserModel.findById(empId);
+        if (employee) {
+          await createHistoryLog({
+            actionType: HistoryActionType.PROJECT_EMPLOYEE_REMOVED,
+            entityType: HistoryEntityType.PROJECT,
+            entityId: project._id,
+            entityName: project.projectName,
+            performedBy: actorId,
+            performedByName: actorName,
+            performedByEmail: actorEmail,
+            description: generateHistoryDescription(
+              HistoryActionType.PROJECT_EMPLOYEE_REMOVED,
+              project.projectName,
+              { employeeName: `${employee.firstName} ${employee.lastName}` }
+            ),
+            metadata: { employeeId: empId, employeeName: `${employee.firstName} ${employee.lastName}` },
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to create history log for project update:', error);
+  }
 
   // Update roles based on supervisor change
   if (data.supervisor !== undefined) {

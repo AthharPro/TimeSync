@@ -42,7 +42,6 @@ export const fetchReportMetadata = createAsyncThunk(
       const response = await getReportMetadata();
       return response.data;
     } catch (error: any) {
-      console.error('fetchReportMetadata - Error:', error);
       return rejectWithValue(
         error.response?.data?.message || error.message || 'Failed to fetch report metadata'
       );
@@ -58,7 +57,6 @@ export const fetchSupervisedEmployees = createAsyncThunk(
       const response = await getSupervisedEmployees();
       return response.data.employees || [];
     } catch (error: any) {
-      console.error('fetchSupervisedEmployees - Error:', error);
       return rejectWithValue(
         error.response?.data?.message || error.message || 'Failed to fetch supervised employees'
       );
@@ -74,7 +72,6 @@ export const generateDetailedReport = createAsyncThunk(
       const result = await generateDetailedTimesheetReport(params.filter, params.format);
       return { data: result, params };
     } catch (error: any) {
-      console.error('generateDetailedReport - Error:', error);
       return rejectWithValue(
         error.response?.data?.message || error.message || 'Failed to generate detailed report'
       );
@@ -90,7 +87,6 @@ export const generateEntriesReport = createAsyncThunk(
       const result = await generateTimesheetEntriesReport(params.filter, params.format);
       return { data: result, params };
     } catch (error: any) {
-      console.error('generateEntriesReport - Error:', error);
       return rejectWithValue(
         error.response?.data?.message || error.message || 'Failed to generate entries report'
       );

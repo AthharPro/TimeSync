@@ -29,6 +29,7 @@ interface IEmpTimesheetEntry {
   date: string;
   project: string;
   projectId?: string;
+  teamId?: string;
   task: string;
   taskId?: string;
   description: string;
@@ -36,12 +37,15 @@ interface IEmpTimesheetEntry {
   billableType: BillableType;
   status: DailyTimesheetStatus;
   isChecked?: boolean;
+  isSupervised?: boolean; // Whether the supervisor has permission to edit this timesheet
 }
 
 interface EmpTimesheetTableProps {
   employeeId: string;
   onSelectedTimesheetsChange?: (timesheetIds: string[]) => void;
   filters?: ReviewTimesheetFilters;
+  supervisedProjectIds?: string[];
+  supervisedTeamIds?: string[];
 }
 
 // Billable type options as Record
@@ -50,7 +54,13 @@ const billableTypeOptions: Record<string, BillableType> = {
   'Non-Billable': BillableType.NonBillable,
 };
 
-const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSelectedTimesheetsChange, filters }) => {
+const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ 
+  employeeId, 
+  onSelectedTimesheetsChange, 
+  filters,
+  supervisedProjectIds = [],
+  supervisedTeamIds = []
+}) => {
   const {
     loadEmployeeTimesheets,
     getEmployeeTimesheets,
@@ -110,23 +120,55 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
 
   // Update local state when Redux data changes
   useEffect(() => {
+    console.log('=== EmpTimesheetTable useEffect triggered ===');
+    console.log('Supervised Project IDs received:', supervisedProjectIds);
+    console.log('Supervised Team IDs received:', supervisedTeamIds);
+    
     if (timesheets) {
-      const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => ({
-        id: ts.id,
-        date: ts.date,
-        project: ts.project,
-        projectId: ts.projectId,
-        task: ts.task,
-        taskId: ts.taskId,
-        description: ts.description,
-        hours: ts.hours,
-        billableType: ts.billableType as BillableType,
-        status: ts.status as DailyTimesheetStatus,
-        isChecked: false,
-      }));
+      const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => {
+        // Check if this timesheet is supervised (either by project or team)
+        // Note: Team timesheets store the team ID in the projectId field (not teamId)
+        // So we need to check if projectId is in supervisedProjectIds OR supervisedTeamIds
+        const isProjectSupervised = ts.projectId && supervisedProjectIds.length > 0 && supervisedProjectIds.includes(ts.projectId);
+        const isTeamSupervisedViaProjectId = ts.projectId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.projectId);
+        const isTeamSupervisedViaTeamId = ts.teamId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.teamId);
+        const isSupervised = isProjectSupervised || isTeamSupervisedViaProjectId || isTeamSupervisedViaTeamId;
+        
+        // Debug logging
+        console.log('Processing Timesheet:', {
+          project: ts.project,
+          projectId: ts.projectId,
+          teamId: ts.teamId,
+          isProjectSupervised,
+          isTeamSupervisedViaProjectId,
+          isTeamSupervisedViaTeamId,
+          isSupervised,
+          supervisedProjectIdsCount: supervisedProjectIds.length,
+          supervisedTeamIdsCount: supervisedTeamIds.length,
+          projectIdInProjectList: ts.projectId ? supervisedProjectIds.includes(ts.projectId) : 'N/A',
+          projectIdInTeamList: ts.projectId ? supervisedTeamIds.includes(ts.projectId) : 'N/A',
+          teamIdInList: ts.teamId ? supervisedTeamIds.includes(ts.teamId) : 'N/A',
+        });
+        
+        return {
+          id: ts.id,
+          date: ts.date,
+          project: ts.project,
+          projectId: ts.projectId,
+          teamId: ts.teamId,
+          task: ts.task,
+          taskId: ts.taskId,
+          description: ts.description,
+          hours: ts.hours,
+          billableType: ts.billableType as BillableType,
+          status: ts.status as DailyTimesheetStatus,
+          isChecked: false,
+          isSupervised,
+        };
+      });
       setTimesheetData(transformedData);
     }
-  }, [timesheets]);
+  }, [timesheets, supervisedProjectIds, supervisedTeamIds]);
 
   // Apply client-side filters to timesheet data
   const filteredTimesheetData = useMemo(() => {
@@ -187,19 +229,22 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
   // Handle select all checkbox
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     const checked = event.target.checked;
-    // Only select Pending timesheets
+    // Only select Pending timesheets that are supervised
     setTimesheetData((prev) =>
       prev.map((entry) => ({
         ...entry,
-        isChecked: entry.status === DailyTimesheetStatus.Pending ? checked : entry.isChecked,
+        isChecked: entry.status === DailyTimesheetStatus.Pending && entry.isSupervised ? checked : entry.isChecked,
       }))
     );
   };
 
-  // Check if all Pending entries are selected
-  const pendingTimesheets = timesheetData.filter(entry => entry.status === DailyTimesheetStatus.Pending);
-  const isAllSelected = pendingTimesheets.length > 0 && pendingTimesheets.every((entry) => entry.isChecked);
-  const isIndeterminate = pendingTimesheets.some((entry) => entry.isChecked) && !isAllSelected;
+  // Check if all Pending and supervised entries are selected
+  const pendingAndSupervisedTimesheets = timesheetData.filter(
+    entry => entry.status === DailyTimesheetStatus.Pending && entry.isSupervised
+  );
+  const isAllSelected = pendingAndSupervisedTimesheets.length > 0 && 
+    pendingAndSupervisedTimesheets.every((entry) => entry.isChecked);
+  const isIndeterminate = pendingAndSupervisedTimesheets.some((entry) => entry.isChecked) && !isAllSelected;
 
   // Get available tasks for a specific entry based on its project
   const getAvailableTasksForEntry = (entry: IEmpTimesheetEntry): string[] => {
@@ -415,7 +460,7 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
                     size="small"
                     checked={entry.isChecked || false}
                     onChange={() => handleCheckboxChange(entry.id)}
-                    disabled={entry.status !== DailyTimesheetStatus.Pending}
+                    disabled={entry.status !== DailyTimesheetStatus.Pending || !entry.isSupervised}
                   />
                 </TableCell>
                 <TableCell>
@@ -433,6 +478,7 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
                     onChange={(event, value) => handleTaskChange(entry, event, value)}
                     onCreateNew={(taskName) => handleCreateNewTask(entry, taskName)}
                     placeholder="Select or create task"
+                    disabled={entry.status !== DailyTimesheetStatus.Pending || !entry.isSupervised}
                   />
                 </TableCell>
                 <TableCell>
@@ -443,11 +489,19 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
                     multiline
                     fullWidth
                     variant="standard"
+                    disabled={entry.status !== DailyTimesheetStatus.Pending || !entry.isSupervised}
                     sx={{
                       '& .MuiInput-underline:before': { borderBottom: 'none' },
                       '& .MuiInput-underline:after': { borderBottom: 'none' },
                       '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
                         borderBottom: 'none',
+                      },
+                      '& .MuiInput-underline.Mui-disabled:before': {
+                        borderBottom: 'none !important',
+                      },
+                      '& .MuiInputBase-input.Mui-disabled': {
+                        WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
+                        color: 'rgba(0, 0, 0, 0.6)',
                       },
                     }}
                   />
@@ -456,6 +510,7 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
                   <HoursField
                     value={entry.hours}
                     onChange={(value) => handleHoursChange(entry.id, value)}
+                    disabled={entry.status !== DailyTimesheetStatus.Pending || !entry.isSupervised}
                   />
                 </TableCell>
                 <TableCell>
@@ -463,6 +518,7 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({ employeeId, onSel
                     value={entry.billableType}
                     onChange={(value) => handleBillableTypeChange(entry.id, value)}
                     options={billableTypeOptions}
+                    disabled={entry.status !== DailyTimesheetStatus.Pending || !entry.isSupervised}
                   />
                 </TableCell>
                 <TableCell>{entry.status}</TableCell>

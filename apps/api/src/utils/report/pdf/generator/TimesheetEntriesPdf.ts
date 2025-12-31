@@ -106,8 +106,8 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       // Check if ALL titles are teams (and NO projects)
       if (teamTitles.length > 0 && projectTitles.length === 0 && titlesArray.length === teamTitles.length) {
         // All entries are from teams only
-        const teamName = teamTitles[0].split('Team:')[1].trim();
-        mainTitle = `Timesheet Entries for the ${teamName} Team`;
+        const teamName = this.cleanProjectName(teamTitles[0].split('Team:')[1].trim());
+        mainTitle = `Timesheet Entries for ${teamName}`;
         
         data.forEach((employeeData, employeeIndex) => {
           // Add new page for each employee after the first
@@ -128,8 +128,8 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       // Check if ALL titles are projects (and NO teams)
       else if (projectTitles.length > 0 && teamTitles.length === 0 && titlesArray.length === projectTitles.length) {
         // All entries are from projects only
-        const projectName = projectTitles[0].split('Project:')[1].trim();
-        mainTitle = `Timesheet Entries for the ${projectName} Project`;
+        const projectName = this.cleanProjectName(projectTitles[0].split('Project:')[1].trim());
+        mainTitle = `Timesheet Entries for ${projectName} Project`;
         
         data.forEach((employeeData, employeeIndex) => {
           // Add new page for each employee after the first
@@ -240,7 +240,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         });
       }
     } else {
-      // Single employee (individual user filter) - show all entries in one table
+      // Single employee (individual user filter) - show entries grouped by project/team
       const employeeData = data[0];
       
       // Collect all unique project/team names from all tables
@@ -257,11 +257,11 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       const projectTitles = titlesArray.filter(t => t.includes('Project:'));
       const teamTitles = titlesArray.filter(t => t.includes('Team:'));
       
-      // Check if ALL titles are teams (and NO projects)
-      if (teamTitles.length > 0 && projectTitles.length === 0 && titlesArray.length === teamTitles.length) {
-        // Single team
-        const teamName = teamTitles[0].split('Team:')[1].trim();
-        mainTitle = `Timesheet Entries for the ${teamName} Team`;
+      // Check if user has ONLY ONE team (and NO projects)
+      if (teamTitles.length === 1 && projectTitles.length === 0) {
+        // Single team only
+        const teamName = this.cleanProjectName(teamTitles[0].split('Team:')[1].trim());
+        mainTitle = `Timesheet Entries for ${teamName}`;
         
         // Add main team title
         this.addProjectTitle(mainTitle);
@@ -272,11 +272,11 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         // Add single table with all entries
         this.addTimesheetTable(allEntries);
       } 
-      // Check if ALL titles are projects (and NO teams)
-      else if (projectTitles.length > 0 && teamTitles.length === 0 && titlesArray.length === projectTitles.length) {
-        // Single project
-        const projectName = projectTitles[0].split('Project:')[1].trim();
-        mainTitle = `Timesheet Entries for the ${projectName} Project`;
+      // Check if user has ONLY ONE project (and NO teams)
+      else if (projectTitles.length === 1 && teamTitles.length === 0) {
+        // Single project only
+        const projectName = this.cleanProjectName(projectTitles[0].split('Project:')[1].trim());
+        mainTitle = `Timesheet Entries for ${projectName}`;
         
         // Add main project title
         this.addProjectTitle(mainTitle);
@@ -287,8 +287,8 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         // Add single table with all entries
         this.addTimesheetTable(allEntries);
       } 
-      // Mixed project and team entries
-      else if (projectTitles.length > 0 && teamTitles.length > 0) {
+      // User has multiple projects/teams or mixed entries - show separate tables for each
+      else if (titlesArray.length > 1) {
         // Get entries grouped by project/team
         const groupedEntries = this.getEmployeeEntriesByProject(employeeData);
         
@@ -299,56 +299,15 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
             this.currentY += 20;
           }
           
-          // Determine if this is a project or team and add appropriate title
-          if (group.projectName.includes('Project:') || projectTitles.some(t => t.includes(group.projectName))) {
-            this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Project`);
-          } else {
-            this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Team`);
-          }
+          // Add title for this project/team
+          const cleanName = this.cleanProjectName(group.projectName);
+          this.addProjectTitle(`Timesheet Entries for ${cleanName}`);
           
           // Add table for this project/team
           this.addTimesheetTable(group.entries);
         });
       } 
-      // Multiple projects
-      else if (projectTitles.length > 1) {
-        // Get entries grouped by project
-        const groupedEntries = this.getEmployeeEntriesByProject(employeeData);
-        
-        // Create separate table for each project with its own title
-        groupedEntries.forEach((group, index) => {
-          // Add spacing between tables
-          if (index > 0) {
-            this.currentY += 20;
-          }
-          
-          // Add project title
-          this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Project`);
-          
-          // Add table for this project
-          this.addTimesheetTable(group.entries);
-        });
-      } 
-      // Multiple teams
-      else if (teamTitles.length > 1) {
-        // Get entries grouped by team
-        const groupedEntries = this.getEmployeeEntriesByProject(employeeData);
-        
-        // Create separate table for each team with its own title
-        groupedEntries.forEach((group, index) => {
-          // Add spacing between tables
-          if (index > 0) {
-            this.currentY += 20;
-          }
-          
-          // Add team title
-          this.addProjectTitle(`Timesheet Entries for the ${group.projectName} Team`);
-          
-          // Add table for this team
-          this.addTimesheetTable(group.entries);
-        });
-      } 
-      // Fallback
+      // Fallback - no clear project/team info
       else {
         mainTitle = 'Timesheet Entries';
         
@@ -370,6 +329,12 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     this.drawFooter();
 
     return this.doc;
+  }
+
+  private cleanProjectName(name: string): string {
+    // Remove trailing numbers/IDs that might be appended (e.g., "Test Project 30" -> "Test Project")
+    // Match patterns like: " 30", " - 30", " (30)", etc.
+    return name.replace(/\s*[-–—]?\s*\(?\d+\)?\s*$/, '').trim();
   }
 
   private findLogoPath(): void {

@@ -182,6 +182,35 @@ function ProjectWindow() {
         width: 80,
         render: (row) => row.billable ? 'Billable' : 'Non-Billable',
       },
+      {
+        key: 'status',
+        label: 'Status',
+        width: 80,
+        render: (row) => (
+          <Box
+            sx={{
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              display: 'inline-block',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              bgcolor: row.status === 'Active' 
+                ? 'success.light' 
+                : row.status === 'Completed'
+                ? 'info.light'
+                : 'warning.light',
+              color: row.status === 'Active' 
+                ? 'success.dark' 
+                : row.status === 'Completed'
+                ? 'info.dark'
+                : 'warning.dark',
+            }}
+          >
+            {row.status}
+          </Box>
+        ),
+      },
        {
               label: '',
               key: 'actions',
@@ -269,7 +298,7 @@ function ProjectWindow() {
             }}
           >
             <Typography color="text.secondary" variant="body1">
-              No projects found. Create a new project to get started.
+              No projects found.
             </Typography>
           </Box>
         ) : (

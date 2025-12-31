@@ -35,11 +35,7 @@ export const createHandler = catchErrors(async (req, res) => {
     supervisor: parsedUi.supervisor ?? null,
   });
 
-  // Log normalized employees for debug
-  // eslint-disable-next-line no-console
-  console.debug('createHandler - normalized.employees:', normalized.employees);
-
-  const project = await createProject(normalized);
+  const project = await createProject(normalized, req.userId);
 
   return res.status(CREATED).json(project);
 });

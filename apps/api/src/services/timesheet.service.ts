@@ -1,6 +1,10 @@
 import { Timesheet } from '../models';
 import { ITimesheetDocument } from '../interfaces';
 import mongoose from 'mongoose';
+import { createBulkNotifications } from './notification.service';
+import { NotificationType } from '@tms/shared';
+import { getSupervisorsForTimesheets } from '../utils/data/assignmentUtils';
+import { UserModel } from '../models/user.model';
 
 interface CreateTimesheetParams {
   date: Date;
@@ -194,7 +198,10 @@ export const getMyTimesheets = async (
       query.date.$gte = startDate;
     }
     if (endDate) {
-      query.date.$lte = endDate;
+      // Set to end of day to include all entries on the last day
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      query.date.$lte = end;
     }
   }
 
@@ -231,6 +238,32 @@ export const submitTimesheets = async (
   const updatedTimesheets = await Timesheet.find({
     _id: { $in: timesheetIds.map(id => new mongoose.Types.ObjectId(id)) },
   });
+
+  // Send notifications to supervisors based on the actual timesheets being submitted
+  try {
+    // Get supervisors from the specific projects and teams in these timesheets
+    const supervisorIds = await getSupervisorsForTimesheets(timesheets);
+    
+    // Remove the submitter from the list of notification recipients
+    const filteredSupervisorIds = supervisorIds.filter(id => id !== userId);
+    
+    if (filteredSupervisorIds.length > 0) {
+      // Get employee info for the notification message
+      const employee = await UserModel.findById(userId).select('firstName lastName').lean();
+      const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : 'An employee';
+      
+      await createBulkNotifications(filteredSupervisorIds, {
+        type: NotificationType.TimesheetSubmitted,
+        title: 'New Timesheet Submission',
+        message: `${employeeName} has submitted ${timesheetIds.length} timesheet(s) for review`,
+        relatedId: userId,
+        relatedModel: 'User',
+      });
+    }
+  } catch (error) {
+    console.error('Error sending timesheet submission notifications:', error);
+    // Don't fail the submission if notification fails
+  }
 
   return {
     updated: result.modifiedCount,
