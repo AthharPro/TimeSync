@@ -182,6 +182,35 @@ function ProjectWindow() {
         width: 80,
         render: (row) => row.billable ? 'Billable' : 'Non-Billable',
       },
+      {
+        key: 'status',
+        label: 'Status',
+        width: 80,
+        render: (row) => (
+          <Box
+            sx={{
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              display: 'inline-block',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              bgcolor: row.status === 'Active' 
+                ? 'success.light' 
+                : row.status === 'Completed'
+                ? 'info.light'
+                : 'warning.light',
+              color: row.status === 'Active' 
+                ? 'success.dark' 
+                : row.status === 'Completed'
+                ? 'info.dark'
+                : 'warning.dark',
+            }}
+          >
+            {row.status}
+          </Box>
+        ),
+      },
        {
               label: '',
               key: 'actions',
@@ -211,6 +240,9 @@ function ProjectWindow() {
           : null;
       })()
     : null;
+
+  // Filter to only show internal projects
+  const internalProjects = projects.filter((p) => p.projectName === 'Internal');
 
   return (
     <>
@@ -259,7 +291,7 @@ function ProjectWindow() {
           >
             
           </Box>
-        ) : projects.length === 0 ? (
+        ) : internalProjects.length === 0 ? (
           <Box
             sx={{
               display: 'flex',
@@ -269,13 +301,13 @@ function ProjectWindow() {
             }}
           >
             <Typography color="text.secondary" variant="body1">
-              No projects found. Create a new project to get started.
+              No internal projects found.
             </Typography>
           </Box>
         ) : (
           <DataTable
             columns={columns}
-            rows={projects}
+            rows={internalProjects}
             getRowKey={(row) => row.id}
           />
         )}

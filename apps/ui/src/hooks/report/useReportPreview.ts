@@ -51,7 +51,6 @@ export const useReportPreview = ({
       
       if (reportType === 'detailed-timesheet') {
         const rawData = await previewDetailedTimesheet(filter);
-        console.log('Preview rawData received:', rawData);
         
         // rawData is array of employee weeks with categories structure:
         // [{ employeeName, employeeEmail, weekStartDate, categories: [{ category, items: [{ projectName, teamName, dailyHours, ... }] }] }]
@@ -70,7 +69,7 @@ export const useReportPreview = ({
         const isProjectWiseFilter = filter.projectId && filter.projectId !== '';
         // Check if filtering by team - if so, show separate tables for each user (like individual users)
         const isTeamWiseFilter = filter.teamId && filter.teamId !== '';
-
+        
         // For project-wise filter OR team-wise filter OR individual users with single/multiple employees, group by employee first, then by category
         // Only combine into single table when multiple employees are selected AND it's NOT project-wise filter AND it's NOT team-wise filter
         if (hasMultipleEmployees && !isProjectWiseFilter && !isTeamWiseFilter) {
@@ -131,7 +130,6 @@ export const useReportPreview = ({
             }
           };
           
-          console.log('Combined preview data for multiple employees:', singleTableData);
           setGroupedPreviewData(singleTableData);
         } else {
           // For project-wise filter OR team-wise filter OR individual users: group by employee first, then by category (project/task/leave)
@@ -321,7 +319,6 @@ export const useReportPreview = ({
             });
           });
 
-          console.log('Grouped preview data (project-wise, team-wise, or individual):', groupedData);
           setGroupedPreviewData(groupedData);
         }
         
@@ -365,8 +362,6 @@ export const useReportPreview = ({
       } else if (reportType === 'timesheet-entries') {
         const rawEntries = await previewDetailedTimesheetRaw(filter);
         
-        console.log('Timesheet entries raw data:', rawEntries);
-        
         // Check if filtering by individual user, project-wise, or team-wise
         const isIndividualUserFilter = filter.employeeIds && filter.employeeIds.length > 0;
         const isProjectWiseFilter = filter.projectId && filter.projectId !== '';
@@ -375,7 +370,6 @@ export const useReportPreview = ({
         // Filter employees first
         const filteredEmployees = (rawEntries || []).filter((employee: any) => {
           if (!employee || !employee.employeeName || !employee.employeeEmail) {
-            console.warn('Invalid employee data:', employee);
             return false;
           }
 
@@ -398,7 +392,7 @@ export const useReportPreview = ({
 
         // Check if multiple employees
         const hasMultipleEmployees = filteredEmployees.length > 1;
-
+        
         // For individual user, project-wise, or team-wise filter:
         // Create separate tables for each project/team when user works on multiple projects/teams
         // When employee has single project/team: create one table
@@ -635,7 +629,6 @@ export const useReportPreview = ({
             }
           });
           
-          console.log('Grouped preview data (individual/project-wise/team-wise):', groupedData);
           setGroupedPreviewData(groupedData);
 
           // For backward compatibility - create flat rows
@@ -683,7 +676,6 @@ export const useReportPreview = ({
         }
       }
     } catch (e) {
-      console.error('Preview data loading error:', e);
       setPreviewError(e instanceof Error ? e.message : 'Failed to load preview data');
     } finally {
       setIsLoadingPreview(false);

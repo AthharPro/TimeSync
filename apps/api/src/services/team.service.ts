@@ -173,7 +173,31 @@ export const updateTeamStaff = async (
     
   appAssert(team, INTERNAL_SERVER_ERROR, 'Team update failed');
 
-
+  // Update user team memberships if members were changed
+  if (Array.isArray(data.members)) {
+    const oldMemberIds = (existing?.members || []).map(id => id.toString());
+    const newMemberIds = data.members.filter(id => !!id);
+    console.log('Team update - Updating user team memberships');
+    console.log('Team ID:', teamId);
+    console.log('Old members:', oldMemberIds);
+    console.log('New members:', newMemberIds);
+    
+    try {
+      await updateUserTeamMemberships(teamId, newMemberIds, oldMemberIds);
+      console.log('User team memberships updated successfully');
+    } catch (error) {
+      console.error('ERROR: Failed to update user team memberships:', error);
+      // Log the full error details
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      // Re-throw to make the error visible - this is critical for data consistency
+      throw error;
+    }
+  } else {
+    console.log('Team update - Members array not provided, skipping user team membership updates');
+  }
 
   if (data.supervisor !== undefined) {
     const previousSupervisorId = existing?.supervisor?.toString() || null;
