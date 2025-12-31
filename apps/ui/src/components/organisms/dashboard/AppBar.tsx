@@ -7,10 +7,13 @@ import NotificationPopover from '../popover/NotificationPopover';
 import UserPopover from '../popover/UserPopover';
 import ProfilePopup from '../popup/ProfilePopup';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotificationContext } from '../../../contexts/NotificationContext';
 
 export default function CustomAppBar() {
   const theme = useTheme();
   const { user, logout } = useAuth();
+  const { unreadCount } = useNotificationContext();
+  
   const [notificationAnchorEl, setNotificationAnchorEl] = useState<HTMLElement | null>(null);
   const [userAnchorEl, setUserAnchorEl] = useState<HTMLElement | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -43,9 +46,6 @@ export default function CustomAppBar() {
   const handleLogoutClick = () => {
     logout();
   };
-
-  // Dummy unread notification count
-  const unreadCount = 2;
 
   return (
     <AppBar

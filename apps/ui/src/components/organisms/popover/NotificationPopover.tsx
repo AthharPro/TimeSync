@@ -10,97 +10,63 @@ import {
   Avatar,
   Divider,
   Button,
+  CircularProgress,
+  IconButton,
 } from '@mui/material';
 import {
   Schedule as ScheduleIcon,
   Assignment as AssignmentIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
-
-interface Notification {
-  id: string;
-  type: 'info' | 'success' | 'warning' | 'task';
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-}
+import { INotification, NotificationType } from '@tms/shared';
+import { formatDistanceToNow } from 'date-fns';
+import { useNotificationContext } from '../../../contexts/NotificationContext';
+import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
+import dayjs from 'dayjs';
 
 interface NotificationPopoverProps {
   anchorEl: HTMLElement | null;
   onClose: () => void;
 }
 
-// Dummy notification data
-const dummyNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'task',
-    title: 'New Task Assigned',
-    message: 'You have been assigned to "Frontend Development"',
-    time: '5 min ago',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'success',
-    title: 'Timesheet Approved',
-    message: 'Your timesheet for last week has been approved',
-    time: '1 hour ago',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'warning',
-    title: 'Pending Timesheet',
-    message: 'Please submit your timesheet for this week',
-    time: '2 hours ago',
-    read: true,
-  },
-  {
-    id: '4',
-    type: 'info',
-    title: 'Project Update',
-    message: 'Project "TimeSync" deadline extended to next week',
-    time: '1 day ago',
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'task',
-    title: 'Task Completed',
-    message: 'John Doe completed the task "API Integration"',
-    time: '2 days ago',
-    read: true,
-  },
-];
 
-const getNotificationIcon = (type: Notification['type']) => {
+const getNotificationIcon = (type: NotificationType) => {
   switch (type) {
-    case 'task':
+    case NotificationType.TimesheetSubmitted:
+    case NotificationType.TimesheetEditRequest:
       return <AssignmentIcon />;
-    case 'success':
+    case NotificationType.TimesheetApproved:
+    case NotificationType.TimesheetEditApproved:
       return <CheckCircleIcon />;
-    case 'warning':
+    case NotificationType.TimesheetRejected:
+    case NotificationType.TimesheetEditRejected:
       return <WarningIcon />;
-    case 'info':
+    case NotificationType.TimesheetReminder:
+    case NotificationType.ProjectAssignment:
+    case NotificationType.TeamAssignment:
     default:
       return <ScheduleIcon />;
   }
 };
 
-const getNotificationColor = (type: Notification['type']) => {
+const getNotificationColor = (type: NotificationType) => {
   switch (type) {
-    case 'task':
+    case NotificationType.TimesheetSubmitted:
+    case NotificationType.ProjectAssignment:
+    case NotificationType.TeamAssignment:
       return '#1976d2';
-    case 'success':
+    case NotificationType.TimesheetApproved:
+    case NotificationType.TimesheetEditApproved:
       return '#2e7d32';
-    case 'warning':
-      return '#ed6c02';
-    case 'info':
+    case NotificationType.TimesheetRejected:
+    case NotificationType.TimesheetEditRejected:
+      return '#d32f2f';
+    case NotificationType.TimesheetReminder:
+    case NotificationType.TimesheetEditRequest:
     default:
-      return '#0288d1';
+      return '#ed6c02';
   }
 };
 
@@ -108,6 +74,99 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({
   anchorEl,
   onClose,
 }) => {
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotificationContext();
+
+  const { setSelectedButton, setReviewTimesheetParams, setMyTimesheetParams } = useWindowNavigation();
+
+  const handleNotificationClick = (notification: INotification) => {
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
+
+    // Handle TimesheetSubmitted notification - navigate to Review Timesheets
+    if (notification.type === NotificationType.TimesheetSubmitted) {
+      // relatedId contains the employee's user ID who submitted the timesheet
+      const employeeId = notification.relatedId;
+      
+      if (employeeId) {
+        // Extract month from notification createdAt date or current month
+        const notificationDate = dayjs(notification.createdAt);
+        const month = notificationDate.format('YYYY-MM');
+        
+        // Set navigation parameters
+        setReviewTimesheetParams({
+          employeeId,
+          month,
+          status: 'Pending'
+        });
+        
+        // Navigate to Review Timesheets
+        setSelectedButton('Review Timesheets');
+      }
+      
+      // Close the notification popover
+      onClose();
+    }
+
+    // Handle TimesheetRejected notification - navigate to My Timesheets
+    if (notification.type === NotificationType.TimesheetRejected) {
+      // Extract year and month from notification createdAt date
+      const notificationDate = dayjs(notification.createdAt);
+      const year = notificationDate.format('YYYY');
+      const month = notificationDate.format('YYYY-MM');
+      
+      // Set navigation parameters for My Timesheets
+      setMyTimesheetParams({
+        year,
+        month,
+        status: 'Rejected'
+      });
+      
+      // Navigate to My Timesheets
+      setSelectedButton('My Timesheets');
+      
+      // Close the notification popover
+      onClose();
+    }
+
+    // Handle TimesheetApproved notification - navigate to My Timesheets
+    if (notification.type === NotificationType.TimesheetApproved) {
+      // Extract year and month from notification createdAt date
+      const notificationDate = dayjs(notification.createdAt);
+      const year = notificationDate.format('YYYY');
+      const month = notificationDate.format('YYYY-MM');
+      
+      // Set navigation parameters for My Timesheets
+      setMyTimesheetParams({
+        year,
+        month,
+        status: 'Approved'
+      });
+      
+      // Navigate to My Timesheets
+      setSelectedButton('My Timesheets');
+      
+      // Close the notification popover
+      onClose();
+    }
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead();
+  };
+
+  const handleDeleteNotification = (notificationId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent notification click
+    deleteNotification(notificationId);
+  };
+
   return (
     <Popover
       open={Boolean(anchorEl)}
@@ -132,31 +191,61 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({
       }}
     >
       <Box sx={{ p: 2, pb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Notifications
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Notifications
+            {unreadCount > 0 && (
+              <Typography
+                component="span"
+                sx={{
+                  ml: 1,
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  bgcolor: 'error.main',
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                }}
+              >
+                {unreadCount}
+              </Typography>
+            )}
+          </Typography>
+          {unreadCount > 0 && (
+            <Button size="small" onClick={handleMarkAllAsRead} sx={{ textTransform: 'none' }}>
+              Mark all as read
+            </Button>
+          )}
+        </Box>
       </Box>
       <Divider />
       <List sx={{ p: 0, maxHeight: 360, overflow: 'auto' }}>
-        {dummyNotifications.length === 0 ? (
+        {loading ? (
+          <Box sx={{ p: 4, textAlign: 'center' }}>
+            <CircularProgress size={32} />
+          </Box>
+        ) : notifications.length === 0 ? (
           <Box sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
               No notifications
             </Typography>
           </Box>
         ) : (
-          dummyNotifications.map((notification, index) => (
-            <React.Fragment key={notification.id}>
+          notifications.slice(0, 10).map((notification, index) => (
+            <React.Fragment key={notification._id}>
               <ListItem
                 sx={{
                   py: 1.5,
                   px: 2,
-                  backgroundColor: notification.read ? 'transparent' : 'action.hover',
+                  backgroundColor: notification.isRead ? 'transparent' : 'action.hover',
                   '&:hover': {
                     backgroundColor: 'action.selected',
                   },
                   cursor: 'pointer',
+                  position: 'relative',
                 }}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <ListItemAvatar>
                   <Avatar
@@ -174,8 +263,9 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({
                     <Typography
                       variant="subtitle2"
                       sx={{
-                        fontWeight: notification.read ? 400 : 600,
+                        fontWeight: notification.isRead ? 400 : 600,
                         mb: 0.5,
+                        pr: 4, // Make room for delete button
                       }}
                     >
                       {notification.title}
@@ -191,13 +281,26 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({
                         {notification.message}
                       </Typography>
                       <Typography variant="caption" color="text.disabled">
-                        {notification.time}
+                        {formatDistanceToNow(new Date(notification.createdAt), {
+                          addSuffix: true,
+                        })}
                       </Typography>
                     </>
                   }
                 />
+                <IconButton
+                  size="small"
+                  sx={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                  }}
+                  onClick={(e) => handleDeleteNotification(notification._id, e)}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
               </ListItem>
-              {index < dummyNotifications.length - 1 && <Divider />}
+              {index < notifications.slice(0, 10).length - 1 && <Divider />}
             </React.Fragment>
           ))
         )}

@@ -40,19 +40,35 @@ export const isEmployeeAssignedToProjectOrTeam = async (userId: string): Promise
 
 export const getSupervisedUserIds = async (supervisorId: string): Promise<string[]> => {
 
-  const supervisedProjects = await ProjectModel.find({ supervisor: supervisorId });
+  const supervisedProjects = await ProjectModel.find({ supervisor: supervisorId }).lean();
   const projectSupervisedUserIds = Array.from(
     new Set(
-      supervisedProjects.flatMap(p => p.employees?.map(e => e.toString()) || [])
+      supervisedProjects.flatMap(p => {
+        if (!p.employees) return [];
+        return p.employees.map(e => {
+          // Handle both ObjectId and populated User objects
+          if (typeof e === 'string') return e;
+          if (e && typeof e === 'object' && '_id' in e) return e._id.toString();
+          return e.toString();
+        });
+      })
     )
   );
 
   // Include ALL teams (both department and non-department) to determine supervised users
   // Non-department teams allow supervisors to see and approve project/department timesheets of their members
-  const supervisedTeams = await TeamModel.find({ supervisor: supervisorId });
+  const supervisedTeams = await TeamModel.find({ supervisor: supervisorId }).lean();
   const teamSupervisedUserIds = Array.from(
     new Set(
-      supervisedTeams.flatMap(t => t.members?.map(m => m.toString()) || [])
+      supervisedTeams.flatMap(t => {
+        if (!t.members) return [];
+        return t.members.map(m => {
+          // Handle both ObjectId and populated User objects
+          if (typeof m === 'string') return m;
+          if (m && typeof m === 'object' && '_id' in m) return m._id.toString();
+          return m.toString();
+        });
+      })
     )
   );
 
@@ -110,3 +126,89 @@ export const updateUserTeamMemberships = async (
      
     }
 };
+
+/**
+ * Get supervisors who should be notified when a user submits timesheets
+ * Returns supervisors from projects and teams that the user is assigned to
+ */
+export const getSupervisorsForUser = async (userId: string): Promise<string[]> => {
+  const supervisorIds = new Set<string>();
+
+  // Get supervisors from projects where user is assigned
+  const projects = await ProjectModel.find({ 
+    employees: userId,
+    status: true 
+  }).select('supervisor').lean();
+
+  projects.forEach(project => {
+    if (project.supervisor) {
+      supervisorIds.add(project.supervisor.toString());
+    }
+  });
+
+  // Get supervisors from teams where user is a member
+  const teams = await TeamModel.find({ 
+    members: userId,
+    status: true 
+  }).select('supervisor').lean();
+
+  teams.forEach(team => {
+    if (team.supervisor) {
+      supervisorIds.add(team.supervisor.toString());
+    }
+  });
+
+  return Array.from(supervisorIds);
+};
+
+/**
+ * Get supervisors from specific timesheets
+ * Returns supervisors from the projects and teams associated with the submitted timesheets
+ */
+export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?: any; teamId?: any; userId?: any }>): Promise<string[]> => {
+  const supervisorIds = new Set<string>();
+
+  // Extract unique project and team IDs from timesheets
+  const projectIds = new Set<string>();
+  const teamIds = new Set<string>();
+
+  timesheets.forEach(timesheet => {
+    if (timesheet.projectId) {
+      projectIds.add(timesheet.projectId.toString());
+    }
+    if (timesheet.teamId) {
+      teamIds.add(timesheet.teamId.toString());
+    }
+  });
+
+  // Get supervisors from the projects in these timesheets
+  if (projectIds.size > 0) {
+    const projects = await ProjectModel.find({
+      _id: { $in: Array.from(projectIds) },
+      status: true
+    }).select('supervisor').lean();
+
+    projects.forEach(project => {
+      if (project.supervisor) {
+        supervisorIds.add(project.supervisor.toString());
+      }
+    });
+  }
+
+  // Get supervisors from the teams in these timesheets
+  if (teamIds.size > 0) {
+    const teams = await TeamModel.find({
+      _id: { $in: Array.from(teamIds) },
+      status: true
+    }).select('supervisor').lean();
+
+    teams.forEach(team => {
+      if (team.supervisor) {
+        supervisorIds.add(team.supervisor.toString());
+      }
+    });
+  }
+
+  return Array.from(supervisorIds);
+};
+

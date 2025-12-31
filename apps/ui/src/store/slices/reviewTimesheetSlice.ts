@@ -16,6 +16,7 @@ interface IReviewEmployee {
   name: string;
   email: string;
   designation?: string;
+  pendingTimesheetCount?: number;
   timesheets?: IReviewTimesheet[];
   timesheetsLoading?: boolean;
   timesheetsError?: string | null;
@@ -170,6 +171,7 @@ const reviewTimesheetSlice = createSlice({
           name: `${emp.firstName} ${emp.lastName}`,
           email: emp.email,
           designation: emp.designation,
+          pendingTimesheetCount: emp.pendingTimesheetCount || 0,
           timesheets: undefined,
           timesheetsLoading: false,
           timesheetsError: null,
@@ -239,6 +241,10 @@ const reviewTimesheetSlice = createSlice({
               ? { ...ts, status: DailyTimesheetStatus.Approved }
               : ts
           );
+          // Decrease pending count
+          if (employee.pendingTimesheetCount !== undefined) {
+            employee.pendingTimesheetCount = Math.max(0, employee.pendingTimesheetCount - timesheetIds.length);
+          }
         }
       })
       .addCase(approveTimesheetsThunk.rejected, (state, action) => {
@@ -257,6 +263,10 @@ const reviewTimesheetSlice = createSlice({
               ? { ...ts, status: DailyTimesheetStatus.Rejected }
               : ts
           );
+          // Decrease pending count
+          if (employee.pendingTimesheetCount !== undefined) {
+            employee.pendingTimesheetCount = Math.max(0, employee.pendingTimesheetCount - timesheetIds.length);
+          }
         }
       })
       .addCase(rejectTimesheetsThunk.rejected, (state, action) => {

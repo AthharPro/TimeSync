@@ -5,3 +5,5 @@ export * from './timesheet';
 export * from './rejectionReason';
 export * from './project';
 export * from './team';
+export * from './history';
+export * from './report';
