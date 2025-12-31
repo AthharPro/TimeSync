@@ -241,9 +241,6 @@ function ProjectWindow() {
       })()
     : null;
 
-  // Filter to only show internal projects
-  const internalProjects = projects.filter((p) => p.projectName === 'Internal');
-
   return (
     <>
       <WindowLayout
@@ -291,7 +288,7 @@ function ProjectWindow() {
           >
             
           </Box>
-        ) : internalProjects.length === 0 ? (
+        ) : projects.length === 0 ? (
           <Box
             sx={{
               display: 'flex',
@@ -301,13 +298,13 @@ function ProjectWindow() {
             }}
           >
             <Typography color="text.secondary" variant="body1">
-              No internal projects found.
+              No projects found.
             </Typography>
           </Box>
         ) : (
           <DataTable
             columns={columns}
-            rows={internalProjects}
+            rows={projects}
             getRowKey={(row) => row.id}
           />
         )}
