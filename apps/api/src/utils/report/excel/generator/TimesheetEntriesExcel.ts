@@ -27,36 +27,6 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
     // Company header to mirror PDF (logo + address)
     const logoId = this.tryAddLogoImage();
     this.addCompanyHeader(totalColumns, logoId);
-    
-    const titleRow = this.worksheet.addRow(['Timesheet Entries Report']);
-    this.worksheet.mergeCells(titleRow.number, 1, titleRow.number, totalColumns);
-    titleRow.font = { bold: true, size: 14 };
-    titleRow.alignment = { horizontal: 'center' };
-    titleRow.height = 17;
-
-    const subtitleRow = this.worksheet.addRow([
-      'Daily entry view grouped by project with employee time spent'
-    ]);
-    this.worksheet.mergeCells(subtitleRow.number, 1, subtitleRow.number, totalColumns);
-    subtitleRow.font = { size: 9 };
-    subtitleRow.alignment = { horizontal: 'center' };
-    subtitleRow.height = 14;
-
-    const start = filters?.startDate ? new Date(filters.startDate) : undefined;
-    const end = filters?.endDate ? new Date(filters.endDate) : undefined;
-    const startStr = start ? start.toISOString().slice(0, 10) : undefined;
-    const endStr = end ? end.toISOString().slice(0, 10) : undefined;
-    const periodText = startStr || endStr
-      ? `Period: ${startStr ?? '...'} to ${endStr ?? '...'}`
-      : 'Period: All time';
-
-    const periodRow = this.worksheet.addRow([periodText]);
-    this.worksheet.mergeCells(periodRow.number, 1, periodRow.number, totalColumns);
-    periodRow.font = { size: 8, italic: true };
-    periodRow.alignment = { horizontal: 'center' };
-    periodRow.height = 13;
-
-    this.worksheet.addRow([]);
 
     if (data.length === 0) {
       this.worksheet.addRow(['No data available for the selected period.']).font = {
