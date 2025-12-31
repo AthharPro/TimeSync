@@ -60,7 +60,14 @@ export const updateStaffHandler = catchErrors(async (req, res) => {
     members?: string[];
     supervisor?: string | null;
   };
-  const result = await updateTeamStaff(id, { members, supervisor }, req.userId);
+  
+  console.log('updateStaffHandler - Team ID:', id);
+  console.log('updateStaffHandler - Request body:', req.body);
+  console.log('updateStaffHandler - Members:', members);
+  console.log('updateStaffHandler - Members type:', typeof members, Array.isArray(members));
+  console.log('updateStaffHandler - Supervisor:', supervisor);
+  
+  const result = await updateTeamStaff(id, { members, supervisor });
   return res.status(OK).json(result);
 });
 

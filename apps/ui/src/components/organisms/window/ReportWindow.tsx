@@ -20,7 +20,7 @@ import { useReportType } from '../../../hooks/report/useReportType';
 
 function ReportWindow({ onReset }: IReportWindowProps) {
   const [resetTrigger, setResetTrigger] = useState(0);
-  const [tabValue, setTabValue] = useState('1');
+  const [tabValue, setTabValue] = useState('2');
   const [dialogOpen, setDialogOpen] = useState(false);
   
   const { currentFilter, handleFilterChange, resetFilters, isFilterValid } = useReportFilters();
@@ -28,16 +28,15 @@ function ReportWindow({ onReset }: IReportWindowProps) {
   
   const {
     isGenerating,
-    generateDetailedReport,
     generateTimesheetEntries,
     error: generatorError,
     clearError
   } = useReportGenerator({
-    onSuccess: (filename) => {
-      console.log('Report generated successfully:', filename);
+    onSuccess: () => {
+      // Report generated successfully
     },
-    onError: (error) => {
-      console.error('Report generation failed:', error);
+    onError: () => {
+      // Report generation failed
     }
   });
 
@@ -61,13 +60,13 @@ function ReportWindow({ onReset }: IReportWindowProps) {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
     // Update report type when tab changes
-    setReportType(newValue === '1' ? 'detailed-timesheet' : 'timesheet-entries');
+    setReportType('timesheet-entries');
     clearError();
   };
 
   // Set initial report type
   useEffect(() => {
-    setReportType('detailed-timesheet');
+    setReportType('timesheet-entries');
   }, []);
 
   const handleGenerateReport = () => {
@@ -80,26 +79,18 @@ function ReportWindow({ onReset }: IReportWindowProps) {
   const handlePDFExport = async () => {
     setDialogOpen(false);
     try {
-      if (reportType === 'detailed-timesheet') {
-        await generateDetailedReport(currentFilter, 'pdf');
-      } else if (reportType === 'timesheet-entries') {
-        await generateTimesheetEntries(currentFilter, 'pdf');
-      }
+      await generateTimesheetEntries(currentFilter, 'pdf');
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      // Error generating PDF
     }
   };
 
   const handleEXCELExport = async () => {
     setDialogOpen(false);
     try {
-      if (reportType === 'detailed-timesheet') {
-        await generateDetailedReport(currentFilter, 'excel');
-      } else if (reportType === 'timesheet-entries') {
-        await generateTimesheetEntries(currentFilter, 'excel');
-      }
+      await generateTimesheetEntries(currentFilter, 'excel');
     } catch (error) {
-      console.error('Error generating Excel:', error);
+      // Error generating Excel
     }
   };
 
@@ -120,15 +111,6 @@ function ReportWindow({ onReset }: IReportWindowProps) {
   );
 
   const hasPreviewData = groupedPreviewData && Object.keys(groupedPreviewData).length > 0;
-  
-  console.log('ReportWindow state:', {
-    reportType,
-    isFilterValid,
-    isLoadingPreview,
-    hasPreviewData,
-    groupedPreviewDataKeys: Object.keys(groupedPreviewData),
-    displayError
-  });
 
   return (
     <WindowLayout title="Report" buttons={button}>
@@ -155,7 +137,6 @@ function ReportWindow({ onReset }: IReportWindowProps) {
                 {/* Report Type Tabs - Left Corner */}
                 <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                   <TabList onChange={handleTabChange} aria-label="report type tabs">
-                    <Tab label="Detailed TimeSheet" value="1" disabled={!isFilterValid} />
                     <Tab label="Timesheet Entries" value="2" disabled={!isFilterValid} />
                   </TabList>
                 </Box>
@@ -174,22 +155,6 @@ function ReportWindow({ onReset }: IReportWindowProps) {
 
               {/* Preview Content - Tab Panels */}
               <Box sx={{ width: '100%' }}>
-                <TabPanel value="1">
-                  {/* Detailed TimeSheet Preview Content */}
-                  {isLoadingPreview ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
-                      <CircularProgress />
-                    </Box>
-                  ) : displayError ? (
-                    <HelperText color="error">{displayError}</HelperText>
-                  ) : hasPreviewData ? (
-                    <ReportGroupedPreview groupedPreviewData={groupedPreviewData} />
-                  ) : (
-                    <HelperText>
-                      Apply the required report filters to generate and preview the report
-                    </HelperText>
-                  )}
-                </TabPanel>
                 <TabPanel value="2">
                   {/* Timesheet Entries Preview Content */}
                   {isLoadingPreview ? (

@@ -209,95 +209,30 @@ export const updateTeamStaff = async (
     
   appAssert(team, INTERNAL_SERVER_ERROR, 'Team update failed');
 
-  // Create history logs
-  try {
-    const actor = performedBy ? await UserModel.findById(performedBy) : null;
-    const actorId = performedBy || team._id;
-    const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'System';
-    const actorEmail = actor ? actor.email : 'system@timesync.com';
-
-    // Log supervisor change
-    if (data.supervisor !== undefined) {
-      const previousSupervisorId = existing?.supervisor?.toString() || null;
-      const newSupervisorId = team.supervisor
-        ? (team.supervisor as any)._id?.toString?.() || team.supervisor.toString()
-        : null;
-
-      if (previousSupervisorId !== newSupervisorId) {
-        const newSupervisor = newSupervisorId ? await UserModel.findById(newSupervisorId) : null;
-        const newSupervisorName = newSupervisor ? `${newSupervisor.firstName} ${newSupervisor.lastName}` : 'None';
-
-        await createHistoryLog({
-          actionType: HistoryActionType.TEAM_SUPERVISOR_CHANGED,
-          entityType: HistoryEntityType.TEAM,
-          entityId: team._id,
-          entityName: team.teamName,
-          performedBy: actorId,
-          performedByName: actorName,
-          performedByEmail: actorEmail,
-          description: generateHistoryDescription(
-            HistoryActionType.TEAM_SUPERVISOR_CHANGED,
-            team.teamName,
-            { newSupervisorName }
-          ),
-          metadata: {
-            oldSupervisorId: previousSupervisorId,
-            newSupervisorId,
-            newSupervisorName,
-          },
-        });
+  // Update user team memberships if members were changed
+  if (Array.isArray(data.members)) {
+    const oldMemberIds = (existing?.members || []).map(id => id.toString());
+    const newMemberIds = data.members.filter(id => !!id);
+    console.log('Team update - Updating user team memberships');
+    console.log('Team ID:', teamId);
+    console.log('Old members:', oldMemberIds);
+    console.log('New members:', newMemberIds);
+    
+    try {
+      await updateUserTeamMemberships(teamId, newMemberIds, oldMemberIds);
+      console.log('User team memberships updated successfully');
+    } catch (error) {
+      console.error('ERROR: Failed to update user team memberships:', error);
+      // Log the full error details
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
       }
+      // Re-throw to make the error visible - this is critical for data consistency
+      throw error;
     }
-
-    // Log member additions
-    if (Array.isArray(data.members)) {
-      const addedMembers = newMemberIds.filter((id) => !oldMemberIds.includes(id));
-      for (const memberId of addedMembers) {
-        const member = await UserModel.findById(memberId);
-        if (member) {
-          await createHistoryLog({
-            actionType: HistoryActionType.TEAM_MEMBER_ADDED,
-            entityType: HistoryEntityType.TEAM,
-            entityId: team._id,
-            entityName: team.teamName,
-            performedBy: actorId,
-            performedByName: actorName,
-            performedByEmail: actorEmail,
-            description: generateHistoryDescription(
-              HistoryActionType.TEAM_MEMBER_ADDED,
-              team.teamName,
-              { memberName: `${member.firstName} ${member.lastName}` }
-            ),
-            metadata: { memberId, memberName: `${member.firstName} ${member.lastName}` },
-          });
-        }
-      }
-
-      // Log member removals
-      const removedMembers = oldMemberIds.filter((id) => !newMemberIds.includes(id));
-      for (const memberId of removedMembers) {
-        const member = await UserModel.findById(memberId);
-        if (member) {
-          await createHistoryLog({
-            actionType: HistoryActionType.TEAM_MEMBER_REMOVED,
-            entityType: HistoryEntityType.TEAM,
-            entityId: team._id,
-            entityName: team.teamName,
-            performedBy: actorId,
-            performedByName: actorName,
-            performedByEmail: actorEmail,
-            description: generateHistoryDescription(
-              HistoryActionType.TEAM_MEMBER_REMOVED,
-              team.teamName,
-              { memberName: `${member.firstName} ${member.lastName}` }
-            ),
-            metadata: { memberId, memberName: `${member.firstName} ${member.lastName}` },
-          });
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Failed to create history log for team update:', error);
+  } else {
+    console.log('Team update - Members array not provided, skipping user team membership updates');
   }
 
   if (data.supervisor !== undefined) {

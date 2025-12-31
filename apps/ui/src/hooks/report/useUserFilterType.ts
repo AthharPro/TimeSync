@@ -47,7 +47,6 @@ export const useUserFilterType = ({
         setTeams(teamsResponse.teams || []);
         setProjects(projectsResponse.projects || []);
       } catch (error) {
-        console.error('Failed to load teams and projects:', error);
         // Reset to empty arrays on error
         setTeams([]);
         setProjects([]);
@@ -74,7 +73,6 @@ export const useUserFilterType = ({
         const usersResponse = await getUsers();
         setUsers(usersResponse || []);
       } catch (error) {
-        console.error('Failed to load users:', error);
         setUsers([]);
       } finally {
         setIsLoadingUsers(false);

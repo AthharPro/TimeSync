@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import {UseReportTypeOptions, UseReportTypeReturn} from '../../interfaces/report/IReportPreview';
+
+export interface UseReportTypeOptions {
+  initialType?: 'detailed-timesheet' | 'timesheet-entries' | '';
+}
+
+export interface UseReportTypeReturn {
+  reportType: 'detailed-timesheet' | 'timesheet-entries' | '';
+  setReportType: (type: 'detailed-timesheet' | 'timesheet-entries' | '') => void;
+}
 
 export const useReportType = ({ 
   initialType = '' 

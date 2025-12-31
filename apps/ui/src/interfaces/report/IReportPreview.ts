@@ -1,5 +1,26 @@
-import type { ReactNode } from 'react';
 import { ReportFilter } from './IReportFilter';
+
+export interface ReportPreviewContainerProps {
+  isLoading: boolean;
+  error: string | null;
+  supervisedEmployeesCount: number;
+  reportType: 'detailed-timesheet' | 'timesheet-entries' | '';
+  previewColumns: { key: string; header: string }[];
+  previewRows: any[];
+  groupedPreviewData: {
+    [employeeKey: string]: {
+      employeeName: string;
+      employeeEmail: string;
+      tables: Array<{
+        title: string;
+        columns: { key: string; header: string }[];
+        rows: any[];
+      }>;
+    };
+  };
+  onClearError: () => void;
+}
+
 
 export interface ReportSinglePreviewProps {
   columns: { key: string; header: string }[];
@@ -9,7 +30,7 @@ export interface ReportSinglePreviewProps {
 export interface ReportDataTableColumn<T> {
   key: string;
   label: string;
-  render: (row: T) => ReactNode;
+  render: (row: T) => React.ReactNode;
   width?: string | number;
 }
 
@@ -18,7 +39,7 @@ type InputColumn<T> =
   | {
       key: string;
       header: string;
-      render?: (row: T) => ReactNode;
+      render?: (row: T) => React.ReactNode;
       label?: never;
     };
 
@@ -30,6 +51,8 @@ export interface ReportPreviewTableProps<T = any> {
   subtitle2?: string;
   getRowKey?: (row: T) => string | number;
 }
+
+// DataTableColumn and DataTableProps are exported from './layout/ITableProps' to avoid duplication
 
 export interface ReportGroupedPreviewProps {
   groupedPreviewData: {
@@ -66,9 +89,9 @@ export  interface ReportEmployeeHeaderProps {
 
 export interface ReportTableLayoutProps {
   title?: string;
-  action?: ReactNode;
+  action?: React.ReactNode;
   disabled?: boolean;
-  children: ReactNode;
+  children: React.ReactNode;
   noBorder?: boolean;
 }
 
@@ -104,34 +127,6 @@ export interface ReportEmptyStateProps {
   iconVariant?: 'default' | 'large';
 }
 
-export interface DetailedTimesheetPreviewRow {
-  employeeName: string;
-  employeeEmail: string;
-  weekStartDate: string;
-  weekEndDate?: string;
-  status: string;
-  category: string;
-  work: string;
-  projectName?: string;
-  mon: string;
-  tue: string;
-  wed: string;
-  thu: string;
-  fri: string;
-  sat: string;
-  sun: string;
-  total: string;
-}
-
-export interface UseReportTypeOptions {
-  initialType?: 'detailed-timesheet' | 'timesheet-entries' | '';
-}
-
-export interface UseReportTypeReturn {
-  reportType: 'detailed-timesheet' | 'timesheet-entries' | '';
-  setReportType: (type: 'detailed-timesheet' | 'timesheet-entries' | '') => void;
-}
-
 export interface UseReportPreviewOptions {
   reportType: 'detailed-timesheet' | 'timesheet-entries' | '';
   filter: ReportFilter;
@@ -155,4 +150,23 @@ export interface UseReportPreviewReturn {
   isLoadingPreview: boolean;
   previewError: string | null;
   loadPreview: () => Promise<void>;
+}
+
+export interface DetailedTimesheetPreviewRow {
+  employeeName: string;
+  employeeEmail: string;
+  weekStartDate: string;
+  weekEndDate: string;
+  status: string;
+  category: string;
+  work: string;
+  projectName: string;
+  mon: string;
+  tue: string;
+  wed: string;
+  thu: string;
+  fri: string;
+  sat: string;
+  sun: string;
+  total: string;
 }

@@ -96,12 +96,13 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     }
     case UserRole.Admin:
     case UserRole.SuperAdmin: {
+      // Admins can see ALL projects including inactive ones (status: false)
       const projects = await ProjectModel.find({})
         .sort({ createdAt: -1 })
         .populate({ path: 'employees', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       
-      // Admins can see all teams
+      // Admins can see all teams including inactive ones
       const teams = await TeamModel.find({})
         .sort({ createdAt: -1 })
         .select('_id teamName isDepartment');
