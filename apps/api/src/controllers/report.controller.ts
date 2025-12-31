@@ -502,6 +502,25 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
   
   const projectMap = new Map<string, string>(projects.map((p: any) => [String(p._id), p.projectName] as [string, string]));
   
+  // Check which projectIds are actually team IDs (legacy data issue)
+  // Some timesheet entries store team IDs in projectId field
+  const projectIdsThatAreTeams = new Set<string>();
+  const projectIdsToCheckAsTeams = allProjectIds.filter(id => !projectMap.has(id));
+  if (projectIdsToCheckAsTeams.length > 0) {
+    const teamObjectIdsToCheck = projectIdsToCheckAsTeams.map(id => new mongoose.Types.ObjectId(id));
+    const teamsFromProjectIds = await TeamModel.find({ _id: { $in: teamObjectIdsToCheck } }).select('_id teamName isDepartment').lean();
+    teamsFromProjectIds.forEach((t: any) => {
+      projectIdsThatAreTeams.add(String(t._id));
+    });
+    // Add these teams to the teams array if not already present
+    teamsFromProjectIds.forEach((t: any) => {
+      const teamIdStr = String(t._id);
+      if (!teams.find((existing: any) => String(existing._id) === teamIdStr)) {
+        teams.push(t);
+      }
+    });
+  }
+  
   // Check if any selected team filter is a non-department team
   const hasNonDeptTeamFilter = teamFilterMode === 'non-department' || teamFilterMode === 'mixed';
   
@@ -516,7 +535,8 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
   )));
   
   // Combine team IDs from timesheets and user memberships
-  const allTeamIdsWithUserTeams = Array.from(new Set([...allTeamIds, ...userTeamIds]));
+  // Also include projectIds that are actually team IDs
+  const allTeamIdsWithUserTeams = Array.from(new Set([...allTeamIds, ...userTeamIds, ...Array.from(projectIdsThatAreTeams)]));
   
   // Update teamIdsToFetch to include user team memberships for individual user filters
   // This ensures all teams the user is associated with are available for team name lookup
@@ -524,14 +544,24 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
   
   const finalTeamIdsToFetch = isIndividualUserFilter && allTeamIdsWithUserTeams.length > 0
     ? Array.from(new Set([...allTeamIdsWithUserTeams, ...(selectedTeamIds || [])]))
-    : teamIdsToFetch;
+    : Array.from(new Set([...teamIdsToFetch, ...Array.from(projectIdsThatAreTeams)]));
   
   // Re-fetch teams if we have additional team IDs from user memberships that weren't already fetched
   let finalTeams = teams;
-  const missingTeamIds = finalTeamIdsToFetch.filter(id => !allTeamIds.includes(id));
-  if (isIndividualUserFilter && missingTeamIds.length > 0) {
-    finalTeams = await TeamModel.find({ _id: { $in: finalTeamIdsToFetch.map(id => new mongoose.Types.ObjectId(id)) } })
+  const missingTeamIds = finalTeamIdsToFetch.filter(id => {
+    const idStr = String(id);
+    return !teams.find((t: any) => String(t._id) === idStr);
+  });
+  if (missingTeamIds.length > 0) {
+    const additionalTeams = await TeamModel.find({ _id: { $in: missingTeamIds.map(id => new mongoose.Types.ObjectId(id)) } })
       .select('_id teamName isDepartment').lean();
+    // Add to finalTeams if not already present
+    additionalTeams.forEach((t: any) => {
+      const teamIdStr = String(t._id);
+      if (!finalTeams.find((existing: any) => String(existing._id) === teamIdStr)) {
+        finalTeams.push(t);
+      }
+    });
   }
   
   // Always use finalTeams to build maps (even if we didn't re-fetch, finalTeams = teams)
@@ -575,8 +605,18 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     (t.data || [])
       .filter((cat: any) => {
         if (!workType || workType === 'both') return true;
-        if (workType === 'project') return cat.category === 'Project';
-        if (workType === 'team') return cat.category === 'Team';
+        if (workType === 'project') {
+          // For project filter, only show actual projects (not projectIds that are teams)
+          if (cat.category === 'Project') {
+            // We'll filter out projectIds that are teams in the item filter below
+            return true;
+          }
+          return false;
+        }
+        if (workType === 'team') {
+          // For team filter, show Team category and also Project category items that are actually teams
+          return cat.category === 'Team' || cat.category === 'Project';
+        }
         return true;
       })
       .forEach((cat: any) => {
@@ -594,6 +634,26 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
             // Default behavior: only show department teams
             return finalTeamDeptMap.get(tid) === true;
           }
+          // Also check if Project category items are actually teams (legacy data)
+          if (cat.category === 'Project' && it.projectId) {
+            const projectIdStr = String(it.projectId);
+            if (projectIdsThatAreTeams.has(projectIdStr)) {
+              // This is actually team work, apply team filtering
+              if (workType === 'project') {
+                // If filtering by project, exclude this (it's actually a team)
+                return false;
+              }
+              if (hasNonDeptTeamFilter) {
+                // Show all team work when non-dept team is selected
+                return true;
+              }
+              // Default behavior: only show department teams
+              return finalTeamDeptMap.get(projectIdStr) === true;
+            } else if (workType === 'team') {
+              // If filtering by team, exclude actual projects
+              return false;
+            }
+          }
           return true;
         })
         .forEach((it: any) => {
@@ -607,8 +667,39 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
         }
         else if (cat.category === 'Project') {
           const projectIdStr = it.projectId ? String(it.projectId) : null;
-          const projectName = projectIdStr ? projectMap.get(projectIdStr) || `Unknown Project (${projectIdStr})` : 'Project';
-          title = `Project: ${projectName}`;
+          
+          // Check if projectId is actually a team ID (legacy data issue)
+          if (projectIdStr && projectIdsThatAreTeams.has(projectIdStr)) {
+            // This projectId is actually a team ID - treat it as team work
+            // For individual user filters, if user has only one team membership, use that team name
+            if (isIndividualUserFilter) {
+              const userTeams = userTeamMap.get(employeeKey);
+              if (userTeams && userTeams.length === 1) {
+                // User has exactly one team - use that team name (like team-wise filtering)
+                const userTeamId = userTeams[0];
+                const userTeamName = finalTeamMap.get(userTeamId);
+                if (userTeamName) {
+                  title = `Team: ${userTeamName}`;
+                } else {
+                  // Fallback to projectId as team ID
+                  const teamName = finalTeamMap.get(projectIdStr) || `Unknown Team (${projectIdStr})`;
+                  title = `Team: ${teamName}`;
+                }
+              } else {
+                // User has multiple teams or no teams - use projectId as team ID
+                const teamName = finalTeamMap.get(projectIdStr) || `Unknown Team (${projectIdStr})`;
+                title = `Team: ${teamName}`;
+              }
+            } else {
+              // Not individual user filter - use projectId as team ID
+              const teamName = finalTeamMap.get(projectIdStr) || `Unknown Team (${projectIdStr})`;
+              title = `Team: ${teamName}`;
+            }
+          } else {
+            // Normal project ID
+            const projectName = projectIdStr ? projectMap.get(projectIdStr) || `Unknown Project (${projectIdStr})` : 'Project';
+            title = `Project: ${projectName}`;
+          }
         } else if (cat.category === 'Team') {
           // For individual user filters, if user has only one team membership, use that team name
           // This ensures correct team name display (similar to team-wise filtering)
