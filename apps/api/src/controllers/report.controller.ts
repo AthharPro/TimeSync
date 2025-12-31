@@ -148,14 +148,13 @@ export const getSupervisedEmployeesHandler: RequestHandler = async (req, res) =>
 };
 
 const buildTimesheetQuery = async (supervisorId: string, userRole: UserRole, params: any) => {
-  const { startDate, endDate, employeeIds, approvalStatus, projectIds, teamIds, filterByProjectMembers } = params as {
+  const { startDate, endDate, employeeIds, approvalStatus, projectIds, teamIds } = params as {
     startDate?: string;
     endDate?: string;
     employeeIds?: string[] | string;
     approvalStatus?: string[] | string;
     projectIds?: string[] | string;
     teamIds?: string[] | string;
-    filterByProjectMembers?: boolean; // Flag to indicate we want all timesheets for project members
   };
 
   const memberFilter = { $in: [] as any[] };
@@ -502,8 +501,6 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
   ]);
   
   const projectMap = new Map<string, string>(projects.map((p: any) => [String(p._id), p.projectName] as [string, string]));
-  const teamMap = new Map<string, string>(teams.map((t: any) => [String(t._id), t.teamName] as [string, string]));
-  const teamDeptMap = new Map<string, boolean>(teams.map((t: any) => [String(t._id), Boolean(t.isDepartment)] as [string, boolean]));
   
   // Check if any selected team filter is a non-department team
   const hasNonDeptTeamFilter = teamFilterMode === 'non-department' || teamFilterMode === 'mixed';
@@ -690,28 +687,20 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     return res.json({ data: employees });
   }
   if (format === 'pdf') {
-    try {
-      const pdf = new TimesheetEntriesPdf();
-      const doc = pdf.generate(employees);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=timesheet-entries-report.pdf');
-      doc.pipe(res);
-      doc.end();
-      return;
-    } catch (error) {
-      throw error;
-    }
+    const pdf = new TimesheetEntriesPdf();
+    const doc = pdf.generate(employees);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=timesheet-entries-report.pdf');
+    doc.pipe(res);
+    doc.end();
+    return;
   }
 
   if (format === 'excel') {
-    try {
-      const excel = new TimesheetEntriesExcel();
-      excel.build(employees, { startDate, endDate });
-      await excel.write(res, 'timesheet-entries-report');
-      return;
-    } catch (error) {
-      throw error;
-    }
+    const excel = new TimesheetEntriesExcel();
+    excel.build(employees, { startDate, endDate });
+    await excel.write(res, 'timesheet-entries-report');
+    return;
   }
 };
 
