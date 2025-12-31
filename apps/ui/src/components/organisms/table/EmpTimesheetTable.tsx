@@ -127,12 +127,9 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     if (timesheets) {
       const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => {
         // Check if this timesheet is supervised (either by project or team)
-        // Note: Team timesheets store the team ID in the projectId field (not teamId)
-        // So we need to check if projectId is in supervisedProjectIds OR supervisedTeamIds
         const isProjectSupervised = ts.projectId && supervisedProjectIds.length > 0 && supervisedProjectIds.includes(ts.projectId);
-        const isTeamSupervisedViaProjectId = ts.projectId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.projectId);
-        const isTeamSupervisedViaTeamId = ts.teamId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.teamId);
-        const isSupervised = isProjectSupervised || isTeamSupervisedViaProjectId || isTeamSupervisedViaTeamId;
+        const isTeamSupervised = ts.teamId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.teamId);
+        const isSupervised = isProjectSupervised || isTeamSupervised;
         
         // Debug logging
         console.log('Processing Timesheet:', {
@@ -140,13 +137,11 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
           projectId: ts.projectId,
           teamId: ts.teamId,
           isProjectSupervised,
-          isTeamSupervisedViaProjectId,
-          isTeamSupervisedViaTeamId,
+          isTeamSupervised,
           isSupervised,
           supervisedProjectIdsCount: supervisedProjectIds.length,
           supervisedTeamIdsCount: supervisedTeamIds.length,
           projectIdInProjectList: ts.projectId ? supervisedProjectIds.includes(ts.projectId) : 'N/A',
-          projectIdInTeamList: ts.projectId ? supervisedTeamIds.includes(ts.projectId) : 'N/A',
           teamIdInList: ts.teamId ? supervisedTeamIds.includes(ts.teamId) : 'N/A',
         });
         
@@ -168,7 +163,9 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
       });
       setTimesheetData(transformedData);
     }
-  }, [timesheets, supervisedProjectIds, supervisedTeamIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timesheets, supervisedProjectIds.join(','), supervisedTeamIds.join(',')]);
+  // Use join(',') to create a stable string representation of arrays for comparison
 
   // Apply client-side filters to timesheet data
   const filteredTimesheetData = useMemo(() => {

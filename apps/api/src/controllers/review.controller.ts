@@ -170,7 +170,7 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
     // Manually populate and check if projectId is actually a team
     const enrichedTimesheets = await Promise.all(
       rawTimesheets.map(async (ts: any) => {
-        // Try to populate as project first
+        // Populate project
         if (ts.projectId) {
           const projectData = await ProjectModel.findById(ts.projectId).select('projectName').lean();
           if (projectData) {
@@ -179,17 +179,8 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
               projectName: projectData.projectName
             };
           } else {
-            // If not found as project, try as team
-            const teamData = await TeamModel.findById(ts.projectId).select('teamName').lean();
-            if (teamData) {
-              ts.projectId = {
-                _id: ts.projectId,
-                projectName: teamData.teamName // Use teamName in projectName field for consistency
-              };
-            } else {
-              // Neither project nor team found
-              ts.projectId = null;
-            }
+            // Project not found
+            ts.projectId = null;
           }
         }
         
@@ -308,13 +299,11 @@ export const approveTimesheetsHandler: RequestHandler = async (req, res) => {
         const timesheetTeamId = timesheet.teamId?.toString();
         
         // Check if the supervisor supervises the project or team of this timesheet
-        // Note: Team timesheets store team ID in projectId field (not teamId)
         const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
-        const hasTeamPermissionViaTeamId = timesheetTeamId && teamIds.includes(timesheetTeamId);
-        const hasTeamPermissionViaProjectId = timesheetProjectId && teamIds.includes(timesheetProjectId);
+        const hasTeamPermission = timesheetTeamId && teamIds.includes(timesheetTeamId);
         
         appAssert(
-          hasProjectPermission || hasTeamPermissionViaTeamId || hasTeamPermissionViaProjectId,
+          hasProjectPermission || hasTeamPermission,
           FORBIDDEN,
           `You do not have permission to approve this timesheet. You can only approve timesheets for projects or teams you supervise.`
         );
@@ -462,13 +451,11 @@ export const rejectTimesheetsHandler: RequestHandler = async (req, res) => {
         const timesheetTeamId = timesheet.teamId?.toString();
         
         // Check if the supervisor supervises the project or team of this timesheet
-        // Note: Team timesheets store team ID in projectId field (not teamId)
         const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
-        const hasTeamPermissionViaTeamId = timesheetTeamId && teamIds.includes(timesheetTeamId);
-        const hasTeamPermissionViaProjectId = timesheetProjectId && teamIds.includes(timesheetProjectId);
+        const hasTeamPermission = timesheetTeamId && teamIds.includes(timesheetTeamId);
         
         appAssert(
-          hasProjectPermission || hasTeamPermissionViaTeamId || hasTeamPermissionViaProjectId,
+          hasProjectPermission || hasTeamPermission,
           FORBIDDEN,
           `You do not have permission to reject this timesheet. You can only reject timesheets for projects or teams you supervise.`
         );

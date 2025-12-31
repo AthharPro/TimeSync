@@ -59,6 +59,10 @@ export const syncTimesheetUpdate = createAsyncThunk(
       if (params.updates.project !== undefined && params.updates.project !== null) {
         backendUpdates.projectId = String(params.updates.project);
       }
+      // Map team to teamId
+      if (params.updates.team !== undefined && params.updates.team !== null) {
+        backendUpdates.teamId = String(params.updates.team);
+      }
       // Map task to taskId
       if (params.updates.task !== undefined && params.updates.task !== null) {
         backendUpdates.taskId = String(params.updates.task);
@@ -140,11 +144,11 @@ const myTimesheetSlice = createSlice({
       
       // Add to calendar view inline
       const data = action.payload;
-      const project = data.project;
+      const project = data.project || data.team || '';
       const task = data.task;
       const billable = data.billableType;
 
-      // Only add to calendar view if project and task are not empty
+      // Only add to calendar view if project/team and task are not empty
       if (!project || !task) {
         return;
       }
@@ -260,7 +264,7 @@ const myTimesheetSlice = createSlice({
                 // Calendar entry doesn't exist - create new one
                 const newCalendarEntry: IMyTimesheetCalendarEntry = {
                   id: newId,
-                  project: updatedEntry.project,
+                  project: updatedEntry.project || updatedEntry.team || '',
                   task: updatedEntry.task,
                   billableType: updatedEntry.billableType,
                   myTimesheetEntriesIds: [id]
@@ -456,12 +460,13 @@ const myTimesheetSlice = createSlice({
         const calendarMap = new Map<string, IMyTimesheetCalendarEntry>();
 
         mappedTimesheets.forEach((ts) => {
-          const key = `${ts.project}-${ts.task}-${ts.billableType}`;
+          const projectOrTeam = ts.project || ts.team || '';
+          const key = `${projectOrTeam}-${ts.task}-${ts.billableType}`;
           
           if (!calendarMap.has(key)) {
             calendarMap.set(key, {
               id: crypto.randomUUID(),
-              project: ts.project,
+              project: projectOrTeam,
               task: ts.task,
               billableType: ts.billableType,
               myTimesheetEntriesIds: [],

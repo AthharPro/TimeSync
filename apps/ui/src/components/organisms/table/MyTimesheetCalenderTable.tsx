@@ -21,7 +21,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import CustomRow from './other/CustomRow';
 
 interface ExtendedTimesheetRow extends ITimesheetRow {
-  projectId?: string; // We'll add this for internal use
+  projectId?: string; // For projects
+  teamId?: string;    // For teams
 }
 
 // Optimized debounced update that delays both Redux and backend updates
@@ -245,7 +246,7 @@ const MyTimesheetCalendarTable = () => {
       rows.push({
         id: `team-${team._id}`,
         project: teamName,
-        projectId: team._id,
+        teamId: team._id,
         isProjectRow: true,
       });
 
@@ -254,7 +255,7 @@ const MyTimesheetCalendarTable = () => {
         rows.push({
           id: task.id,
           project: task.project,
-          projectId: team._id,
+          teamId: team._id,
           task: task.task,
           billableType: task.billableType,
           myTimesheetEntriesIds: task.myTimesheetEntriesIds,
@@ -266,7 +267,7 @@ const MyTimesheetCalendarTable = () => {
       rows.push({
         id: `create-task-${team._id}`,
         project: teamName,
-        projectId: team._id,
+        teamId: team._id,
         isProjectRow: false,
         isCreateTaskRow: true,
       });
@@ -437,8 +438,12 @@ const MyTimesheetCalendarTable = () => {
 
     const existingTimesheet = newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
+      const entityMatch = matchingProject 
+        ? (ts.project === calendarRow.project || ts.project === entityId)
+        : (ts.team === entityId);
+      
       return (
-        (ts.project === calendarRow.project || ts.project === entityId) &&
+        entityMatch &&
         ts.task === taskId &&
         ts.billableType === calendarRow.billableType &&
         tsDate.toDateString() === date.toDateString()
@@ -452,7 +457,8 @@ const MyTimesheetCalendarTable = () => {
       addNewTimesheet({
         id: crypto.randomUUID(),
         date: date.toISOString(),
-        project: calendarRow.project,
+        project: matchingProject ? matchingProject._id : undefined,
+        team: matchingTeam ? matchingTeam._id : undefined,
         task: taskId,
         description: '',
         hours: value,
@@ -481,8 +487,12 @@ const MyTimesheetCalendarTable = () => {
 
     const existingTimesheet = newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
+      const entityMatch = matchingProject 
+        ? (ts.project === calendarRow.project || ts.project === entityId)
+        : (ts.team === entityId);
+      
       return (
-        (ts.project === calendarRow.project || ts.project === entityId) &&
+        entityMatch &&
         ts.task === taskId &&
         ts.billableType === calendarRow.billableType &&
         tsDate.toDateString() === date.toDateString()
@@ -496,7 +506,8 @@ const MyTimesheetCalendarTable = () => {
       addNewTimesheet({
         id: crypto.randomUUID(),
         date: date.toISOString(),
-        project: calendarRow.project,
+        project: matchingProject ? matchingProject._id : undefined,
+        team: matchingTeam ? matchingTeam._id : undefined,
         task: taskId,
         description: value,
         hours: 0,
@@ -513,14 +524,21 @@ const MyTimesheetCalendarTable = () => {
     }
 
     // Get the task ID from the task name (row.task is the display name)
-    const projectTasks = row.projectId ? (tasksByProject[row.projectId] || []) : [];
+    const entityId = row.projectId || row.teamId;
+    const projectTasks = entityId ? (tasksByProject[entityId] || []) : [];
     const taskObj = projectTasks.find(t => t.taskName === row.task);
     const taskId = taskObj ? taskObj._id : row.task;
 
     return newTimesheets.find((ts) => {
       const tsDate = new Date(ts.date);
+      
+      // Match based on whether this row is a project or team
+      const entityMatch = row.projectId 
+        ? (ts.project === row.project || ts.project === row.projectId)
+        : (ts.team === row.teamId);
+      
       return (
-        (ts.project === row.project || ts.project === row.projectId) &&
+        entityMatch &&
         ts.task === taskId &&
         ts.billableType === row.billableType &&
         tsDate.toDateString() === date.toDateString()
@@ -538,21 +556,23 @@ const MyTimesheetCalendarTable = () => {
           return <CustomRow text={row.project || ''} />;
         }
         if (row.isCreateTaskRow) {
+          const entityId = row.projectId || row.teamId;
           return (
             <CreateTaskRow
-              onCreateTask={() => row.projectId && handleCreateTask(row.projectId)}
+              onCreateTask={() => entityId && handleCreateTask(entityId)}
             />
           );
         }
         
-        const availableTasksForRow = row.projectId ? getAvailableTasksForProject(row.projectId) : [];
+        const entityId = row.projectId || row.teamId;
+        const availableTasksForRow = entityId ? getAvailableTasksForProject(entityId) : [];
         
         return (
           <TaskRow
             task={row.task || ''}
             billableType={row.billableType ?? BillableType.Billable}
             rowId={row.id}
-            projectId={row.projectId || ''}
+            projectId={entityId || ''}
             availableTasks={availableTasksForRow}
             onTaskChange={handleTaskChange}
             onBillableTypeChange={handleBillableTypeChange}
