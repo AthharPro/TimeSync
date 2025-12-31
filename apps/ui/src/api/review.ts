@@ -7,6 +7,7 @@ export interface ReviewEmployee {
   lastName: string;
   email: string;
   designation?: string;
+  pendingTimesheetCount?: number;
 }
 
 export interface GetSupervisedEmployeesForReviewResponse {

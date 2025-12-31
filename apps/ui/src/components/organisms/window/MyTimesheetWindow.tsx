@@ -3,7 +3,7 @@ import {  ToggleButton, ToggleButtonGroup } from '@mui/material';
 import MyTimesheetTable from '../table/MyTimesheetTable';
 import { useMyTimesheet } from '../../../hooks/timesheet/useMyTimesheet';
 import { BillableType, DailyTimesheetStatus } from '@tms/shared';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import TableRowsOutlinedIcon from '@mui/icons-material/TableRowsOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import MyTimesheetCalenderTable from '../table/MyTimesheetCalenderTable';
@@ -15,9 +15,11 @@ import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import MyTimesheetFilterPopover, { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
 import dayjs from 'dayjs';
+import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
 
 function MyTimesheetWindow() {
   const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets, deleteSelectedTimesheets } = useMyTimesheet();
+  const { myTimesheetParams, setMyTimesheetParams } = useWindowNavigation();
 
   const [view, setView] = useState('table');
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
@@ -41,6 +43,39 @@ function MyTimesheetWindow() {
   }, []);
 
   const [filters, setFilters] = useState<TimesheetFilters>(defaultTableFilters);
+
+  // Handle navigation from notification (rejected timesheets)
+  useEffect(() => {
+    if (myTimesheetParams) {
+      const { year, month, status } = myTimesheetParams;
+      
+      // Apply filters based on notification params
+      if (year || month || status) {
+        const newFilters = { ...filters };
+        
+        if (year) {
+          newFilters.year = year;
+        }
+        
+        if (month) {
+          const monthDate = dayjs(month, 'YYYY-MM');
+          newFilters.month = month;
+          newFilters.year = monthDate.format('YYYY');
+          newFilters.startDate = monthDate.startOf('month').format('YYYY-MM-DD');
+          newFilters.endDate = monthDate.endOf('month').format('YYYY-MM-DD');
+        }
+        
+        if (status) {
+          newFilters.status = status as any;
+        }
+        
+        setFilters(newFilters);
+      }
+      
+      // Clear the params after processing
+      setMyTimesheetParams(null);
+    }
+  }, [myTimesheetParams, setMyTimesheetParams]);
 
   const handleCreateClick = () => {
     if(view==='table'){

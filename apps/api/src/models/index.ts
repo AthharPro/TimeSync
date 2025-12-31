@@ -5,3 +5,4 @@ export * from './rejectionReason.model';
 export * from './team.model';
 export * from './verificationCode.model';
 export * from './session.model';
+export * from './notification.model';

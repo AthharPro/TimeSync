@@ -22,6 +22,7 @@ interface IEmployee {
   name: string;
   email: string;
   designation?: string;
+  pendingTimesheetCount?: number;
 }
 
 interface ReviewTimesheetTableProps {
@@ -29,13 +30,15 @@ interface ReviewTimesheetTableProps {
   filters?: ReviewTimesheetFilters;
   supervisedProjectIds?: string[];
   supervisedTeamIds?: string[];
+  initialEmployeeId?: string | null;
 }
 
 const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({ 
   onSelectedTimesheetsChange,
   filters,
   supervisedProjectIds = [],
-  supervisedTeamIds = []
+  supervisedTeamIds = [],
+  initialEmployeeId = null
 }) => {
   const {
     employees,
@@ -52,6 +55,17 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
   useEffect(() => {
     loadSupervisedEmployees();
   }, [loadSupervisedEmployees]);
+
+  // Auto-open drawer for initial employee ID (from notification)
+  useEffect(() => {
+    if (initialEmployeeId && employees.length > 0) {
+      // Check if the employee exists in the list
+      const employeeExists = employees.some(emp => emp.id === initialEmployeeId);
+      if (employeeExists) {
+        setExpandedEmployees(new Set([initialEmployeeId]));
+      }
+    }
+  }, [initialEmployeeId, employees]);
 
   // Handle timesheet selection change from child component
   const handleTimesheetSelectionChange = (employeeId: string, timesheetIds: string[]) => {
@@ -111,25 +125,35 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
       label: 'Employee ID',
       key: 'employeeId',
       render: (row) => <Box sx={{ py: 1 }}>{row.employeeId}</Box>,
-      width: '15%',
+      width: '12%',
     },
     {
       label: 'Name',
       key: 'name',
       render: (row) => <Box sx={{ py: 1 }}>{row.name}</Box>,
-      width: '20%',
+      width: '18%',
     },
     {
       label: 'Email',
       key: 'email',
       render: (row) => <Box sx={{ py: 1 }}>{row.email}</Box>,
-      width: '30%',
+      width: '25%',
     },
     {
       label: 'Designation',
       key: 'designation',
       render: (row) => <Box sx={{ py: 1 }}>{row.designation || 'N/A'}</Box>,
-      width: '35%',
+      width: '25%',
+    },
+    {
+      label: 'Pending Timesheets',
+      key: 'pendingTimesheetCount',
+      render: (row) => (
+        <Box sx={{ py: 1 }}>
+          {row.pendingTimesheetCount !== undefined ? row.pendingTimesheetCount : 0}
+        </Box>
+      ),
+      width: '20%',
     },
   ];
 

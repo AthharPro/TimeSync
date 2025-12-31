@@ -7,9 +7,10 @@ import ProjectModel from '../models/project.model';
 import { Task } from '../models/task.model';
 import appAssert from '../utils/validation/appAssert';
 import { FORBIDDEN, NOT_FOUND } from '../constants/http';
-import { UserRole, DailyTimesheetStatus } from '@tms/shared';
+import { UserRole, DailyTimesheetStatus, NotificationType } from '@tms/shared';
 import { getSupervisedUserIds, getSupervisedProjectAndTeamIds } from '../utils/data/assignmentUtils';
 import mongoose from 'mongoose';
+import { createBulkNotifications, createNotification } from '../services/notification.service';
 
 /**
  * Get employees that the supervisor can review timesheets for
@@ -57,9 +58,39 @@ export const getSupervisedEmployeesForReviewHandler: RequestHandler = async (req
         .select('_id employee_id firstName lastName email designation')
         .sort({ firstName: 1, lastName: 1 })
         .lean();
+      
+      console.log('Found employees:', employees.length);
     }
     
-    res.json({ employees });
+    // Get pending timesheet counts for each employee
+    const employeeObjectIds = employees.map(emp => new mongoose.Types.ObjectId(emp._id));
+    const pendingCounts = await Timesheet.aggregate([
+      {
+        $match: {
+          userId: { $in: employeeObjectIds },
+          status: DailyTimesheetStatus.Pending
+        }
+      },
+      {
+        $group: {
+          _id: '$userId',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Create a map of employee ID to pending count
+    const pendingCountMap = new Map(
+      pendingCounts.map(item => [item._id.toString(), item.count])
+    );
+
+    // Add pending count to each employee
+    const employeesWithPendingCount = employees.map(emp => ({
+      ...emp,
+      pendingTimesheetCount: pendingCountMap.get(emp._id.toString()) || 0
+    }));
+    
+    res.json({ employees: employeesWithPendingCount });
   } catch (error) {
     console.error('Error fetching supervised employees for review:', error);
     res.status(500).json({ 
@@ -317,6 +348,61 @@ export const approveTimesheetsHandler: RequestHandler = async (req, res) => {
       }
     );
 
+    // Send notifications to affected employees
+    try {
+      // Group timesheets by employee
+      const timesheetsByEmployee = new Map<string, typeof timesheets>();
+      timesheets.forEach(ts => {
+        const employeeId = (ts.userId as any)._id.toString();
+        if (!timesheetsByEmployee.has(employeeId)) {
+          timesheetsByEmployee.set(employeeId, []);
+        }
+        timesheetsByEmployee.get(employeeId)!.push(ts);
+      });
+
+      // Get supervisor info for the notification message
+      const supervisor = await UserModel.findById(supervisorId).select('firstName lastName').lean();
+      const supervisorName = supervisor ? `${supervisor.firstName} ${supervisor.lastName}` : 'Your supervisor';
+
+      // Send individual notifications to each employee with their specific timesheet dates
+      for (const [employeeId, employeeTimesheets] of timesheetsByEmployee.entries()) {
+        // Get the date range or month information
+        const dates = employeeTimesheets.map(ts => new Date(ts.date));
+        dates.sort((a, b) => a.getTime() - b.getTime());
+        
+        const firstDate = dates[0];
+        const lastDate = dates[dates.length - 1];
+        
+        // Format month and year
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const month = monthNames[firstDate.getMonth()];
+        const year = firstDate.getFullYear();
+        
+        // Create a descriptive message with date information
+        let dateInfo = '';
+        if (employeeTimesheets.length === 1) {
+          dateInfo = `for ${firstDate.getDate()} ${month} ${year}`;
+        } else if (firstDate.getMonth() === lastDate.getMonth() && firstDate.getFullYear() === lastDate.getFullYear()) {
+          dateInfo = `for ${month} ${year}`;
+        } else {
+          dateInfo = `from ${firstDate.getDate()} ${monthNames[firstDate.getMonth()]} ${firstDate.getFullYear()} to ${lastDate.getDate()} ${monthNames[lastDate.getMonth()]} ${lastDate.getFullYear()}`;
+        }
+
+        await createNotification({
+          userId: employeeId,
+          type: NotificationType.TimesheetApproved,
+          title: 'Timesheets Approved',
+          message: `${supervisorName} has approved ${employeeTimesheets.length} of your timesheet(s) ${dateInfo}`,
+          relatedId: supervisorId,
+          relatedModel: 'User',
+        });
+      }
+    } catch (error) {
+      console.error('Error sending approval notifications:', error);
+      // Don't fail the approval if notification fails
+    }
+
     res.json({
       message: 'Timesheets approved successfully',
       approved: result.modifiedCount
@@ -424,6 +510,61 @@ export const rejectTimesheetsHandler: RequestHandler = async (req, res) => {
     }));
 
     await TimesheetRejection.insertMany(rejectionRecords);
+
+    // Send notifications to affected employees
+    try {
+      // Group timesheets by employee
+      const timesheetsByEmployee = new Map<string, typeof timesheets>();
+      timesheets.forEach(ts => {
+        const employeeId = (ts.userId as any)._id.toString();
+        if (!timesheetsByEmployee.has(employeeId)) {
+          timesheetsByEmployee.set(employeeId, []);
+        }
+        timesheetsByEmployee.get(employeeId)!.push(ts);
+      });
+
+      // Get supervisor info for the notification message
+      const supervisor = await UserModel.findById(supervisorId).select('firstName lastName').lean();
+      const supervisorName = supervisor ? `${supervisor.firstName} ${supervisor.lastName}` : 'Your supervisor';
+
+      // Send individual notifications to each employee with their specific timesheet dates
+      for (const [employeeId, employeeTimesheets] of timesheetsByEmployee.entries()) {
+        // Get the date range or month information
+        const dates = employeeTimesheets.map(ts => new Date(ts.date));
+        dates.sort((a, b) => a.getTime() - b.getTime());
+        
+        const firstDate = dates[0];
+        const lastDate = dates[dates.length - 1];
+        
+        // Format month and year
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const month = monthNames[firstDate.getMonth()];
+        const year = firstDate.getFullYear();
+        
+        // Create a descriptive message with date information
+        let dateInfo = '';
+        if (employeeTimesheets.length === 1) {
+          dateInfo = `for ${firstDate.getDate()} ${month} ${year}`;
+        } else if (firstDate.getMonth() === lastDate.getMonth() && firstDate.getFullYear() === lastDate.getFullYear()) {
+          dateInfo = `for ${month} ${year}`;
+        } else {
+          dateInfo = `from ${firstDate.getDate()} ${monthNames[firstDate.getMonth()]} ${firstDate.getFullYear()} to ${lastDate.getDate()} ${monthNames[lastDate.getMonth()]} ${lastDate.getFullYear()}`;
+        }
+
+        await createNotification({
+          userId: employeeId,
+          type: NotificationType.TimesheetRejected,
+          title: 'Timesheets Rejected',
+          message: `${supervisorName} has rejected ${employeeTimesheets.length} of your timesheet(s) ${dateInfo}. Reason: ${rejectionReason.trim()}`,
+          relatedId: supervisorId,
+          relatedModel: 'User',
+        });
+      }
+    } catch (error) {
+      console.error('Error sending rejection notifications:', error);
+      // Don't fail the rejection if notification fails
+    }
 
     res.json({
       message: 'Timesheets rejected successfully',

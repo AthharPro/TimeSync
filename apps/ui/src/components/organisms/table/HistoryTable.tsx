@@ -1,98 +1,28 @@
 import React from 'react';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
 import DataTable from '../../templates/other/DataTable';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, CircularProgress } from '@mui/material';
 
 interface IHistoryEntry {
   id: string;
   date: string;
   time: string;
   performedBy: string;
+  performedByEmail: string;
   description: string;
   isFirstInGroup?: boolean;
 }
 
 interface IHistoryTableProps {
-  rows?: IHistoryEntry[];
+  rows: IHistoryEntry[];
+  isLoading?: boolean;
 }
 
-// Dummy data with same dates grouped together
-const dummyHistoryData: IHistoryEntry[] = [
-  {
-    id: '1',
-    date: '2025-12-15',
-    time: '09:30 AM',
-    performedBy: 'John Doe',
-    description: 'Created new project "Website Redesign"',
-  },
-  {
-    id: '2',
-    date: '2025-12-15',
-    time: '10:15 AM',
-    performedBy: 'Jane Smith',
-    description: 'Updated task status from "In Progress" to "Completed"',
-  },
-  {
-    id: '3',
-    date: '2025-12-15',
-    time: '02:45 PM',
-    performedBy: 'John Doe',
-    description: 'Added new team member to project',
-  },
-  {
-    id: '4',
-    date: '2025-12-14',
-    time: '11:20 AM',
-    performedBy: 'Mike Johnson',
-    description: 'Submitted timesheet for approval',
-  },
-  {
-    id: '5',
-    date: '2025-12-14',
-    time: '03:30 PM',
-    performedBy: 'Sarah Williams',
-    description: 'Approved timesheet for Team Alpha',
-  },
-  {
-    id: '6',
-    date: '2025-12-14',
-    time: '04:55 PM',
-    performedBy: 'John Doe',
-    description: 'Modified project deadline',
-  },
-  {
-    id: '7',
-    date: '2025-12-13',
-    time: '09:00 AM',
-    performedBy: 'Jane Smith',
-    description: 'Started new sprint planning',
-  },
-  {
-    id: '8',
-    date: '2025-12-13',
-    time: '01:15 PM',
-    performedBy: 'Mike Johnson',
-    description: 'Created task "Implement authentication"',
-  },
-  {
-    id: '9',
-    date: '2025-12-12',
-    time: '10:30 AM',
-    performedBy: 'Sarah Williams',
-    description: 'Deleted obsolete project files',
-  },
-  {
-    id: '10',
-    date: '2025-12-12',
-    time: '11:45 AM',
-    performedBy: 'John Doe',
-    description: 'Updated user permissions',
-  },
-];
-
-const HistoryTable = ({ rows = dummyHistoryData }: IHistoryTableProps) => {
+const HistoryTable = ({ rows, isLoading = false }: IHistoryTableProps) => {
   // Group data by date and mark first entry in each group
   const processedRows = React.useMemo(() => {
+    if (!rows || rows.length === 0) return [];
+    
     const sortedRows = [...rows].sort((a, b) => {
       // Sort by date descending (newest first), then by time
       const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -155,9 +85,14 @@ const HistoryTable = ({ rows = dummyHistoryData }: IHistoryTableProps) => {
           alignItems: 'flex-end',
           minHeight: row.isFirstInGroup ? '52px' : 'auto',
         }}>
-          <Typography variant="body2" sx={{ color: 'text.primary' }}>
-            {row.performedBy}
-          </Typography>
+          <Box>
+            <Typography variant="body2" fontWeight={500}>
+              {row.performedBy}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {row.performedByEmail}
+            </Typography>
+          </Box>
         </Box>
       ),
     },
@@ -178,6 +113,38 @@ const HistoryTable = ({ rows = dummyHistoryData }: IHistoryTableProps) => {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (processedRows.length === 0) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <Typography variant="body1" color="text.secondary">
+          No history entries found
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <DataTable

@@ -5,3 +5,4 @@ export * from './timesheet.controller';
 export * from './report.controller';
 export * from "./team.controller";
 export * from './review.controller';
+export * from './notification.controller';
