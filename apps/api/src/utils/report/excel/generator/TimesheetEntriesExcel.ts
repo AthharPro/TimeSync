@@ -36,8 +36,6 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
       return;
     }
 
-    let grandTotalHours = 0;
-
     // If multiple employees (project-wise or team-wise filter), show each employee with their own table
     if (data.length > 1) {
       data.forEach((employeeData, employeeIndex) => {
@@ -78,7 +76,6 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
 
         // Add total row for this employee
         const employeeTotal = entries.reduce((sum, e) => sum + e.hours, 0);
-        grandTotalHours += employeeTotal;
         const totalRow = this.addDataRow(['', '', 'Total (Hours)', this.formatHoursToHHMM(employeeTotal)]);
         const totalCells = [
           this.worksheet.getCell(totalRow.number, 3),
@@ -86,15 +83,6 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
         ];
         totalCells.forEach((cell) => (cell.font = { bold: true, size: 10 }));
       });
-
-      // Grand total row (only for multiple employees)
-      this.worksheet.addRow([]);
-      const grandRow = this.addDataRow(['', '', 'Grand Total (Hours)', this.formatHoursToHHMM(grandTotalHours)]);
-      const grandCells = [
-        this.worksheet.getCell(grandRow.number, 3),
-        this.worksheet.getCell(grandRow.number, 4),
-      ];
-      grandCells.forEach((cell) => (cell.font = { bold: true, size: 11 }));
     } else {
       // Single employee (individual user filter) - show entries grouped by project/team
       const employeeData = data[0];
@@ -437,9 +425,7 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
     return null;
   }
 
-  /**
-   * Adds branding and address rows so Excel matches the PDF header.
-   */
+  
   private addCompanyHeader(totalColumns: number, logoId: number | null) {
     // Align brand text in columns 2-4; leave col 1 for logo placement
     const brandRow = this.worksheet.addRow(['', 'ALLION']);

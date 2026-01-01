@@ -17,4 +17,11 @@ export const createTeamSchema = z.object({
   isDepartment: z.boolean().optional().default(true),
 });
 
+// Update team staff schema
+export const updateTeamStaffSchema = z.object({
+  members: z.array(z.string().min(1, "Member ID cannot be empty")).optional(),
+  supervisor: supervisorIdSchema,
+});
+
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
+export type UpdateTeamStaffInput = z.infer<typeof updateTeamStaffSchema>;

@@ -285,77 +285,82 @@ export const updateProjectStaff = async (
   }
 
   // Update roles based on supervisor change
-  if (data.supervisor !== undefined) {
-    const previousSupervisorId = existing?.supervisor?.toString() || null;
-    const newSupervisorId = project.supervisor
-      ? (project.supervisor as any)._id?.toString?.() || project.supervisor.toString()
-      : null;
+  try {
+    if (data.supervisor !== undefined) {
+      const previousSupervisorId = existing?.supervisor?.toString() || null;
+      const newSupervisorId = project.supervisor
+        ? (project.supervisor as any)._id?.toString?.() || project.supervisor.toString()
+        : null;
 
-    if (newSupervisorId && previousSupervisorId !== newSupervisorId) {
-      const sup = await UserModel.findById(newSupervisorId).select('role firstName lastName');
-      if (sup) {
-        if (sup.role === UserRole.Admin) {
-          await UserModel.findByIdAndUpdate(newSupervisorId, {
-            $set: { role: UserRole.SupervisorAdmin },
-          });
-        } else if (sup.role === UserRole.Emp) {
-          await UserModel.findByIdAndUpdate(newSupervisorId, {
-            $set: { role: UserRole.Supervisor },
-          });
-        }
-
-      }
-    }
-    // Demote previous supervisor if changed or removed
-    if (
-      previousSupervisorId &&
-      (previousSupervisorId !== newSupervisorId || !newSupervisorId)
-    ) {
-      const prev = await UserModel.findById(previousSupervisorId).select('role');
-      
-      if (prev) {
-        if (prev.role === UserRole.SupervisorAdmin) {
-          // For SupervisorAdmin: check if still supervising any other projects or teams
-          const stillSupervisingAnotherProject = await ProjectModel.exists({
-            _id: { $ne: projectId },
-            supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
-            status: true,
-          });
-          
-          const stillSupervisingAnotherTeam = await TeamModel.exists({
-            supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
-            status: true,
-          });
-          
-          // Only demote to Admin if not supervising any other projects or teams
-          if (!stillSupervisingAnotherProject && !stillSupervisingAnotherTeam) {
-            await UserModel.findByIdAndUpdate(previousSupervisorId, {
-              $set: { role: UserRole.Admin },
+      if (newSupervisorId && previousSupervisorId !== newSupervisorId) {
+        const sup = await UserModel.findById(newSupervisorId).select('role firstName lastName');
+        if (sup) {
+          if (sup.role === UserRole.Admin) {
+            await UserModel.findByIdAndUpdate(newSupervisorId, {
+              $set: { role: UserRole.SupervisorAdmin },
+            });
+          } else if (sup.role === UserRole.Emp) {
+            await UserModel.findByIdAndUpdate(newSupervisorId, {
+              $set: { role: UserRole.Supervisor },
             });
           }
-        } else if (prev.role === UserRole.Supervisor) {
-          // For Supervisor: check if still supervising any other projects or teams
-          const stillSupervisingAnotherProject = await ProjectModel.exists({
-            _id: { $ne: projectId },
-            supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
-            status: true,
-          });
-          
-          const stillSupervisingAnotherTeam = await TeamModel.exists({
-            supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
-            status: true,
-          });
-          
-          // Only demote to Emp if not supervising any other projects or teams
-          if (!stillSupervisingAnotherProject && !stillSupervisingAnotherTeam) {
-            await UserModel.findByIdAndUpdate(previousSupervisorId, {
-              $set: { role: UserRole.Emp },
+
+        }
+      }
+      // Demote previous supervisor if changed or removed
+      if (
+        previousSupervisorId &&
+        (previousSupervisorId !== newSupervisorId || !newSupervisorId)
+      ) {
+        const prev = await UserModel.findById(previousSupervisorId).select('role');
+        
+        if (prev) {
+          if (prev.role === UserRole.SupervisorAdmin) {
+            // For SupervisorAdmin: check if still supervising any other projects or teams
+            const stillSupervisingAnotherProject = await ProjectModel.exists({
+              _id: { $ne: projectId },
+              supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
+              status: true,
             });
+            
+            const stillSupervisingAnotherTeam = await TeamModel.exists({
+              supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
+              status: true,
+            });
+            
+            // Only demote to Admin if not supervising any other projects or teams
+            if (!stillSupervisingAnotherProject && !stillSupervisingAnotherTeam) {
+              await UserModel.findByIdAndUpdate(previousSupervisorId, {
+                $set: { role: UserRole.Admin },
+              });
+            }
+          } else if (prev.role === UserRole.Supervisor) {
+            // For Supervisor: check if still supervising any other projects or teams
+            const stillSupervisingAnotherProject = await ProjectModel.exists({
+              _id: { $ne: projectId },
+              supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
+              status: true,
+            });
+            
+            const stillSupervisingAnotherTeam = await TeamModel.exists({
+              supervisor: new mongoose.Types.ObjectId(previousSupervisorId),
+              status: true,
+            });
+            
+            // Only demote to Emp if not supervising any other projects or teams
+            if (!stillSupervisingAnotherProject && !stillSupervisingAnotherTeam) {
+              await UserModel.findByIdAndUpdate(previousSupervisorId, {
+                $set: { role: UserRole.Emp },
+              });
+            }
           }
         }
       }
     }
+  } catch (error) {
+    console.error('Failed to update user roles after project staff change:', error);
   }
+
   return { project };
 };
 

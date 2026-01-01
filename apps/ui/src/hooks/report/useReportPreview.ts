@@ -421,9 +421,18 @@ export const useReportPreview = ({
               };
             }
             
+            // When filtering by team-wise, filter out project tables to only show team entries
+            const employeeTables = (employee.tables || []).filter((table: any) => {
+              if (isTeamWiseFilter) {
+                // Only include team tables when team-wise filtering is active
+                return table.title && table.title.includes('Team:');
+              }
+              return true;
+            });
+            
             // Collect all unique project/team titles from employee's tables
             const allTitles = new Set<string>();
-            (employee.tables || []).forEach((table: any) => {
+            employeeTables.forEach((table: any) => {
               if (table.title) {
                 allTitles.add(table.title);
               }
@@ -438,7 +447,7 @@ export const useReportPreview = ({
               // Single project only - combine all entries into one table
               const allEmployeeRows: any[] = [];
               
-              (employee.tables || []).forEach((table: any) => {
+              employeeTables.forEach((table: any) => {
                 const isProjectTable = table.title?.includes('Project:');
                 const isTeamTable = table.title?.includes('Team:');
                 const isLeaveTable = table.title?.includes('Leave');
@@ -485,7 +494,7 @@ export const useReportPreview = ({
               // Single team only - combine all entries into one table
               const allEmployeeRows: any[] = [];
               
-              (employee.tables || []).forEach((table: any) => {
+              employeeTables.forEach((table: any) => {
                 const isProjectTable = table.title?.includes('Project:');
                 const isTeamTable = table.title?.includes('Team:');
                 const isLeaveTable = table.title?.includes('Leave');
@@ -530,7 +539,7 @@ export const useReportPreview = ({
             // User has multiple projects/teams or mixed entries - show separate tables for each
             else if (titlesArray.length > 1) {
               // Create separate table for each project/team
-              (employee.tables || []).forEach((table: any) => {
+              employeeTables.forEach((table: any) => {
                 const isProjectTable = table.title?.includes('Project:');
                 const isTeamTable = table.title?.includes('Team:');
                 const isLeaveTable = table.title?.includes('Leave');
@@ -586,7 +595,7 @@ export const useReportPreview = ({
             else {
               const allEmployeeRows: any[] = [];
               
-              (employee.tables || []).forEach((table: any) => {
+              employeeTables.forEach((table: any) => {
                 const isProjectTable = table.title?.includes('Project:');
                 const isTeamTable = table.title?.includes('Team:');
                 const isLeaveTable = table.title?.includes('Leave');
@@ -635,7 +644,16 @@ export const useReportPreview = ({
           if (filteredEmployees.length > 0) {
             const allRows: any[] = [];
             filteredEmployees.forEach((employee: any) => {
-              (employee.tables || []).forEach((table: any) => {
+              // When filtering by team-wise, filter out project tables to only show team entries
+              const employeeTables = (employee.tables || []).filter((table: any) => {
+                if (isTeamWiseFilter) {
+                  // Only include team tables when team-wise filtering is active
+                  return table.title && table.title.includes('Team:');
+                }
+                return true;
+              });
+              
+              employeeTables.forEach((table: any) => {
                 const isProjectTable = table.title?.includes('Project:');
                 const isTeamTable = table.title?.includes('Team:');
                 const isLeaveTable = table.title?.includes('Leave');

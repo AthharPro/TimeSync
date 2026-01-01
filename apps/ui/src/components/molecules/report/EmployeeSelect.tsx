@@ -23,6 +23,8 @@ const EmployeeSelect: React.FC<EmployeeSelectProps> = ({ employees, selectedIds,
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
+  // Support single or multiple selection
+  const isMultiple = Array.isArray(selectedIds);
   
   // Filter employees based on search term
   const filteredEmployees = useMemo(() => {
@@ -75,7 +77,7 @@ const EmployeeSelect: React.FC<EmployeeSelectProps> = ({ employees, selectedIds,
     <FormControl fullWidth size="small" disabled={disabled}>
       <InputLabel>Employees</InputLabel>
       <Select
-        multiple
+        multiple={isMultiple}
         open={open}
         onOpen={() => setOpen(true)}
         onClose={() => {
@@ -86,18 +88,27 @@ const EmployeeSelect: React.FC<EmployeeSelectProps> = ({ employees, selectedIds,
         onChange={handleSelectChange}
         input={<OutlinedInput label="Employees" />}
         renderValue={selected => (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {(selected as string[]).map(employeeId => {
+          isMultiple ? (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {(selected as string[]).map(employeeId => {
+                const employee = employees.find(emp => emp._id === employeeId);
+                return (
+                  <Chip
+                    key={employeeId}
+                    label={employee ? `${employee.firstName} ${employee.lastName}` : employeeId}
+                    size="small"
+                  />
+                );
+              })}
+            </Box>
+          ) : (
+            (() => {
+              const employeeIds = selected as string[];
+              const employeeId = employeeIds.length > 0 ? employeeIds[0] : '';
               const employee = employees.find(emp => emp._id === employeeId);
-              return (
-                <Chip
-                  key={employeeId}
-                  label={employee ? `${employee.firstName} ${employee.lastName}` : employeeId}
-                  size="small"
-                />
-              );
-            })}
-          </Box>
+              return employee ? `${employee.firstName} ${employee.lastName}` : employeeId;
+            })()
+          )
         )}
         MenuProps={MenuProps}
       >
@@ -149,9 +160,11 @@ const EmployeeSelect: React.FC<EmployeeSelectProps> = ({ employees, selectedIds,
                 },
               }}
             >
-              <Checkbox 
-                checked={selectedIds.indexOf(employee._id) > -1} 
-              />
+              {isMultiple ? (
+                <Checkbox 
+                  checked={selectedIds.indexOf(employee._id) > -1} 
+                />
+              ) : null}
               <ListItemText 
                 primary={highlightText(`${employee.firstName} ${employee.lastName}`, searchTerm)}
                 secondary={highlightText(employee.email, searchTerm)}

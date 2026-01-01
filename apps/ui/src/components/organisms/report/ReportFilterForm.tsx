@@ -28,19 +28,6 @@ export const ReportFilterForm = ({
   supervisedEmployees,
   disabled = false 
 }: IReportFilterFormProps) => {
-  const prevResetTriggerRef = useRef(resetTrigger);
-
-  useEffect(() => {
-    if (resetTrigger !== undefined && resetTrigger > (prevResetTriggerRef.current ?? 0)) {
-      // Reset date filters
-      updateFilter({
-        startDate: undefined,
-        endDate: undefined,
-      });
-      prevResetTriggerRef.current = resetTrigger;
-    }
-  }, [resetTrigger, updateFilter]);
-
   // User filter type management 
   const {
     userFilterType,
@@ -58,6 +45,24 @@ export const ReportFilterForm = ({
     isLoadingUsers,
     resetFilterType,
   } = useUserFilterType({ userRole, canSeeAllData });
+
+  const prevResetTriggerRef = useRef(resetTrigger);
+
+  useEffect(() => {
+    if (resetTrigger !== undefined && resetTrigger > (prevResetTriggerRef.current ?? 0)) {
+      // Reset all filters including filter type
+      updateFilter({
+        startDate: undefined,
+        endDate: undefined,
+        employeeIds: [],
+        projectId: undefined,
+        teamId: undefined,
+        workType: undefined,
+      });
+      resetFilterType();
+      prevResetTriggerRef.current = resetTrigger;
+    }
+  }, [resetTrigger, updateFilter, resetFilterType]);
   // Date range handlers
   const handleStartDateChange = (date: Dayjs | null) => {
     updateFilter({
