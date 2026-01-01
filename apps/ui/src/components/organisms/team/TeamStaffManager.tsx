@@ -131,6 +131,7 @@ export default function TeamStaffManager({
 
   const handleSave = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       await updateTeamStaff(teamId, {
         members: selectedMembers.map((e) => e.id),
@@ -138,9 +139,10 @@ export default function TeamStaffManager({
       });
       onSaved && onSaved();
       onClose();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to update team staff:', e);
-      // You might want to show an error message to the user here
+      const errorMessage = e?.message || 'Failed to update team staff. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

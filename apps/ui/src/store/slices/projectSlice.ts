@@ -221,10 +221,16 @@ export const updateProjectStaffAction = createAsyncThunk<
       employees: params.employees,
       supervisor: params.supervisor,
     });
+    // response already is response.data (contains { project: ... })
+    if (!response || !response.project) {
+      console.error('Invalid response structure:', response);
+      return thunkAPI.rejectWithValue('Invalid response structure from server');
+    }
     return transformProject(response.project);
   } catch (error: any) {
+    console.error('Error updating project staff:', error);
     return thunkAPI.rejectWithValue(
-      error.response?.data?.message || 'Failed to update project staff'
+      error.response?.data?.message || error.message || 'Failed to update project staff'
     );
   }
 });

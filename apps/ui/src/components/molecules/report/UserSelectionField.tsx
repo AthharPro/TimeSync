@@ -39,13 +39,13 @@ const UserSelectionField: React.FC<UserSelectionFieldProps> = ({
       <>
         <EmployeeSelect
           employees={employees}
-          selectedIds={selectedEmployeeIds}
-          onChange={onEmployeeChange || ((ids) => undefined)}
+          selectedIds={selectedEmployeeIds && selectedEmployeeIds.length > 0 ? [selectedEmployeeIds[0]] : []}
+          onChange={ids => onEmployeeChange ? onEmployeeChange(Array.isArray(ids) && ids.length > 0 ? [ids[0]] : []) : undefined}
           disabled={disabled}
         />
         {renderHelperText(
-          'Optional: select one or more employees',
-          selectedEmployeeIds.length === 0
+          'Select an employee',
+          !selectedEmployeeIds || selectedEmployeeIds.length === 0
         )}
       </>
     );

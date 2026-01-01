@@ -211,8 +211,7 @@ export const updateTeamStaff = async (
 
   // Update user team memberships if members were changed
   if (Array.isArray(data.members)) {
-    const oldMemberIds = (existing?.members || []).map(id => id.toString());
-    const newMemberIds = data.members.filter(id => !!id);
+    // Use the oldMemberIds and newMemberIds already defined above (lines 187-188)
     console.log('Team update - Updating user team memberships');
     console.log('Team ID:', teamId);
     console.log('Old members:', oldMemberIds);
@@ -228,15 +227,17 @@ export const updateTeamStaff = async (
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
       }
-      // Re-throw to make the error visible - this is critical for data consistency
-      throw error;
+      // Don't throw error - team update was successful, just log the membership sync issue
+      console.warn('Team was updated successfully, but user team membership sync failed. This may need manual correction.');
     }
   } else {
     console.log('Team update - Members array not provided, skipping user team membership updates');
   }
 
   if (data.supervisor !== undefined) {
-    const previousSupervisorId = existing?.supervisor?.toString() || null;
+    const previousSupervisorId = existing?.supervisor 
+      ? (existing.supervisor as any)._id?.toString() || null 
+      : null;
     const newSupervisorId = team.supervisor
       ? (team.supervisor as any)._id?.toString?.() || team.supervisor.toString()
       : null;

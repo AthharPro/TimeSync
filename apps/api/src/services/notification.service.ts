@@ -70,8 +70,8 @@ export const createBulkNotifications = async (
  */
 export const getUserNotifications = async (
   userId: string,
-  limit: number = 50,
-  skip: number = 0
+  limit = 50,
+  skip = 0
 ): Promise<{ notifications: INotificationDocument[]; total: number; unreadCount: number }> => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
 

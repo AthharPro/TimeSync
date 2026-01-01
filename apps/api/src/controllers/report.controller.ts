@@ -547,7 +547,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     : Array.from(new Set([...teamIdsToFetch, ...Array.from(projectIdsThatAreTeams)]));
   
   // Re-fetch teams if we have additional team IDs from user memberships that weren't already fetched
-  let finalTeams = teams;
+  const finalTeams = teams;
   const missingTeamIds = finalTeamIdsToFetch.filter(id => {
     const idStr = String(id);
     return !teams.find((t: any) => String(t._id) === idStr);
