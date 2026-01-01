@@ -184,8 +184,10 @@ export const useReportPreview = ({
               };
             }
 
-            // Process categories and items from raw API data
-            (weekData.categories || []).forEach((category: any) => {
+            // Process categories and items from raw API data (excluding 'Other' and 'Leave')
+            (weekData.categories || [])
+              .filter((category: any) => category.category !== 'Other' && category.category !== 'Leave')
+              .forEach((category: any) => {
               (category.items || []).forEach((item: any) => {
                 // Determine table title based on project/team
                 let tableTitle = category.category;
@@ -193,11 +195,10 @@ export const useReportPreview = ({
                   tableTitle = `Project: ${item.projectName}`;
                 } else if (item.teamName) {
                   tableTitle = `Team: ${item.teamName}`;
-                } else if (category.category === 'Other' || category.category.toLowerCase().includes('leave')) {
-                  tableTitle = 'Leave';
                 }
+                // Don't convert 'Other' to 'Leave'
                 
-                const isLeave = tableTitle.toLowerCase().includes('leave') || tableTitle === 'Leave';
+                const isLeave = false; // No longer treating 'Other' as leave
                 
                 // Create unique key: weekStartDate + tableTitle
                 const weekTitleKey: WeekTitleKey = `${weekData.weekStartDate}_${tableTitle}`;
@@ -211,7 +212,6 @@ export const useReportPreview = ({
                     title: tableTitle,
                     isLeave: isLeave,
                     status: weekData.status || 'Draft',
-                    work: isLeave ? (item.work || '') : undefined,
                     mon: 0,
                     tue: 0,
                     wed: 0,
@@ -257,7 +257,6 @@ export const useReportPreview = ({
                 weekStartDate: weekData.weekStartDate,
                 weekEndDate: weekData.weekEndDate,
                 status: weekData.status,
-                ...(weekData.isLeave && weekData.work ? { work: weekData.work } : {}),
                 mon: weekData.mon ? weekData.mon.toFixed(2) : '',
                 tue: weekData.tue ? weekData.tue.toFixed(2) : '',
                 wed: weekData.wed ? weekData.wed.toFixed(2) : '',
@@ -269,9 +268,9 @@ export const useReportPreview = ({
               tablesByTitle.get(weekData.title)!.push(rowData);
             });
             
-            // Create tables sorted by priority: Projects first, then Teams, then Leave
+            // Create tables sorted by priority: Projects first, then Teams, then Others
             const sortedTitles = Array.from(tablesByTitle.keys()).sort((a, b) => {
-              const rank = (t: string) => (t.startsWith('Project:') ? 0 : t.startsWith('Team:') ? 1 : t === 'Leave' ? 2 : 3);
+              const rank = (t: string) => (t.startsWith('Project:') ? 0 : t.startsWith('Team:') ? 1 : 2);
               const rA = rank(a);
               const rB = rank(b);
               if (rA !== rB) return rA - rB;
@@ -280,33 +279,19 @@ export const useReportPreview = ({
             
             sortedTitles.forEach(title => {
               const rows = tablesByTitle.get(title)!;
-              const isLeave = title.toLowerCase().includes('leave') || title === 'Leave';
               
-              // Define columns based on whether it's a leave table
-              const columns = isLeave
-                ? [
-                    { key: 'weekStartDate', header: 'Week Start' },
-                    { key: 'weekEndDate', header: 'Week End' },
-                    { key: 'status', header: 'Status' },
-                    { key: 'work', header: 'Work' },
-                    { key: 'mon', header: 'Mon' },
-                    { key: 'tue', header: 'Tue' },
-                    { key: 'wed', header: 'Wed' },
-                    { key: 'thu', header: 'Thu' },
-                    { key: 'fri', header: 'Fri' },
-                    { key: 'total', header: 'Total' },
-                  ]
-                : [
-                    { key: 'weekStartDate', header: 'Week Start' },
-                    { key: 'weekEndDate', header: 'Week End' },
-                    { key: 'status', header: 'Status' },
-                    { key: 'mon', header: 'Mon' },
-                    { key: 'tue', header: 'Tue' },
-                    { key: 'wed', header: 'Wed' },
-                    { key: 'thu', header: 'Thu' },
-                    { key: 'fri', header: 'Fri' },
-                    { key: 'total', header: 'Total' },
-                  ];
+              // All tables have the same columns structure (no special handling for 'Leave')
+              const columns = [
+                { key: 'weekStartDate', header: 'Week Start' },
+                { key: 'weekEndDate', header: 'Week End' },
+                { key: 'status', header: 'Status' },
+                { key: 'mon', header: 'Mon' },
+                { key: 'tue', header: 'Tue' },
+                { key: 'wed', header: 'Wed' },
+                { key: 'thu', header: 'Thu' },
+                { key: 'fri', header: 'Fri' },
+                { key: 'total', header: 'Total' },
+              ];
               
               // Sort rows by week start date
               rows.sort((a, b) => new Date(a.weekStartDate).getTime() - new Date(b.weekStartDate).getTime());
@@ -450,10 +435,9 @@ export const useReportPreview = ({
               employeeTables.forEach((table: any) => {
                 const isProjectTable = table.title?.includes('Project:');
                 const isTeamTable = table.title?.includes('Team:');
-                const isLeaveTable = table.title?.includes('Leave');
                 
                 // Apply workType filtering
-                if (filter.workType && !isLeaveTable) {
+                if (filter.workType) {
                   if (filter.workType === 'project' && !isProjectTable) {
                     return;
                   }

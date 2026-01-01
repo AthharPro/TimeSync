@@ -362,12 +362,17 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
       weekEndRaw.setDate(weekStartRaw.getDate() + 4);
       const weekEnd = this.formatDate(weekEndRaw);
 
-      for (const category of timesheetWeek.categories) {
+      // Filter out 'Other' and 'Leave' categories
+      const filteredCategories = timesheetWeek.categories.filter(
+        (category: any) => category.category !== 'Other' && category.category !== 'Leave'
+      );
+
+      for (const category of filteredCategories) {
         for (const item of category.items) {
           const dailyHours = Array.isArray(item.dailyHours) ? item.dailyHours : [];
 
           let title: string | null = null;
-          let includeWork = false;
+          const includeWork = false;
 
           // Each project gets its own table with unique title
           if (item.projectName) {
@@ -377,10 +382,9 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
           else if (item.teamName) {
             title = `Team: ${item.teamName}`;
           }
-          // Leave/Other activities go into a single "Leave" table
-          else if (category.category === 'Other') {
-            title = 'Leave';
-            includeWork = true;
+          // Use category name as-is, don't convert 'Other' to 'Leave'
+          else {
+            title = category.category;
           }
 
           // Skip items that don't belong to any specific category
@@ -532,19 +536,6 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
               return sum + (isNaN(nNum) ? 0 : nNum);
             }, 0);
           grandTotal += rowTotal;
-
-          if (cat.category === 'Other') {
-            for (let i = 0; i < 5; i++) {
-              const h = dailyHours[i];
-              const n =
-                typeof h === 'string'
-                  ? parseFloat(h)
-                  : typeof h === 'number'
-                  ? h
-                  : 0;
-              if (!isNaN(n) && n > 0) weeklyLeaveHours[i] += n;
-            }
-          }
         });
       });
 

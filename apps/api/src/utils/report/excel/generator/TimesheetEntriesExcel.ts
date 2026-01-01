@@ -87,11 +87,13 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
       // Single employee (individual user filter) - show entries grouped by project/team
       const employeeData = data[0];
 
-      // Collect all unique project/team names from all tables
+      // Collect all unique project/team names from all tables (excluding 'Other' and 'Leave')
       const allTitles = new Set<string>();
-      employeeData.tables.forEach(table => {
-        allTitles.add(table.title);
-      });
+      employeeData.tables
+        .filter(table => table.title !== 'Other' && table.title !== 'Leave')
+        .forEach(table => {
+          allTitles.add(table.title);
+        });
       
       const titlesArray = Array.from(allTitles);
       const projectTitles = titlesArray.filter(t => t.includes('Project:'));
@@ -193,10 +195,12 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
       }
       // User has multiple projects/teams or mixed entries - show separate tables for each
       else if (titlesArray.length > 1) {
-        // Create separate table for each project/team
+        // Create separate table for each project/team (excluding 'Other' and 'Leave')
         let isFirstTable = true;
         
-        employeeData.tables.forEach((table) => {
+        employeeData.tables
+          .filter(table => table.title !== 'Other' && table.title !== 'Leave')
+          .forEach((table) => {
           if (!isFirstTable) {
             this.worksheet.addRow([]);
           }
@@ -319,7 +323,9 @@ export class TimesheetEntriesExcel extends BaseExcelGenerator {
 
     const entries: FlatEntry[] = [];
 
-    employeeData.tables.forEach((table) => {
+    employeeData.tables
+      .filter(table => table.title !== 'Other' && table.title !== 'Leave')
+      .forEach((table) => {
       table.rows.forEach((row) => {
         const hours = this.parseHours(row.quantity);
         entries.push({

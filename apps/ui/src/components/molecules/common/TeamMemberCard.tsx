@@ -1,9 +1,9 @@
 import React from 'react';
-import { Paper, Typography, Box } from '@mui/material';
+import { Paper, Typography, Box, Chip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { TeamMemberCardProps } from '../../../interfaces/team/ITeam';
 
-const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member }) => {
+const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, allocation }) => {
   const theme = useTheme();
   if (!member) {
     return (
@@ -44,6 +44,19 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member }) => {
         >
           {member.email || 'No email'}
         </Typography>
+        {allocation !== undefined && (
+          <Chip
+            label={`${allocation}% Allocated`}
+            color="primary"
+            variant="outlined"
+            size="small"
+            sx={{
+              mt: 1,
+              fontWeight: 600,
+              fontSize: '0.75rem',
+            }}
+          />
+        )}
       </Box>
     </Paper>
   );

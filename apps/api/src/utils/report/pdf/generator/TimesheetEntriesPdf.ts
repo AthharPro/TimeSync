@@ -243,11 +243,13 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       // Single employee (individual user filter) - show entries grouped by project/team
       const employeeData = data[0];
       
-      // Collect all unique project/team names from all tables
+      // Collect all unique project/team names from all tables (excluding 'Other' and 'Leave')
       const allTitles = new Set<string>();
-      employeeData.tables.forEach(table => {
-        allTitles.add(table.title);
-      });
+      employeeData.tables
+        .filter(table => table.title !== 'Other' && table.title !== 'Leave')
+        .forEach(table => {
+          allTitles.add(table.title);
+        });
       
       // Determine the main title based on common pattern
       let mainTitle = '';
@@ -589,7 +591,9 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
   ): FlatEntry[] {
     const entries: FlatEntry[] = [];
 
-    employeeData.tables.forEach((table) => {
+    employeeData.tables
+      .filter(table => table.title !== 'Other' && table.title !== 'Leave')
+      .forEach((table) => {
       // Extract project name from table title
       let projectName = 'All Projects';
       if (table.title.startsWith('Project: ')) {
@@ -634,7 +638,9 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
   ): Array<{ projectName: string; entries: FlatEntry[] }> {
     const projectMap = new Map<string, FlatEntry[]>();
 
-    employeeData.tables.forEach((table) => {
+    employeeData.tables
+      .filter(table => table.title !== 'Other' && table.title !== 'Leave')
+      .forEach((table) => {
       // Extract project name from table title
       let projectName = 'All Projects';
       if (table.title.startsWith('Project: ')) {
