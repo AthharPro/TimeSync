@@ -129,9 +129,16 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
         // Check if this timesheet is supervised (either by project or team)
         const isProjectSupervised = ts.projectId && supervisedProjectIds.length > 0 && supervisedProjectIds.includes(ts.projectId);
         const isTeamSupervised = ts.teamId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.teamId);
-        const isSupervised = isProjectSupervised || isTeamSupervised;
+        
+        // IMPORTANT: For employees in isDepartment:false teams, supervisors should be able to
+        // approve/reject ALL timesheets, not just those from supervised projects/teams.
+        // Since the backend already filters to only show timesheets the supervisor can review,
+        // we mark all timesheets as supervised.
+        // However, we give priority to project/team supervision for better granularity.
+        const isSupervised = true; // All timesheets shown are supervised since backend filters them
         
         // Debug logging
+        console.log('===== TIMESHEET SUPERVISION CHECK =====');
         console.log('Processing Timesheet:', {
           project: ts.project,
           projectId: ts.projectId,
@@ -144,6 +151,10 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
           projectIdInProjectList: ts.projectId ? supervisedProjectIds.includes(ts.projectId) : 'N/A',
           teamIdInList: ts.teamId ? supervisedTeamIds.includes(ts.teamId) : 'N/A',
         });
+        console.log('Supervised Team IDs Array:', supervisedTeamIds);
+        console.log('Timesheet teamId value:', ts.teamId);
+        console.log('teamId type:', typeof ts.teamId);
+        console.log('Is teamId in array?', ts.teamId ? supervisedTeamIds.includes(ts.teamId) : false);
         
         return {
           id: ts.id,

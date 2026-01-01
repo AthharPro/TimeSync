@@ -289,23 +289,20 @@ export const approveTimesheetsHandler: RequestHandler = async (req, res) => {
     appAssert(timesheets.length > 0, NOT_FOUND, 'No timesheets found');
 
     // Verify supervisor has permission to approve these timesheets
-    // Check based on the project or team associated with each timesheet
-    // Note: SupervisorAdmin should also check permissions (only Admin and SuperAdmin can approve any timesheet)
+    // For Supervisor and SupervisorAdmin, check if they supervise the employee
+    // Admin and SuperAdmin can approve any timesheet
     if (userRole !== UserRole.Admin && userRole !== UserRole.SuperAdmin) {
-      const { projectIds, teamIds } = await getSupervisedProjectAndTeamIds(supervisorId);
+      // Get all supervised employee IDs
+      const supervisedUserIds = await getSupervisedUserIds(supervisorId);
       
       for (const timesheet of timesheets) {
-        const timesheetProjectId = timesheet.projectId?.toString();
-        const timesheetTeamId = timesheet.teamId?.toString();
+        const employeeId = (timesheet.userId as any)._id.toString();
         
-        // Check if the supervisor supervises the project or team of this timesheet
-        const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
-        const hasTeamPermission = timesheetTeamId && teamIds.includes(timesheetTeamId);
-        
+        // Check if this employee is supervised by this supervisor
         appAssert(
-          hasProjectPermission || hasTeamPermission,
+          supervisedUserIds.includes(employeeId),
           FORBIDDEN,
-          `You do not have permission to approve this timesheet. You can only approve timesheets for projects or teams you supervise.`
+          `You do not have permission to approve this timesheet. You can only approve timesheets for employees you supervise.`
         );
       }
     }
@@ -441,23 +438,20 @@ export const rejectTimesheetsHandler: RequestHandler = async (req, res) => {
     appAssert(timesheets.length > 0, NOT_FOUND, 'No timesheets found');
 
     // Verify supervisor has permission to reject these timesheets
-    // Check based on the project or team associated with each timesheet
-    // Note: SupervisorAdmin should also check permissions (only Admin and SuperAdmin can reject any timesheet)
+    // For Supervisor and SupervisorAdmin, check if they supervise the employee
+    // Admin and SuperAdmin can reject any timesheet
     if (userRole !== UserRole.Admin && userRole !== UserRole.SuperAdmin) {
-      const { projectIds, teamIds } = await getSupervisedProjectAndTeamIds(supervisorId);
+      // Get all supervised employee IDs
+      const supervisedUserIds = await getSupervisedUserIds(supervisorId);
       
       for (const timesheet of timesheets) {
-        const timesheetProjectId = timesheet.projectId?.toString();
-        const timesheetTeamId = timesheet.teamId?.toString();
+        const employeeId = (timesheet.userId as any)._id.toString();
         
-        // Check if the supervisor supervises the project or team of this timesheet
-        const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
-        const hasTeamPermission = timesheetTeamId && teamIds.includes(timesheetTeamId);
-        
+        // Check if this employee is supervised by this supervisor
         appAssert(
-          hasProjectPermission || hasTeamPermission,
+          supervisedUserIds.includes(employeeId),
           FORBIDDEN,
-          `You do not have permission to reject this timesheet. You can only reject timesheets for projects or teams you supervise.`
+          `You do not have permission to reject this timesheet. You can only reject timesheets for employees you supervise.`
         );
       }
     }
