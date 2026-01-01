@@ -10,9 +10,12 @@ import { Link } from 'react-router-dom';
 import { IPasswordResetData } from '../../../interfaces/auth/IAuth';
 import { useAuth } from '../../../hooks/auth';
 import { useEffect } from 'react';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 
 const ForgetPassword: React.FC = () => {
     const { sendPasswordResetEmail, loading, error, message, clearError, clearMessage } = useAuth();
+    const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
     
     const {
       register,
@@ -30,6 +33,16 @@ const ForgetPassword: React.FC = () => {
         clearMessage();
       };
     }, [clearError, clearMessage]);
+
+    // Show snackbar for error or success messages
+    useEffect(() => {
+      if (error) {
+        showError(error);
+      }
+      if (message) {
+        showSuccess(message);
+      }
+    }, [error, message, showError, showSuccess]);
 
     const onSubmit = async (data: IPasswordResetData) => {
       try {
@@ -66,37 +79,12 @@ const ForgetPassword: React.FC = () => {
           >
             {loading ? 'Sending...' : 'Confirm'}
           </BaseBtn>
-          
-          {message && (
-            <Box sx={{ 
-              mt: 2, 
-              p: 2, 
-              bgcolor: 'success.light', 
-              color: 'success.contrastText',
-              borderRadius: 1,
-              textAlign: 'center'
-            }}>
-              {message}
-            </Box>
-          )}
-          
-          {error && (
-            <Box sx={{ 
-              mt: 2, 
-              p: 2, 
-              bgcolor: 'error.light', 
-              color: 'error.contrastText',
-              borderRadius: 1,
-              textAlign: 'center'
-            }}>
-              {error}
-            </Box>
-          )}
         </form>
         <Box sx={{textAlign: 'center', display: 'block', mt: 2}}>
           <Link to="/login">Back to Login</Link>
         </Box>
       </Box>
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </AuthFormLayout>
   );
 };

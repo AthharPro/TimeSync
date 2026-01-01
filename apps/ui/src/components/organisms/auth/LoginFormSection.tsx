@@ -9,10 +9,13 @@ import { replace, useNavigate } from 'react-router-dom';
 import { ILoginData } from '../../../interfaces/auth';
 import { useAuth } from '../../../contexts/AuthContext';
 import { UserRole } from '@tms/shared';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
   
 const LoginFormSection: React.FC = () => {
   const navigate = useNavigate();
   const { login,user } = useAuth()!;
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const {
     register,
@@ -26,36 +29,49 @@ const LoginFormSection: React.FC = () => {
   const onSubmit = async (data: ILoginData) => {
     console.log(data);
     const res = await login(data.email, data.password);
+    
     if (res.success && res.user) {
-          // Check if user needs to change password on first login
-          if (!res.user.isChangedPwd) {
-            navigate('/resetpasswordfirstlogin', { replace: true });
-            return;
-          }
+      showSuccess('Login successful! Redirecting...');
+      
+      // Store user reference for type safety in setTimeout callback
+      const user = res.user;
+      
+      // Delay navigation to allow snackbar to show
+      setTimeout(() => {
+        // Check if user needs to change password on first login
+        if (!user.isChangedPwd) {
+          navigate('/resetpasswordfirstlogin', { replace: true });
+          return;
+        }
 
-          // Redirect based on user role
-          switch(res.user.role) {
-            case UserRole.SuperAdmin:
-              navigate('/super-admin', { replace: true });
-              break;
-            case UserRole.Admin:
-              navigate('/admin', { replace: true });
-              break;
-            case UserRole.Emp:
-              navigate('/employee', { replace: true });
-              break;
-            case UserRole.Supervisor:
-              navigate('/employee', { replace: true });
-              break;
-            case UserRole.SupervisorAdmin:
-              navigate('/admin', { replace: true });
-              break;
-            default:
-              navigate('/login', { replace: true });
-          }
-
+        // Redirect based on user role
+        switch(user.role) {
+          case UserRole.SuperAdmin:
+            navigate('/super-admin', { replace: true });
+            break;
+          case UserRole.Admin:
+            navigate('/admin', { replace: true });
+            break;
+          case UserRole.Emp:
+            navigate('/employee', { replace: true });
+            break;
+          case UserRole.Supervisor:
+            navigate('/employee', { replace: true });
+            break;
+          case UserRole.SupervisorAdmin:
+            navigate('/admin', { replace: true });
+            break;
+          default:
+            navigate('/login', { replace: true });
+        }
+      }, 1000); // 1 second delay to show snackbar
+    } else {
+      // Handle error from login response
+      const errorMessage = res.error?.response?.data?.message || 
+                          res.error?.message || 
+                          'Invalid email or password. Please try again.';
+      showError(errorMessage);
     }
-
   };
 
   return (
@@ -131,6 +147,7 @@ const LoginFormSection: React.FC = () => {
           </Grid>
         </form>
       </Grid>
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </AuthFormLayout>
   );
 };

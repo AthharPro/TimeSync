@@ -10,12 +10,15 @@ import FirstLoginPasswordRestSchema from '../../../validations/auth/FirstLoginPa
 import { useAuth } from '../../../hooks/auth';
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 
 const PasswordReset: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const verificationCode = searchParams.get('verificationCode');
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const {
     verifyPasswordResetLink,
@@ -42,6 +45,7 @@ const PasswordReset: React.FC = () => {
     if (token && verificationCode) {
       verifyPasswordResetLink(token, verificationCode).catch((err) => {
         console.error('Failed to verify reset link:', err);
+        showError('Failed to verify reset link. Please request a new one.');
       });
     } else {
       // If no token or verification code, redirect to forgot password page
@@ -52,19 +56,28 @@ const PasswordReset: React.FC = () => {
       clearError();
       clearMessage();
     };
-  }, [token, verificationCode, verifyPasswordResetLink, navigate, clearError, clearMessage]);
+  }, [token, verificationCode, verifyPasswordResetLink, navigate, clearError, clearMessage, showError]);
 
   // Redirect to login page after successful password reset
   useEffect(() => {
     if (message && message.includes('successful')) {
+      showSuccess(message);
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     }
-  }, [message, navigate]);
+  }, [message, navigate, showSuccess]);
+
+  // Show error snackbar
+  useEffect(() => {
+    if (error) {
+      showError(error);
+    }
+  }, [error, showError]);
 
   const onSubmit = async (data: ISetPasswordData) => {
     if (!resetPasswordData.verificationCodeId) {
+      showError('Invalid verification code. Please try again.');
       return;
     }
 
@@ -76,6 +89,7 @@ const PasswordReset: React.FC = () => {
       );
     } catch (err) {
       console.error('Password reset error:', err);
+      showError('Failed to reset password. Please try again.');
     }
   };
 
@@ -149,38 +163,9 @@ const PasswordReset: React.FC = () => {
           >
             {loading ? 'Resetting...' : 'Reset Password'}
           </BaseBtn>
-
-          {message && (
-            <Box
-              sx={{
-                mt: 2,
-                p: 2,
-                bgcolor: 'success.light',
-                color: 'success.contrastText',
-                borderRadius: 1,
-                textAlign: 'center',
-              }}
-            >
-              {message}
-            </Box>
-          )}
-
-          {error && (
-            <Box
-              sx={{
-                mt: 2,
-                p: 2,
-                bgcolor: 'error.light',
-                color: 'error.contrastText',
-                borderRadius: 1,
-                textAlign: 'center',
-              }}
-            >
-              {error}
-            </Box>
-          )}
         </form>
       </Box>
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </AuthFormLayout>
   );
 };
