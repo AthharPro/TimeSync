@@ -27,8 +27,8 @@ const initialState: ProjectState = {
 const transformProject = (project: any): SerializedProject => {
   // Handle team members (employees) - may be fully populated or just IDs
   const teamMembers = (project.employees || []).map((employee: any) => {
-    if (typeof employee === 'string' || (employee && !employee.firstName)) {
-      // Just an ID, return minimal info
+    // Handle different shapes: string id, populated user doc, or subdocument { user, allocation }
+    if (typeof employee === 'string') {
       return {
         id: employee.toString(),
         name: '',
@@ -38,14 +38,28 @@ const transformProject = (project: any): SerializedProject => {
         allocation: 0,
       };
     }
-    // Fully populated employee
+
+    // If it's a subdocument with user and allocation
+    if (employee && (employee.user || employee.user === 0)) {
+      const user = employee.user;
+      return {
+        id: user?.id || user?._id || (user && typeof user === 'string' ? user : undefined),
+        name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.name || user?.email || 'Unknown',
+        role: user?.designation || '',
+        email: user?.email,
+        avatar: undefined,
+        allocation: employee.allocation ?? 0,
+      };
+    }
+
+    // Fully populated employee doc (legacy shape)
     return {
       id: employee.id || employee._id,
       name: `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unknown',
       role: employee.designation || '',
       email: employee.email,
       avatar: undefined,
-      allocation: 0, // Default allocation, can be updated later if needed
+      allocation: employee.allocation ?? 0,
     };
   });
 
@@ -187,7 +201,7 @@ export const createProjectAction = createAsyncThunk<
     costCenter?: string;
     projectType?: string;
     projectVisibility?: string;
-    employees?: string[];
+    employees?: (string | { user: string; allocation?: number })[];
     supervisor?: string | null;
   },
   { rejectValue: string }
@@ -213,7 +227,7 @@ export const createProjectAction = createAsyncThunk<
 // Update project staff
 export const updateProjectStaffAction = createAsyncThunk<
   SerializedProject,
-  { projectId: string; employees?: string[]; supervisor?: string | null },
+  { projectId: string; employees?: { user: string; allocation?: number }[]; supervisor?: string | null },
   { rejectValue: string }
 >('project/updateProjectStaff', async (params, thunkAPI) => {
   try {

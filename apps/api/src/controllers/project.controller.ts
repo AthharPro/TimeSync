@@ -57,10 +57,10 @@ export const listMyProjectsHandler = catchErrors(async (req, res) => {
 export const updateStaffHandler = catchErrors(async (req, res) => {
   const { id } = req.params as { id: string };
   const { employees, supervisor } = req.body as {
-    employees?: string[];
+    employees?: { user: string; allocation?: number }[];
     supervisor?: string | null;
   };
-  const result = await updateProjectStaff(id, { employees, supervisor }, req.userId);
+  const result = await updateProjectStaff(id, { employees, supervisor });
   return res.status(OK).json(result);
 });
 
