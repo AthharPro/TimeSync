@@ -17,7 +17,7 @@ export const createProject = async (params: {
   billable?: string;
   costCenter?: string;
   projectType?: string;
-  employees?: string[];
+  employees?: (string | { user: string; allocation?: number })[];
   supervisor?: string | null;
   isPublic?: boolean;
   startDate?: Date | null;
@@ -35,7 +35,9 @@ export const createProject = async (params: {
     billable: params.billable || 'Billable',
     costCenter: params.costCenter || '',
     projectType: params.projectType || '',
-    employees: params.employees || [],
+    employees: (params.employees || []).map((e: any) =>
+      typeof e === 'string' ? { user: e } : e
+    ),
     supervisor: params.supervisor ?? null,
     description: description,
   };
@@ -72,7 +74,7 @@ export const deleteProject = async (projectId: string) => {
 export const updateProjectStaff = async (
   projectId: string,
   params: {
-    employees?: string[];
+    employees?: { user: string; allocation?: number }[];
     supervisor?: string | null;
   }
 ) => {

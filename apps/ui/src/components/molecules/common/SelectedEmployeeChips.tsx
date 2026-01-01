@@ -4,20 +4,29 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import type { ISelectedEmployeeChipsProps } from '../../../interfaces/common/IProjectTeam';
 import { useTheme } from '@mui/material/styles';
 import ConformationDailog from '../other/ConformationDailog';
+import EmployeeAllocationDialog from './EmployeeAllocationDialog';
 
 const SelectedEmployeeChips: React.FC<ISelectedEmployeeChipsProps> = ({
   employees,
   onRemove,
   title,
   sx,
+  onAllocationChange,
 }) => {
   const theme = useTheme();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [allocDialogOpen, setAllocDialogOpen] = useState(false);
+  const [currentEmployee, setCurrentEmployee] = useState<any | null>(null);
 
   const handleDeleteClick = (employeeId: string) => {
     setPendingDeleteId(employeeId);
     setIsDialogOpen(true);
+  };
+
+  const handleChipClick = (employee: any) => {
+    setCurrentEmployee(employee);
+    setAllocDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
@@ -65,6 +74,14 @@ const SelectedEmployeeChips: React.FC<ISelectedEmployeeChipsProps> = ({
             [employee.firstName, employee.lastName].filter(Boolean).join(' ').trim() ||
             employee.email;
 
+          // Determine allocation from possible shapes:
+          // - employee.allocation (frontend selection)
+          // - employee.allocation on populated/legacy shapes
+          // - employee.user?.allocation when server returns subdocument where allocation is on parent
+          const rawAlloc = (employee as any).allocation ?? (employee as any).user?.allocation ?? (employee as any).user?.allocation;
+          const allocation = typeof rawAlloc !== 'undefined' && rawAlloc !== null ? Number(rawAlloc) : undefined;
+          const hasAllocation = typeof allocation === 'number' && !Number.isNaN(allocation);
+
           return (
             <Chip
               key={employeeId}
@@ -101,8 +118,15 @@ const SelectedEmployeeChips: React.FC<ISelectedEmployeeChipsProps> = ({
                         </Typography>
                       </Box>
                   )}
+                  {/* Show allocation if present */}
+                  <Box sx={{ ml: 1 }}>
+                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem' }}>
+                      {hasAllocation ? `${allocation}%` : ''}
+                    </Typography>
+                  </Box>
                 </Box>
               }
+              onClick={() => handleChipClick(employee)}
               onDelete={() => handleDeleteClick(employeeId)}
               deleteIcon={<CloseIcon sx={{ fontSize: 18 }} />}
               variant="outlined"
@@ -130,6 +154,25 @@ const SelectedEmployeeChips: React.FC<ISelectedEmployeeChipsProps> = ({
           );
         })}
       </Box>
+      <EmployeeAllocationDialog
+        open={allocDialogOpen}
+        employee={currentEmployee}
+        onClose={() => { setAllocDialogOpen(false); setCurrentEmployee(null); }}
+        onConfirm={(allocation) => {
+          if (currentEmployee) {
+            const id = currentEmployee._id || currentEmployee.id;
+            if (typeof onAllocationChange === 'function') {
+              onAllocationChange(id, allocation);
+            }
+            // update local selection display if the employee object is the same reference
+            if (currentEmployee) {
+              currentEmployee.allocation = allocation;
+            }
+          }
+          setAllocDialogOpen(false);
+          setCurrentEmployee(null);
+        }}
+      />
       <ConformationDailog
         open={isDialogOpen}
         message="Are you sure you want to delete this employee?"

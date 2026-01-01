@@ -26,8 +26,10 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
 }) => {
   // Calculate fixed width based on maxWidth prop to prevent resizing
   const getWidthStyles = () => {
-    if (maxWidth === 'lg' || maxWidth === 'xl') {
-      return { width: 'auto' };
+    if (maxWidth === 'xl') {
+      return { width: '1140px', minWidth: '1140px', maxWidth: '1140px' };
+    }else if (maxWidth === 'lg') {
+      return { width: '900px', minWidth: '900px', maxWidth: '900px' };
     } else if (maxWidth === 'xs') {
       return { width: '444px', minWidth: '444px', maxWidth: '444px' };
     } else {
@@ -49,7 +51,7 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
           display: 'flex',
           flexDirection: 'column',
           ...getWidthStyles(),
-          backgroundColor: (theme) => theme.palette.background.default,
+          backgroundColor: (theme) => theme.palette.background.paper,
         },
       }}
     >

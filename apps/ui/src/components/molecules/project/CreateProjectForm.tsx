@@ -8,14 +8,12 @@ import { Controller, Control, FieldErrors } from 'react-hook-form';
 import Divider from '@mui/material/Divider';
 import SupervisorSelector from '../common/SupervisorSelector';
 import BillableSelect from './BillableSelect';
-import { CreateProjectFormData } from '../../../interfaces/project/IProject';
 import ProjectType from './ProjectType';
 import CostCenterSelect from './CostCenter';
 import ProjectVisibility from './ProjectVisibility';
 import { CreateProjectFormProps } from '../../../interfaces/project/IProject';
 import DatePickerAtom from '../../atoms/report/DatePickerAtom';
 import dayjs from 'dayjs';
-
 
 const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   control,
@@ -38,24 +36,44 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
           gap: 5,
         }}
       >
-        {/* Project Name Field */}
-        <Controller
-          name="projectName"
-          control={control}
-          render={({ field }) => (
-            <BaseTextField
-              {...field}
-              value={field.value || ''}
-              label="Project Name"
-              placeholder="Enter Project Name"
-              variant="outlined"
-              id="project-name"
-              error={!!errors.projectName}
-              helperText={errors.projectName?.message || ' '}
-            />
-          )}
-        />
-         {/* Description Field */}
+        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5 }}>
+          {/* Project Name Field */}
+          <Controller
+            name="projectName"
+            control={control}
+            render={({ field }) => (
+              <BaseTextField
+                {...field}
+                value={field.value || ''}
+                label="Project Name"
+                placeholder="Enter Project Name"
+                variant="outlined"
+                id="project-name"
+                error={!!errors.projectName}
+                helperText={errors.projectName?.message || ' '}
+              />
+            )}
+          />
+          {/* Client Name Field */}
+          <Controller
+            name="clientName"
+            control={control}
+            render={({ field }) => (
+              <BaseTextField
+                {...field}
+                value={field.value || ''}
+                label="Client Name"
+                placeholder="Enter Client Name"
+                variant="outlined"
+                id="client-name"
+                error={!!errors.clientName}
+                helperText={errors.clientName?.message || ' '}
+              />
+            )}
+          />
+        </Box>
+        
+        {/* Description Field */}
         <Controller
           name="description"
           control={control}
@@ -63,7 +81,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             <BaseTextField
               {...field}
               value={field.value || ''}
-              label="Description"
+              label="Project Description"
               placeholder="Enter Project Description"
               variant="outlined"
               id="project-description"
@@ -72,25 +90,8 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             />
           )}
         />
-         {/* Client Name Field */}
-        <Controller
-          name="clientName"
-          control={control}
-          render={({ field }) => (
-            <BaseTextField
-              {...field}
-              value={field.value || ''}
-              label="Client Name"
-              placeholder="Enter Client Name"
-              variant="outlined"
-              id="client-name"
-              error={!!errors.clientName}
-              helperText={errors.clientName?.message || ' '}
-            />
-          )}
-        />
-        {/* Project Visibility Dropdown */}
-        <Box sx={{ mb: 2 }}>
+        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
+          {/* Project Visibility Dropdown */}
           <Controller
             name="projectVisibility"
             control={control}
@@ -103,9 +104,8 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
               />
             )}
           />
-        </Box>
-        {/* Billable Dropdown */}
-        <Box sx={{ mb: 2 }}>
+
+          {/* Billable Dropdown */}
           <Controller
             name="billable"
             control={control}
@@ -119,8 +119,9 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             )}
           />
         </Box>
-        {/* Project Type Dropdown */}
-        <Box sx={{ mb: 2 }}>
+
+        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
+          {/* Project Type Dropdown */}
           <Controller
             name="projectType"
             control={control}
@@ -133,10 +134,8 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
               />
             )}
           />
-        </Box>
 
-        {/* Cost Center Dropdown */}
-        <Box sx={{ mb: 2 }}>
+          {/* Cost Center Dropdown */}
           <Controller
             name="costCenter"
             control={control}
@@ -151,8 +150,8 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
           />
         </Box>
 
-        {/* Start Date */}
-        <Box sx={{ mb: 2 }}>
+        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
+          {/* Start Date */}
           <Controller
             name="startDate"
             control={control}
@@ -164,10 +163,8 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
               />
             )}
           />
-        </Box>
 
-        {/* End Date */}
-        <Box sx={{ mb: 2 }}>
+          {/* End Date */}
           <Controller
             name="endDate"
             control={control}
@@ -179,8 +176,12 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                   <DatePickerAtom
                     label="End Date"
                     value={field.value ? dayjs(field.value) : null}
-                    onChange={(date) => field.onChange(date ? date.toDate() : null)}
-                    minDate={startField.value ? dayjs(startField.value) : undefined}
+                    onChange={(date) =>
+                      field.onChange(date ? date.toDate() : null)
+                    }
+                    minDate={
+                      startField.value ? dayjs(startField.value) : undefined
+                    }
                   />
                 )}
               />
@@ -208,7 +209,6 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             )}
           />
         </Box>
-       
 
         <Box>
           <Divider />
