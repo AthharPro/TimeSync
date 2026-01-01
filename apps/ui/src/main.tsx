@@ -12,8 +12,19 @@ import { useAuth } from './contexts/AuthContext';
 // Wrapper component to access auth context
 const AppWithNotifications = () => {
   const { user } = useAuth();
+  
+  // ⚠️ Only render NotificationProvider when user is authenticated
+  // This prevents socket initialization on login/landing pages
+  if (!user) {
+    return (
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    );
+  }
+
   return (
-    <NotificationProvider userId={user?._id || null}>
+    <NotificationProvider userId={user._id || null}>
       <BrowserRouter>
         <App />
       </BrowserRouter>

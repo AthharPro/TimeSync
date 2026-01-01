@@ -52,21 +52,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   // 🔄 Load user & token (if saved)
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const initializeAuth = async () => {
+      const storedUser = localStorage.getItem("user");
 
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          console.log('📦 User loaded from localStorage:', parsedUser);
 
-      // Initialize socket connection if user is already logged in
-      const userId = parsedUser._id || parsedUser.id;
-      if (userId) {
-        console.log('🔌 Reconnecting socket for existing user:', userId);
-        initializeSocket(userId);
+          // Validate user and get access token from refresh token
+          try {
+            const res = await api.get("/auth/me");
+            const validatedUser = res.data.user;
+            const token = res.data.accessToken;
+
+            // Update with validated user and token
+            setUser(validatedUser);
+            updateAccessToken(token);
+            localStorage.setItem("user", JSON.stringify(validatedUser));
+
+            // Initialize socket connection after successful validation
+            const userId = validatedUser._id || validatedUser.id;
+            if (userId) {
+              console.log('🔌 Initializing socket for validated user:', userId);
+              initializeSocket(userId);
+            }
+          } catch (error) {
+            console.error('Failed to validate user, clearing auth state:', error);
+            // Clear invalid user data
+            setUser(null);
+            updateAccessToken(null);
+            localStorage.removeItem("user");
+            disconnectSocket();
+          }
+        } catch (error) {
+          console.error('Failed to parse stored user, clearing localStorage:', error);
+          localStorage.removeItem("user");
+          disconnectSocket();
+        }
       }
-    }
 
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initializeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 🔐 Login
