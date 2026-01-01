@@ -61,6 +61,9 @@ export const createMyTimesheet = async (
     timesheetData.teamId = null;
   }
 
+  // Skip duplicate check - allow multiple entries for same project/task on same date
+  // Users might want to log different time blocks or descriptions for the same task
+  /*
   // Check for duplicate project+task on same date (only if both projectId and taskId are set)
   if (timesheetData.projectId && timesheetData.taskId) {
     const startOfDay = new Date(params.date);
@@ -83,6 +86,7 @@ export const createMyTimesheet = async (
       throw new Error('A timesheet entry with this project and task already exists for this date');
     }
   }
+  */
 
   const timesheet = new Timesheet(timesheetData);
   return await timesheet.save();
@@ -146,6 +150,9 @@ export const updateMyTimesheet = async (
   }
 
   // Check for duplicate project+task on same date (only if updating project or task)
+  // Skip duplicate check - allow multiple entries for same project/task on same date
+  // Users might want to log different time blocks or descriptions for the same task
+  /*
   const finalProjectId = updateData.projectId !== undefined ? updateData.projectId : existingTimesheet.projectId;
   const finalTaskId = updateData.taskId !== undefined ? updateData.taskId : existingTimesheet.taskId;
   const finalDate = updateData.date !== undefined ? updateData.date : existingTimesheet.date;
@@ -172,6 +179,7 @@ export const updateMyTimesheet = async (
       throw new Error('A timesheet entry with this project and task already exists for this date');
     }
   }
+  */
 
   const updatedTimesheet = await Timesheet.findByIdAndUpdate(
     new mongoose.Types.ObjectId(timesheetId),
