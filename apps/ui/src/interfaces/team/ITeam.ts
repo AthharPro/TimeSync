@@ -33,6 +33,7 @@ export interface ISupervisorMemberCardProps {
     designation?: string;
     email?: string;
   } | null;
+  allocation?: number;
 }
 
 export interface TeamMember {
@@ -44,6 +45,7 @@ export interface TeamMember {
 
 export interface TeamMemberCardProps {
   member: TeamMember;
+  allocation?: number;
 }
 
 export interface ViewTeamMembersProps {

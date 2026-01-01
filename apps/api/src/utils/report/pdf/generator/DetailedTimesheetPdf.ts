@@ -417,7 +417,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     let employeeGrandTotal = 0;
     let hasProject = false;
     let hasTeam = false;
-    let hasLeave = false;
+    const hasLeave = false;
 
     // First pass: aggregate all data by week+title to handle duplicate weeks
     type WeekTitleKey = string; // Format: "2025-12-01_Project: ProjectName" or "2025-12-01_Team: TeamName"
@@ -437,12 +437,15 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       const weekStart = this.formatDate(weekStartRaw);
       const weekEnd = this.formatDate(this.addDays(timesheetWeek.weekStartDate, 4)); // Friday = Monday + 4 days
 
-      timesheetWeek.categories.forEach((category) => {
+      // Filter out 'Other' and 'Leave' categories
+      timesheetWeek.categories
+        .filter((category: any) => category.category !== 'Other' && category.category !== 'Leave')
+        .forEach((category) => {
         category.items.forEach((item) => {
           const dailyHours = item.dailyHours || [];
 
           let title: string | null = null;
-          let includeWork = false;
+          const includeWork = false;
           
           // Each project gets its own table with unique title
           if (item.projectName) {
@@ -454,11 +457,9 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
             title = `Team: ${item.teamName}`;
             hasTeam = true;
           } 
-          // Leave/Other activities go into a single "Leave" table
-          else if (category.category === 'Other') {
-            title = 'Leave';
-            includeWork = true;
-            hasLeave = true;
+          // Use category name as-is, don't convert 'Other' to 'Leave'
+          else {
+            title = category.category;
           }
 
           // Skip items that don't belong to any specific category
@@ -909,19 +910,10 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
             return sum + (parseFloat(hours?.toString()) || 0);
           }, 0);
           grandTotal += rowTotal;
-
-          // Aggregate leave hours per day for this week
-          if (cat.category === 'Other') {
-            for (let i = 0; i < 5; i++) {
-              const h = dailyHours[i];
-              const n = typeof h === 'string' ? parseFloat(h) : (typeof h === 'number' ? h : 0);
-              if (!isNaN(n) && n > 0) weeklyLeaveHours[i] += n;
-            }
-          }
         });
       });
 
-      // Convert weekly aggregated leave hours to other day fractions 
+      // No longer converting leave hours to fractions
       for (let i = 0; i < 5; i++) {
         const fraction = weeklyLeaveHours[i] / 8;
         if (fraction > 0) otherDays += Math.min(fraction, 1);
