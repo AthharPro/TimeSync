@@ -11,6 +11,8 @@ import AccountFilterPopover from '../popover/AccountFilterPopover';
 import { UserRole, User } from '@tms/shared';
 import { useAccount } from '../../../hooks/account';
 import { IAccountTableRow } from '../../../interfaces/component/organism/ITable';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 
 function AccountWindow() {
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
@@ -21,6 +23,7 @@ function AccountWindow() {
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [activeFilters, setActiveFilters] = useState({ role: 'all', status: 'all' });
   const { newAccountDetails, loadAccounts, updateAccount } = useAccount();
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const isFilterOpen = Boolean(filterAnchorEl);
 
@@ -48,7 +51,7 @@ function AccountWindow() {
   const handleCreateSuccess = () => {
     // Refresh account table data
     loadAccounts();
-    console.log('Account created successfully');
+    showSuccess('Account created successfully');
   };
 
   const handleEditRow = (row: IAccountTableRow) => {
@@ -64,7 +67,7 @@ function AccountWindow() {
   const handleEditSuccess = () => {
     // Refresh account table data
     loadAccounts();
-    console.log('Account updated successfully');
+    showSuccess('Account updated successfully');
   };
 
   const handleRowClick = (row: IAccountTableRow) => {
@@ -104,10 +107,11 @@ function AccountWindow() {
           status: newStatus,
         });
         loadAccounts();
-        console.log(`Account status changed to ${newStatus} successfully`);
+        showSuccess(`Account status changed to ${newStatus} successfully`);
       }
     } catch (error) {
       console.error('Failed to update account status:', error);
+      showError('Failed to update account status. Please try again.');
     }
   };
 
@@ -164,6 +168,7 @@ function AccountWindow() {
         onClose={handleCloseFilter}
         onApplyFilter={handleApplyFilter}
       />
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </>
   );
 }

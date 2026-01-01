@@ -13,8 +13,12 @@ import TeamStaffManager from '../team/TeamStaffManager';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ViewTeamMembers from '../team/ViewTeamMembers';
 import { useTeam } from '../../../hooks/team';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
+
 function TeamWindow() {
   const { teams, loading, loadAllTeams, deleteTeam } = useTeam();
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
   const [viewTeam, setViewTeam] = useState<ITeam | null>(null);
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<ITeam | null>(null);
@@ -54,6 +58,7 @@ function TeamWindow() {
 
   const handleTeamStaffSaved = () => {
     // Refresh teams after save
+    showSuccess('Team staff updated successfully');
     loadAllTeams();
     handleCloseStaffManager();
   };
@@ -68,8 +73,10 @@ function TeamWindow() {
       try {
         await deleteTeam(teamToDelete.id);
         await loadAllTeams(); // Refresh the list
+        showSuccess('Team deleted successfully');
       } catch (error) {
         console.error('Failed to delete team:', error);
+        showError('Failed to delete team. Please try again.');
       }
     }
     setIsDeleteDialogOpen(false);
@@ -78,6 +85,7 @@ function TeamWindow() {
   
   const handleTeamCreated = () => {
     // Refresh teams after creation
+    showSuccess('Team created successfully');
     loadAllTeams();
     handleClosePopup();
   };
@@ -221,6 +229,7 @@ function TeamWindow() {
         onClose={handleCloseViewTeam}
         team={viewTeam}
       />
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </>
     
   );

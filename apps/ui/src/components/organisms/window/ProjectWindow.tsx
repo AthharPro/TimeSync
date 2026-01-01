@@ -16,9 +16,12 @@ import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ProjectStaffManager from '../project/ProjectStaffManager';
 import { useProjects } from '../../../hooks/project/useProjects';
 import { Box, CircularProgress, Typography } from '@mui/material';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 
 function ProjectWindow() {
   const { projects, loading: isLoading, error, loadProjects, deleteProject } = useProjects();
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
   
   // Debug logging
   useEffect(() => {
@@ -79,7 +82,7 @@ function ProjectWindow() {
   };
 
   const handleStaffSaved = () => {
-    console.log('Staff saved successfully');
+    showSuccess('Project staff updated successfully');
     // Refresh project data after staff update
     loadProjects();
   };
@@ -95,10 +98,11 @@ function ProjectWindow() {
         await deleteProject(projectToDelete.id);
         setIsDeleteDialogOpen(false);
         setProjectToDelete(null);
+        showSuccess('Project deleted successfully');
         // Projects are automatically updated in Redux store
       } catch (error) {
         console.error('Failed to delete project:', error);
-        // Error is handled by Redux, but you could show a toast notification here
+        showError('Failed to delete project. Please try again.');
       }
     }
   };
@@ -354,6 +358,7 @@ function ProjectWindow() {
           onSaved={handleStaffSaved}
         />
       )}
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </>
   );
 }

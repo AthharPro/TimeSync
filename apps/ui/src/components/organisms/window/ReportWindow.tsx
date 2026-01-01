@@ -17,11 +17,14 @@ import { useReportGenerator } from '../../../hooks/report/useReportGenerator';
 import { useReportPreview } from '../../../hooks/report/useReportPreview';
 import ReportGroupedPreview from '../report/ReportGroupedPreview';
 import { useReportType } from '../../../hooks/report/useReportType';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
 
 function ReportWindow({ onReset }: IReportWindowProps) {
   const [resetTrigger, setResetTrigger] = useState(0);
   const [tabValue, setTabValue] = useState('2');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
   
   const { currentFilter, handleFilterChange, resetFilters, isFilterValid } = useReportFilters();
   const { reportType, setReportType } = useReportType();
@@ -33,10 +36,10 @@ function ReportWindow({ onReset }: IReportWindowProps) {
     clearError
   } = useReportGenerator({
     onSuccess: () => {
-      // Report generated successfully
+      showSuccess('Report generated successfully');
     },
-    onError: () => {
-      // Report generation failed
+    onError: (error) => {
+      showError(error || 'Failed to generate report');
     }
   });
 
@@ -81,7 +84,7 @@ function ReportWindow({ onReset }: IReportWindowProps) {
     try {
       await generateTimesheetEntries(currentFilter, 'pdf');
     } catch (error) {
-      // Error generating PDF
+      // Error is handled by the hook
     }
   };
 
@@ -90,7 +93,7 @@ function ReportWindow({ onReset }: IReportWindowProps) {
     try {
       await generateTimesheetEntries(currentFilter, 'excel');
     } catch (error) {
-      // Error generating Excel
+      // Error is handled by the hook
     }
   };
 
@@ -186,6 +189,7 @@ function ReportWindow({ onReset }: IReportWindowProps) {
         onCancel={handleEXCELExport}
         onClose={handleDialogClose}
       />
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </WindowLayout>
   );
 }
