@@ -30,12 +30,12 @@ export const loginUser = async ({ email, password }: LoginParams) => {
   appAssert(isValid, UNAUTHORIZED, 'Invalid password');
 
   const refreshToken = signToken(
-    { userId: user._id as string },
+    { userId: user._id.toString() },
     REFRESH_TOKEN_OPTIONS
   );
 
   const accessToken = signToken({
-    userId: user._id as string,
+    userId: user._id.toString(),
     role: user.role,
   });
 
@@ -58,7 +58,7 @@ export const getUserFromRefreshToken = async (refreshToken: string) => {
   appAssert(fetchUser, UNAUTHORIZED, 'User not found');
 
   const newAccessToken = signToken({
-    userId: fetchUser._id as string,
+    userId: fetchUser._id.toString(),
     role: fetchUser.role,
   });
 
@@ -82,7 +82,7 @@ export const getAccessToken = async (refreshToken: string) => {
   appAssert(fetchUser, UNAUTHORIZED, 'User not found');
 
   const newAccessToken = signToken({
-    userId: fetchUser._id as string,
+    userId: fetchUser._id.toString(),
     role: fetchUser.role,
   });
 
