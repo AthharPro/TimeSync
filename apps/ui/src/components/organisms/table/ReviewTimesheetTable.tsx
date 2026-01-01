@@ -76,25 +76,24 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
       } else {
         newMap.set(employeeId, timesheetIds);
       }
-      return newMap;
-    });
-
-    // Notify parent component - find the first employee with selections
-    if (onSelectedTimesheetsChange) {
-      if (timesheetIds.length > 0) {
-        onSelectedTimesheetsChange(employeeId, timesheetIds);
-      } else {
-        // Check if there are any other employees with selections
-        const updatedMap = new Map(selectedTimesheetsPerEmployee);
-        updatedMap.delete(employeeId);
-        if (updatedMap.size > 0) {
-          const [firstEmployeeId, firstTimesheetIds] = Array.from(updatedMap.entries())[0];
-          onSelectedTimesheetsChange(firstEmployeeId, firstTimesheetIds);
+      
+      // Notify parent component - use the updated map instead of state
+      if (onSelectedTimesheetsChange) {
+        if (timesheetIds.length > 0) {
+          onSelectedTimesheetsChange(employeeId, timesheetIds);
         } else {
-          onSelectedTimesheetsChange('', []);
+          // Check if there are any other employees with selections in the new map
+          if (newMap.size > 0) {
+            const [firstEmployeeId, firstTimesheetIds] = Array.from(newMap.entries())[0];
+            onSelectedTimesheetsChange(firstEmployeeId, firstTimesheetIds);
+          } else {
+            onSelectedTimesheetsChange('', []);
+          }
         }
       }
-    }
+      
+      return newMap;
+    });
   };
 
   // Handle row click to toggle drawer for that employee
