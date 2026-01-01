@@ -124,6 +124,12 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
     );
   };
 
+  const handleAllocationChange = (employeeId: string, allocation: number) => {
+    setSelectedEmployees((prev) =>
+      prev.map((e) => (e.id === employeeId || e._id === employeeId ? { ...e, allocation } : e))
+    );
+  };
+
   const handleCancel = () => {
     setSelectedEmployees(initialSelectedEmployees);
     setSearchTerm('');
@@ -137,10 +143,10 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
       onBack={handleCancel}
       title="Build Your Team"
       subtitle="Search and select employees to add to your Team"
-      maxWidth="xs"
-      
+      maxWidth="lg"
+      paperHeight={'625px'}
     >
-      <Box sx={{ p: 1 }}>
+      <Box>
         {isLoading && (
           <Typography variant="body2" sx={{ mb: 1 }}>
             Loading employees...
@@ -156,6 +162,7 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
           selected={selectedEmployees}
           onToggle={handleEmployeeToggle}
           onRemove={handleRemoveEmployee}
+          onAllocationChange={handleAllocationChange}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />

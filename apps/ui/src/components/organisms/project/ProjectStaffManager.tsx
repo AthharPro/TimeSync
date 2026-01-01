@@ -96,6 +96,7 @@ export default function ProjectStaffManager({
           lastName: '',
           email: '',
           designation: e.designation || '',
+          allocation: (e as any).allocation ?? 0,
         }))
       );
       setSupervisor(initialSupervisor?.id || '');
@@ -127,8 +128,14 @@ export default function ProjectStaffManager({
         if (supervisor === employee.id) setSupervisor('');
         return updated;
       }
-      return [...prev, employee];
+      return [...prev, { ...employee, allocation: (employee as any).allocation ?? 0 }];
     });
+  };
+
+  const handleAllocationChange = (employeeId: string, allocation: number) => {
+    setSelectedEmployees((prev) =>
+      prev.map((p) => (p.id === employeeId || p._id === employeeId ? { ...p, allocation } : p))
+    );
   };
 
   const handleRemoveEmployee = (employeeId: string) => {
@@ -140,7 +147,7 @@ export default function ProjectStaffManager({
     setIsLoading(true);
     try {
       await updateProjectStaff(projectId, {
-        employees: selectedEmployees.map((e) => e.id),
+        employees: selectedEmployees.map((e) => ({ user: e.id, allocation: e.allocation ?? 0 })),
         supervisor: supervisor || null,
       });
       onSaved?.();
@@ -166,7 +173,7 @@ export default function ProjectStaffManager({
       onClose={onClose}
       title="Manage Project Members"
       subtitle="Add or remove project members and set a supervisor"
-      maxWidth='xs'
+      maxWidth='md'
     >
       <Box>
         {error && (
@@ -175,6 +182,7 @@ export default function ProjectStaffManager({
         <SelectedEmployeeChips
           employees={selectedEmployees}
           onRemove={handleRemoveEmployee}
+          onAllocationChange={handleAllocationChange}
           title="Selected Employees"
           sx={{ mb: 2 }}
         />

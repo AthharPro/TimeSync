@@ -4,7 +4,8 @@ import { ITimesheetRow } from "../../layout";
 export interface ITimesheetTableEntry {
   id: string; 
   date: Date; 
-  project: string;
+  project?: string;
+  team?: string;
   task: string;
   description: string;
   hours: number;

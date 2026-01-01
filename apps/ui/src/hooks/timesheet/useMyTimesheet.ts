@@ -64,6 +64,7 @@ const addNewTimesheet = useCallback(
     const timesheetReqBody = {
       date: timesheet.date,
       projectId: timesheet.project,
+      teamId: timesheet.team,
       taskId: timesheet.task,
       billable: timesheet.billableType,
       description: timesheet.description,
@@ -78,7 +79,8 @@ const addNewTimesheet = useCallback(
     const savedTimesheet: IMyTimesheetTableEntry = {
       id: ts._id || ts.id,           // MongoDB returns _id
       date: ts.date,
-      project: ts.projectId || '',   // mapped
+      project: ts.projectId || undefined,   // mapped
+      team: ts.teamId || undefined,         // mapped
       task: ts.taskId || '',         // mapped
       billableType: ts.billable,     // mapped
       description: ts.description || '',
@@ -170,7 +172,8 @@ const addNewTimesheet = useCallback(
         const mappedTimesheets: IMyTimesheetTableEntry[] = timesheets.map((ts: any) => ({
           id: ts.id || ts._id,
           date: ts.date,
-          project: ts.projectId || '',
+          project: ts.projectId || undefined,
+          team: ts.teamId || undefined,
           task: ts.taskId || '',
           billableType: ts.billable,
           description: ts.description || '',
@@ -203,20 +206,20 @@ const addNewTimesheet = useCallback(
         const validTimesheets = selectedTimesheets.filter((ts) => {
           return (
             ts.hours > 0 &&
-            ts.project && 
+            (ts.project || ts.team) && 
             ts.task && 
             ts.description
           );
         });
 
         if (validTimesheets.length === 0) {
-          throw new Error('No valid timesheets to submit. Please ensure all selected timesheets have hours > 0, project, task, and description filled in.');
+          throw new Error('No valid timesheets to submit. Please ensure all selected timesheets have hours > 0, project/team, task, and description filled in.');
         }
 
         const invalidCount = selectedTimesheets.length - validTimesheets.length;
         if (invalidCount > 0) {
           const proceed = window.confirm(
-            `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped because they are incomplete (missing hours, project, task, or description). Continue with ${validTimesheets.length} valid timesheet${validTimesheets.length > 1 ? 's' : ''}?`
+            `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped because they are incomplete (missing hours, project/team, task, or description). Continue with ${validTimesheets.length} valid timesheet${validTimesheets.length > 1 ? 's' : ''}?`
           );
           if (!proceed) {
             throw new Error('Submission cancelled');
@@ -232,7 +235,8 @@ const addNewTimesheet = useCallback(
         const updatedTimesheets: IMyTimesheetTableEntry[] = result.timesheets.map((ts: any) => ({
           id: ts.id || ts._id,
           date: ts.date,
-          project: ts.projectId || '',
+          project: ts.projectId || undefined,
+          team: ts.teamId || undefined,
           task: ts.taskId || '',
           billableType: ts.billable,
           description: ts.description || '',
@@ -290,13 +294,13 @@ const addNewTimesheet = useCallback(
         const validTimesheets = draftTimesheets.filter((ts) => {
           return (
             ts.hours > 0 &&
-            ts.project && 
+            (ts.project || ts.team) && 
             ts.task
           );
         });
 
         if (validTimesheets.length === 0) {
-          throw new Error('No valid timesheets to submit. Please ensure all timesheets have hours > 0, project, and task filled in.');
+          throw new Error('No valid timesheets to submit. Please ensure all timesheets have hours > 0, project/team, and task filled in.');
         }
 
         const invalidCount = draftTimesheets.length - validTimesheets.length;
@@ -306,7 +310,7 @@ const addNewTimesheet = useCallback(
         if (invalidCount > 0 && alreadySubmittedCount > 0) {
           confirmMessage = `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped (incomplete) and ${alreadySubmittedCount} timesheet${alreadySubmittedCount > 1 ? 's are' : ' is'} already submitted. Continue with ${validTimesheets.length} valid draft timesheet${validTimesheets.length > 1 ? 's' : ''}?`;
         } else if (invalidCount > 0) {
-          confirmMessage = `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped because they are incomplete (missing hours, project, or task). Continue with ${validTimesheets.length} valid timesheet${validTimesheets.length > 1 ? 's' : ''}?`;
+          confirmMessage = `${invalidCount} timesheet${invalidCount > 1 ? 's' : ''} will be skipped because they are incomplete (missing hours, project/team, or task). Continue with ${validTimesheets.length} valid timesheet${validTimesheets.length > 1 ? 's' : ''}?`;
         } else if (alreadySubmittedCount > 0) {
           confirmMessage = `${alreadySubmittedCount} timesheet${alreadySubmittedCount > 1 ? 's are' : ' is'} already submitted and will be skipped. Continue with ${validTimesheets.length} draft timesheet${validTimesheets.length > 1 ? 's' : ''}?`;
         }
@@ -327,7 +331,8 @@ const addNewTimesheet = useCallback(
         const updatedTimesheets: IMyTimesheetTableEntry[] = result.timesheets.map((ts: any) => ({
           id: ts.id || ts._id,
           date: ts.date,
-          project: ts.projectId || '',
+          project: ts.projectId || undefined,
+          team: ts.teamId || undefined,
           task: ts.taskId || '',
           billableType: ts.billable,
           description: ts.description || '',

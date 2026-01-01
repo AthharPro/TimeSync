@@ -22,7 +22,8 @@ export interface DataTableProps<T> {
 export interface IMyTimesheetTableEntry {
   id: string; 
   date: string; 
-  project: string;
+  project?: string;
+  team?: string;
   task: string;
   description: string;
   hours: number;

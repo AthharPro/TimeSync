@@ -21,7 +21,7 @@ export interface UseProjectsReturn {
     billable?: string;
     costCenter?: string;
     projectType?: string;
-    employees?: string[];
+    employees?: (string | { user: string; allocation?: number })[];
     supervisor?: string | null;
     isPublic?: boolean;
     startDate?: Date | null;
@@ -31,7 +31,7 @@ export interface UseProjectsReturn {
   updateProjectStaff: (
     projectId: string,
     params: {
-      employees?: string[];
+      employees?: { user: string; allocation?: number }[];
       supervisor?: string | null;
     }
   ) => Promise<IProject>;
@@ -77,7 +77,7 @@ export const useProjects = (): UseProjectsReturn => {
       billable?: string;
       costCenter?: string;
       projectType?: string;
-      employees?: string[];
+      employees?: (string | { user: string; allocation?: number })[];
       supervisor?: string | null;
       isPublic?: boolean;
       startDate?: Date | null;
@@ -127,7 +127,7 @@ export const useProjects = (): UseProjectsReturn => {
     async (
       projectId: string,
       params: {
-        employees?: string[];
+        employees?: { user: string; allocation?: number }[];
         supervisor?: string | null;
       }
     ) => {

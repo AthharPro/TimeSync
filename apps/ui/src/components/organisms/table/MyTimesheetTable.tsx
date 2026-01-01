@@ -100,14 +100,18 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     const projectMap: Record<string, string> = {};
     
     newTimesheets.forEach((timesheet) => {
-      if (timesheet.project && timesheet.id) {
-        // Store the project ID (timesheet.project contains the ID)
-        projectMap[timesheet.id] = timesheet.project;
+      // Get either project ID or team ID
+      // If both project and team are present, prioritize team (timesheet is for a team member)
+      const entityId = timesheet.team || timesheet.project;
+      
+      if (entityId && timesheet.id) {
+        // Store the entity ID (project or team)
+        projectMap[timesheet.id] = entityId;
         
-        // Load tasks for this project ID if not already loaded
-        if (!loadedProjectsRef.current.has(timesheet.project)) {
-          loadTasks(timesheet.project);
-          loadedProjectsRef.current.add(timesheet.project);
+        // Load tasks for this entity ID if not already loaded
+        if (!loadedProjectsRef.current.has(entityId)) {
+          loadTasks(entityId);
+          loadedProjectsRef.current.add(entityId);
         }
       }
     });
@@ -135,10 +139,10 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
   const timesheetData: ITimesheetTableEntry[] = useMemo(() => {
     let filteredTimesheets = newTimesheets.map((timesheet) => {
       // Find project name from project ID
-      const project = myProjects.find(p => p._id === timesheet.project);
-      // If not a project, check if it's a team
-      const team = !project ? myTeams.find(t => t._id === timesheet.project) : null;
-      const projectName = project ? project.projectName : (team ? team.teamName : timesheet.project);
+      const project = timesheet.project ? myProjects.find(p => p._id === timesheet.project) : null;
+      // Find team name from team ID
+      const team = timesheet.team ? myTeams.find(t => t._id === timesheet.team) : null;
+      const projectName = project ? project.projectName : (team ? team.teamName : (timesheet.project || timesheet.team || ''));
       
       // Find task name from task ID (search in all tasks from all projects)
       const task = allTasks.find(t => t._id === timesheet.task);
@@ -201,9 +205,6 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
   const availableProjectNames = useMemo<string[]>(() => {
     const projectNames = myProjects.map((proj) => proj.projectName);
     const teamNames = myTeams.map((team) => team.teamName);
-    console.log('MyTimesheetTable - Available projects:', projectNames);
-    console.log('MyTimesheetTable - Available teams:', teamNames);
-    console.log('MyTimesheetTable - Combined list:', [...projectNames, ...teamNames]);
     return [...projectNames, ...teamNames];
   }, [myProjects, myTeams]);
 
@@ -232,8 +233,8 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     });
   };
 
-  const handleProjectChange = (id: string, newProjectName: string | null) => {
-    if (newProjectName !== null) {
+  const handleProjectChange = (id: string, newProjectName: string | null | undefined) => {
+    if (newProjectName !== null && newProjectName !== undefined) {
       // Find the project ID from the project name
       const selectedProject = myProjects.find(proj => proj.projectName === newProjectName);
       // If not a project, check if it's a team
@@ -258,14 +259,14 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
         
         // Update UI with team name and sync to backend with team ID
         updateTimesheet(id, { project: newProjectName });
-        debouncedUpdateRef.current(id, { project: selectedTeam._id });
+        debouncedUpdateRef.current(id, { team: selectedTeam._id });
       } else {
         console.warn('Project or team not found for name:', newProjectName);
       }
     }
   };
 
-  const handleTaskChange = (id: string, newTaskName: string | null) => {
+  const handleTaskChange = async (id: string, newTaskName: string | null) => {
     if (newTaskName !== null) {
       // Get the project ID for this row
       const projectId = selectedProjects[id];
@@ -275,9 +276,13 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
       const selectedTask = projectTasks.find(task => task.taskName === newTaskName);
       
       if (selectedTask) {
-        // Update UI with task name and sync to backend with task ID
+        // Update UI with task name and immediately sync to backend with task ID
         updateTimesheet(id, { task: newTaskName });
-        debouncedUpdateRef.current(id, { task: selectedTask._id });
+        try {
+          await syncUpdateTimesheet(id, { task: selectedTask._id });
+        } catch (error) {
+          console.error('Failed to sync task to backend:', error);
+        }
       } else {
         // If task not found, just update UI (will be created separately)
         updateTimesheet(id, { task: newTaskName });
@@ -293,12 +298,11 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     }
 
     try {
-      console.log('Creating new task:', taskName, 'for project:', projectId);
       const newTask: any = await createTask({ projectId, taskName });
       
-      // Only sync to backend with new task ID (UI already updated by handleTaskChange)
+      // Immediately sync to backend with new task ID (no debounce)
       if (newTask && newTask._id) {
-        debouncedUpdateRef.current(rowId, { task: newTask._id });
+        await syncUpdateTimesheet(rowId, { task: newTask._id });
       }
     } catch (error) {
       console.error('Failed to create task:', error);
