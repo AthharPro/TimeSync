@@ -33,16 +33,19 @@ const LoginFormSection: React.FC = () => {
     if (res.success && res.user) {
       showSuccess('Login successful! Redirecting...');
       
+      // Store user reference for type safety in setTimeout callback
+      const user = res.user;
+      
       // Delay navigation to allow snackbar to show
       setTimeout(() => {
         // Check if user needs to change password on first login
-        if (!res.user.isChangedPwd) {
+        if (!user.isChangedPwd) {
           navigate('/resetpasswordfirstlogin', { replace: true });
           return;
         }
 
         // Redirect based on user role
-        switch(res.user.role) {
+        switch(user.role) {
           case UserRole.SuperAdmin:
             navigate('/super-admin', { replace: true });
             break;
