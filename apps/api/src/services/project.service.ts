@@ -88,7 +88,7 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
 
       const projects = await ProjectModel.find({ 
         $or: [
-          { employees: userId }, // Private projects where user is assigned
+          { 'employees.user': new mongoose.Types.ObjectId(userId) }, // Private projects where user is assigned
           { isPublic: true }      // Public projects (all users can add time)
         ]
       })
@@ -98,7 +98,7 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
       
       // Also get teams where user is a member
       const teams = await TeamModel.find({
-        members: userId
+        members: new mongoose.Types.ObjectId(userId)
       })
         .sort({ createdAt: -1 })
         .select('_id teamName isDepartment');
@@ -131,7 +131,7 @@ export const listMyProjects = async (userId: string) => {
   const projects = await ProjectModel.find({ 
     status: true, 
     $or: [
-      { 'employees.user': userId }, // Private projects where user is assigned
+      { 'employees.user': new mongoose.Types.ObjectId(userId) }, // Private projects where user is assigned
       { isPublic: true }      // Public projects (all users can add time)
     ]
   })
@@ -140,7 +140,7 @@ export const listMyProjects = async (userId: string) => {
   // Also find teams where user is a member
   const teams = await TeamModel.find({
     status: true,
-    members: userId
+    members: new mongoose.Types.ObjectId(userId)
   })
     .sort({ createdAt: -1 })
     .select('_id teamName isDepartment');
