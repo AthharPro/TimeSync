@@ -108,7 +108,7 @@ export const listTeamsForUser = async (userId: string, userRole: UserRole) => {
   switch (userRole) {
     case UserRole.Emp:
     case UserRole.Supervisor: {
-      const teams = await TeamModel.find({ status: true, members: userId })
+      const teams = await TeamModel.find({ status: true, members: new mongoose.Types.ObjectId(userId) })
         .sort({ createdAt: -1 })
         .populate({ path: 'members', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
@@ -132,7 +132,7 @@ export const listMyMemberTeams = async (userId: string) => {
   // Only return teams where isDepartment is true (or not set, for backward compatibility)
   const teams = await TeamModel.find({ 
     status: true, 
-    members: userId,
+    members: new mongoose.Types.ObjectId(userId),
     $or: [
       { isDepartment: true },
       { isDepartment: { $exists: false } }
