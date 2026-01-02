@@ -90,12 +90,19 @@ function MyTimesheetWindow() {
 
   const handleCreateClick = () => {
     if(view==='table'){
-      // Use the first day of the filtered month instead of today's date
-      const dateInFilteredMonth = dayjs(filters.month).startOf('month').toISOString();
+      // Use the current day if it's within the filtered month, otherwise use the first day
+      const now = dayjs();
+      const filteredMonthStart = dayjs(filters.month).startOf('month');
+      const filteredMonthEnd = dayjs(filters.month).endOf('month');
+      
+      // Check if current date falls within the filtered month
+      const dateInFilteredMonth = (now.isAfter(filteredMonthStart.subtract(1, 'day')) && now.isBefore(filteredMonthEnd.add(1, 'day')))
+        ? now.toISOString()
+        : filteredMonthStart.toISOString();
       
       const newTime = {
         id: crypto.randomUUID(), // Generate unique ID
-        date: dateInFilteredMonth, // Use filtered month date
+        date: dateInFilteredMonth, // Use current day if in filtered month
         project: '',
         task: '',
         description: '',
