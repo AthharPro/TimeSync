@@ -10,6 +10,7 @@ import { useReviewTimesheet } from '../../../hooks/timesheet';
 import { useMyProjects } from '../../../hooks/project/useMyProject';
 import { useTeam } from '../../../hooks/team';
 import ReviewTimesheetFilterPopover, { ReviewTimesheetFilters } from '../popover/ReviewTimesheetFilterPopover';
+import EditRequestFilterPopover, { EditRequestFilterOptions } from '../popover/EditRequestFilterPopover';
 import dayjs from 'dayjs';
 import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
@@ -17,6 +18,12 @@ import { useSnackbar } from '../../../hooks/useSnackbar';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
+import { Box } from '@mui/material';
+import Tab from '@mui/material/Tab';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
+import EditRequestTable from '../table/EditRequestTable';
 
 function ReviewTimesheetWindow() {
   const { approveSelectedTimesheets, rejectSelectedTimesheets } = useReviewTimesheet();
@@ -31,6 +38,7 @@ function ReviewTimesheetWindow() {
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [initialEmployeeId, setInitialEmployeeId] = useState<string | null>(null);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [tabValue, setTabValue] = useState('1');
 
   // Load projects and teams on mount
   useEffect(() => {
@@ -75,6 +83,7 @@ function ReviewTimesheetWindow() {
   }, []);
 
   const [filters, setFilters] = useState<ReviewTimesheetFilters>(defaultFilters);
+  const [editRequestFilters, setEditRequestFilters] = useState<EditRequestFilterOptions>({ status: 'All' });
 
   // Handle navigation from notification
   useEffect(() => {
@@ -126,6 +135,14 @@ function ReviewTimesheetWindow() {
   const handleApplyFilters = (newFilters: ReviewTimesheetFilters) => {
     setFilters(newFilters);
     // Filters will be passed to ReviewTimesheetTable component
+  };
+
+  const handleApplyEditRequestFilters = (newFilters: EditRequestFilterOptions) => {
+    setEditRequestFilters(newFilters);
+  };
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
+    setTabValue(newValue);
   };
 
   const handleApprove = async () => {
@@ -214,22 +231,68 @@ function ReviewTimesheetWindow() {
   return (
     <>
       <WindowLayout title="Review Timesheet" buttons={buttons}>
-        <ReviewTimesheetTable 
-          onSelectedTimesheetsChange={handleSelectedTimesheetsChange}
-          filters={filters}
-          supervisedProjectIds={supervisedProjectIds}
-          supervisedTeamIds={supervisedTeamIds}
-          initialEmployeeId={initialEmployeeId}
-        />
+        <TabContext value={tabValue}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* Header Row */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
+              {/* Tab List - Left Corner */}
+              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TabList onChange={handleTabChange} aria-label="review timesheet tabs">
+                  <Tab label="Review" value="1" />
+                  <Tab label="Edit Request" value="2" />
+                </TabList>
+              </Box>
+            </Box>
+
+            {/* Tab Panels */}
+            <Box sx={{ width: '100%' }}>
+              <TabPanel value="1" sx={{ padding: 0 }}>
+                <ReviewTimesheetTable 
+                  onSelectedTimesheetsChange={handleSelectedTimesheetsChange}
+                  filters={filters}
+                  supervisedProjectIds={supervisedProjectIds}
+                  supervisedTeamIds={supervisedTeamIds}
+                  initialEmployeeId={initialEmployeeId}
+                />
+              </TabPanel>
+              <TabPanel value="2" sx={{ padding: 0 }}>
+                {/* Edit Request Content */}
+                <EditRequestTable 
+                  statusFilter={editRequestFilters.status}
+                  onStatusFilterChange={(newStatus) => setEditRequestFilters({ status: newStatus })}
+                />
+              </TabPanel>
+            </Box>
+          </Box>
+        </TabContext>
       </WindowLayout>
 
-      <ReviewTimesheetFilterPopover
-        anchorEl={filterAnchorEl}
-        open={Boolean(filterAnchorEl)}
-        onClose={handleFilterClose}
-        onApplyFilters={handleApplyFilters}
-        currentFilters={filters}
-      />
+      {tabValue === '1' && (
+        <ReviewTimesheetFilterPopover
+          anchorEl={filterAnchorEl}
+          open={Boolean(filterAnchorEl)}
+          onClose={handleFilterClose}
+          onApplyFilters={handleApplyFilters}
+          currentFilters={filters}
+        />
+      )}
+
+      {tabValue === '2' && (
+        <EditRequestFilterPopover
+          anchorEl={filterAnchorEl}
+          open={Boolean(filterAnchorEl)}
+          onClose={handleFilterClose}
+          onApplyFilters={handleApplyEditRequestFilters}
+          currentFilters={editRequestFilters}
+        />
+      )}
 
       <RejectReasonDialog
         open={rejectDialogOpen}

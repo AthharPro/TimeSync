@@ -421,7 +421,7 @@ const MyTimesheetCalendarTable = () => {
     }
   };
 
-  const handleHoursChange = (calendarRowId: string, date: Date, value: number) => {
+  const handleHoursChange = async (calendarRowId: string, date: Date, value: number) => {
     const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
     if (!calendarRow || !calendarRow.task) return;
 
@@ -455,22 +455,28 @@ const MyTimesheetCalendarTable = () => {
       // Update with debounce (updates Redux immediately and syncs to backend after delay)
       debouncedUpdateRef.current(existingTimesheet.id, { hours: value });
     } else if (value !== 0) {
-      addNewTimesheet({
-        id: crypto.randomUUID(),
-        date: date.toISOString(),
-        project: matchingProject ? matchingProject._id : undefined,
-        team: matchingTeam ? matchingTeam._id : undefined,
-        task: taskId,
-        description: '',
-        hours: value,
-        billableType: calendarRow.billableType,
-        status: DailyTimesheetStatus.Default,
-        isChecked: false,
-      });
+      try {
+        await addNewTimesheet({
+          id: crypto.randomUUID(),
+          date: date.toISOString(),
+          project: matchingProject ? matchingProject._id : undefined,
+          team: matchingTeam ? matchingTeam._id : undefined,
+          task: taskId,
+          description: '',
+          hours: value,
+          billableType: calendarRow.billableType,
+          status: DailyTimesheetStatus.Default,
+          isChecked: false,
+        });
+      } catch (error: any) {
+        console.error('Failed to create timesheet:', error.message);
+        // Note: Errors will be shown in MyTimesheetWindow's snackbar
+        // since addNewTimesheet is connected to the Redux store
+      }
     }
   };
 
-  const handleDescriptionChange = (calendarRowId: string, date: Date, value: string) => {
+  const handleDescriptionChange = async (calendarRowId: string, date: Date, value: string) => {
     const calendarRow = myCalendarViewData.find((row) => row.id === calendarRowId);
     if (!calendarRow || !calendarRow.task) return;
 
@@ -504,18 +510,23 @@ const MyTimesheetCalendarTable = () => {
       // Update with debounce (updates Redux immediately and syncs to backend after delay)
       debouncedUpdateRef.current(existingTimesheet.id, { description: value });
     } else {
-      addNewTimesheet({
-        id: crypto.randomUUID(),
-        date: date.toISOString(),
-        project: matchingProject ? matchingProject._id : undefined,
-        team: matchingTeam ? matchingTeam._id : undefined,
-        task: taskId,
-        description: value,
-        hours: 0,
-        billableType: calendarRow.billableType,
-        status: DailyTimesheetStatus.Default,
-        isChecked: false,
-      });
+      try {
+        await addNewTimesheet({
+          id: crypto.randomUUID(),
+          date: date.toISOString(),
+          project: matchingProject ? matchingProject._id : undefined,
+          team: matchingTeam ? matchingTeam._id : undefined,
+          task: taskId,
+          description: value,
+          hours: 0,
+          billableType: calendarRow.billableType,
+          status: DailyTimesheetStatus.Default,
+          isChecked: false,
+        });
+      } catch (error: any) {
+        console.error('Failed to create timesheet:', error.message);
+        // Note: Errors will be shown in MyTimesheetWindow's snackbar
+      }
     }
   };
 

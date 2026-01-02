@@ -121,22 +121,19 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
   // Define columns
   const columns: DataTableColumn<IEmployee>[] = [
     {
-      label: 'Employee ID',
-      key: 'employeeId',
-      render: (row) => <Box sx={{ py: 1 }}>{row.employeeId}</Box>,
-      width: '12%',
-    },
-    {
-      label: 'Name',
-      key: 'name',
-      render: (row) => <Box sx={{ py: 1 }}>{row.name}</Box>,
-      width: '18%',
-    },
-    {
-      label: 'Email',
-      key: 'email',
-      render: (row) => <Box sx={{ py: 1 }}>{row.email}</Box>,
-      width: '25%',
+      label: 'Employee',
+      key: 'employee',
+      render: (row) => (
+        <Box sx={{ py: 1 }}>
+          <Typography variant="body2" fontWeight={500}>
+            {row.name}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {row.email}
+          </Typography>
+        </Box>
+      ),
+      width: '30%',
     },
     {
       label: 'Designation',

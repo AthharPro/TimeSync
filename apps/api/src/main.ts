@@ -7,7 +7,7 @@ import { APP_ORIGIN, NODE_ENV, PORT } from './constants';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import errorHandler from "./middleware/errorHandler";
-import {userRoutes,authRoutes,timesheetRoutes,projectRoutes,taskRoutes,teamRoutes,reportRoutes,reviewRoutes,dashboardRoutes} from "./routes";
+import {userRoutes,authRoutes,timesheetRoutes,projectRoutes,taskRoutes,teamRoutes,reportRoutes,reviewRoutes,dashboardRoutes,editRequestRoutes} from "./routes";
 import notificationRoutes from "./routes/notification.route";
 import historyRoutes from "./routes/history.route";
 import { ensureInternalProject } from './utils/data/systemDataUtils';
@@ -62,6 +62,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/review', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/edit-request', editRequestRoutes);
 
 
 app.use(errorHandler);

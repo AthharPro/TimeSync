@@ -21,11 +21,15 @@ import { useSnackbar } from '../../../hooks/useSnackbar';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import EditRequestDialog from '../dialog/EditRequestDialog';
+import { useEditRequest } from '../../../hooks/editRequest/useEditRequest';
 
 function MyTimesheetWindow() {
   const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets, deleteSelectedTimesheets, isLoading, error } = useMyTimesheet();
   const { myTimesheetParams, setMyTimesheetParams } = useWindowNavigation();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { createRequest } = useEditRequest();
 
   const [view, setView] = useState('table');
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
@@ -34,6 +38,7 @@ function MyTimesheetWindow() {
   const [submitDialogMessage, setSubmitDialogMessage] = useState('');
   const [deleteDialogMessage, setDeleteDialogMessage] = useState('');
   const [selectedCount, setSelectedCount] = useState(0);
+  const [editRequestDialogOpen, setEditRequestDialogOpen] = useState(false);
   
   // Default filters for table view: current year and current month
   const defaultTableFilters = useMemo(() => {
@@ -88,21 +93,24 @@ function MyTimesheetWindow() {
     }
   }, [myTimesheetParams, setMyTimesheetParams]);
 
-  const handleCreateClick = () => {
+  const handleCreateClick = async () => {
     if(view==='table'){
-      // Use the current day if it's within the filtered month, otherwise use the first day
+      // Use the filtered month to determine the date
       const now = dayjs();
-      const filteredMonthStart = dayjs(filters.month).startOf('month');
-      const filteredMonthEnd = dayjs(filters.month).endOf('month');
+      const filteredMonth = dayjs(filters.month);
       
-      // Check if current date falls within the filtered month
-      const dateInFilteredMonth = (now.isAfter(filteredMonthStart.subtract(1, 'day')) && now.isBefore(filteredMonthEnd.add(1, 'day')))
-        ? now.toISOString()
-        : filteredMonthStart.toISOString();
+      // If filtered month is current month, use current date
+      // Otherwise, use the first day of the filtered month
+      let dateToUse: string;
+      if (filteredMonth.isSame(now, 'month')) {
+        dateToUse = now.toISOString();
+      } else {
+        dateToUse = filteredMonth.startOf('month').toISOString();
+      }
       
       const newTime = {
         id: crypto.randomUUID(), // Generate unique ID
-        date: dateInFilteredMonth, // Use current day if in filtered month
+        date: dateToUse, // Use filtered month's date
         project: '',
         task: '',
         description: '',
@@ -111,7 +119,12 @@ function MyTimesheetWindow() {
         status: DailyTimesheetStatus.Default,
         isChecked: true,
       };
-      addNewTimesheet(newTime);
+      
+      try {
+        await addNewTimesheet(newTime);
+      } catch (error: any) {
+        showError(error.message || 'Failed to create timesheet');
+      }
     } else if(view==='calendar') {
       // Add new empty calendar row that users can fill in
       createEmptyCalendarRow('New Project', 'New Task', BillableType.NonBillable);
@@ -202,6 +215,19 @@ function MyTimesheetWindow() {
     // The filters will be passed to MyTimesheetTable component
   };
 
+  const handleRequestToEdit = () => {
+    setEditRequestDialogOpen(true);
+  };
+
+  const handleEditRequestConfirm = async (month: string, year: string) => {
+    try {
+      await createRequest(month, year);
+      showSuccess(`Edit request for ${month} has been sent to your supervisors`);
+    } catch (error: any) {
+      showError(error.response?.data?.message || 'Failed to submit edit request');
+    }
+  };
+
   const buttons = (
     <>
       {view === 'calendar' && (
@@ -232,7 +258,7 @@ function MyTimesheetWindow() {
           <BaseBtn variant='outlined' startIcon={<FilterAltOutlinedIcon/>} onClick={handleFilterClick}>Filter</BaseBtn>
         </>
       )}
-      <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>}>Request To Edit</BaseBtn>
+      <BaseBtn variant='outlined' startIcon={<EditNoteOutlinedIcon/>} onClick={handleRequestToEdit}>Request To Edit</BaseBtn>
       <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>} onClick={handleSubmitClick}>Submit</BaseBtn>
       <BaseBtn variant="contained" color="primary" startIcon={<AddOutlinedIcon/>} onClick={handleCreateClick}>Create</BaseBtn>
       <ToggleButtonGroup
@@ -288,6 +314,11 @@ function MyTimesheetWindow() {
         confirmButtonColor="primary"
         onConfirm={handleConfirmSubmit}
         onCancel={() => setIsSubmitDialogOpen(false)}
+      />
+      <EditRequestDialog
+        open={editRequestDialogOpen}
+        onClose={() => setEditRequestDialogOpen(false)}
+        onConfirm={handleEditRequestConfirm}
       />
     </WindowLayout>
   );
