@@ -5,6 +5,8 @@ import { createBulkNotifications } from './notification.service';
 import { NotificationType } from '@tms/shared';
 import { getSupervisorsForTimesheets } from '../utils/data/assignmentUtils';
 import { UserModel } from '../models/user.model';
+import { hasEditPermission } from './editRequest.service';
+import dayjs from 'dayjs';
 
 interface CreateTimesheetParams {
   date: Date;
@@ -29,9 +31,40 @@ interface UpdateTimesheetParams {
   hours?: number;
 }
 
+/**
+ * Check if a timesheet entry date is allowed based on deadline rules
+ * - Past months require supervisor approval via edit request
+ */
+const checkTimesheetDeadline = async (userId: string, entryDate: Date): Promise<void> => {
+  const now = dayjs();
+  const entry = dayjs(entryDate);
+  
+  // Get the month and year of the timesheet entry
+  const entryMonth = entry.format('YYYY-MM');
+  const entryYear = entry.format('YYYY');
+  const entryMonthName = entry.format('MMMM YYYY');
+  
+  // If the entry is for the current month or future, allow it
+  if (entry.isSame(now, 'month') || entry.isAfter(now, 'month')) {
+    return;
+  }
+  
+  // If the entry is for a past month - check if user has approval
+  const hasPermission = await hasEditPermission(userId, entryMonth, entryYear);
+  
+  if (!hasPermission) {
+    throw new Error(
+      `Cannot create or edit timesheets for ${entryMonthName}. Please submit an edit request to your supervisor for approval.`
+    );
+  }
+};
+
 export const createMyTimesheet = async (
   params: CreateTimesheetParams
 ): Promise<ITimesheetDocument> => {
+  // Check deadline before creating timesheet
+  await checkTimesheetDeadline(params.userId, params.date);
+  
   const timesheetData: any = {
     date: params.date,
     userId: new mongoose.Types.ObjectId(params.userId),
@@ -105,6 +138,14 @@ export const updateMyTimesheet = async (
 
   if (!existingTimesheet) {
     return null;
+  }
+  
+  // If date is being updated, check deadline for the new date
+  if (date) {
+    await checkTimesheetDeadline(userId, date);
+  } else {
+    // If date is not being updated, check deadline for existing date
+    await checkTimesheetDeadline(userId, existingTimesheet.date);
   }
 
   // Only allow updating Draft timesheets

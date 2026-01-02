@@ -18,6 +18,7 @@ import { IUseMyTimesheetReturn } from '../../interfaces';
 import { BillableType, DailyTimesheetStatus } from '@tms/shared';
 import api from '../../config/apiClient';
 import { getTimesheets, submitTimesheetsAPI, deleteTimesheetsAPI } from '../../api/timesheet';
+import { isTimesheetBlocked, getDeadlineErrorMessage } from '../../utils/timesheetDeadline';
 
 export const useMyTimesheet = (): IUseMyTimesheetReturn => {
   const dispatch = useDispatch();
@@ -66,6 +67,11 @@ export const useMyTimesheet = (): IUseMyTimesheetReturn => {
 
 const addNewTimesheet = useCallback(
   async (timesheet: IMyTimesheetTableEntry) => {
+    // Check if the timesheet date is blocked (checks for approval)
+    if (await isTimesheetBlocked(timesheet.date)) {
+      throw new Error(getDeadlineErrorMessage(timesheet.date));
+    }
+
     const timesheetReqBody = {
       date: timesheet.date,
       projectId: timesheet.project,
@@ -113,6 +119,15 @@ const addNewTimesheet = useCallback(
   const syncUpdateTimesheet = useCallback(
     async (id: string, updates: Partial<IMyTimesheetTableEntry>) => {
       try {
+        // Get the timesheet to check its date
+        const timesheet = newTimesheets.find(ts => ts.id === id);
+        
+        // Check deadline if date is being updated or use existing date
+        const dateToCheck = updates.date || (timesheet?.date);
+        if (dateToCheck && await isTimesheetBlocked(dateToCheck)) {
+          throw new Error(getDeadlineErrorMessage(dateToCheck));
+        }
+
         // Update local state first (optimistic update)
         dispatch(updateMyTimesheetById({ id, updates }));
 
@@ -121,12 +136,14 @@ const addNewTimesheet = useCallback(
         
         if (result.type === syncTimesheetUpdate.rejected.type) {
           console.error('Sync failed:', result.payload);
+          throw new Error(result.payload as string);
         }
       } catch (error) {
         console.error('Sync error:', error);
+        throw error; // Re-throw to be handled by caller
       }
     },
-    [dispatch]
+    [dispatch, newTimesheets]
   );
 
   const createEmptyCalendarRow = useCallback(
