@@ -1,5 +1,5 @@
 import WindowLayout from '../../templates/other/WindowLayout';
-import {  ToggleButton, ToggleButtonGroup } from '@mui/material';
+import {  ToggleButton, ToggleButtonGroup, Typography, Box, Alert } from '@mui/material';
 import MyTimesheetTable from '../table/MyTimesheetTable';
 import { useMyTimesheet } from '../../../hooks/timesheet/useMyTimesheet';
 import { BillableType, DailyTimesheetStatus } from '@tms/shared';
@@ -23,7 +23,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 
 function MyTimesheetWindow() {
-  const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets, deleteSelectedTimesheets } = useMyTimesheet();
+  const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets, deleteSelectedTimesheets, isLoading, error } = useMyTimesheet();
   const { myTimesheetParams, setMyTimesheetParams } = useWindowNavigation();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
@@ -90,9 +90,12 @@ function MyTimesheetWindow() {
 
   const handleCreateClick = () => {
     if(view==='table'){
+      // Use the first day of the filtered month instead of today's date
+      const dateInFilteredMonth = dayjs(filters.month).startOf('month').toISOString();
+      
       const newTime = {
         id: crypto.randomUUID(), // Generate unique ID
-        date: new Date().toISOString(), // Convert Date to ISO string for Redux
+        date: dateInFilteredMonth, // Use filtered month date
         project: '',
         task: '',
         description: '',
@@ -203,11 +206,26 @@ function MyTimesheetWindow() {
       )}
       {view === 'table' && (
         <>
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              fontWeight: 600, 
+              display: 'flex', 
+              alignItems: 'center',
+              color: 'primary.main',
+              px: 2,
+              py: 0.5,
+              borderRadius: 1,
+              backgroundColor: 'primary.lighter',
+            }}
+          >
+            {dayjs(filters.month).format('MMMM YYYY')}
+          </Typography>
           <BaseBtn variant='outlined' startIcon={<DeleteForeverOutlinedIcon/>} onClick={handleDeleteClick}>Delete</BaseBtn>
           <BaseBtn variant='outlined' startIcon={<FilterAltOutlinedIcon/>} onClick={handleFilterClick}>Filter</BaseBtn>
         </>
       )}
-           <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>}>Request TO Edit</BaseBtn>
+      <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>}>Request To Edit</BaseBtn>
       <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>} onClick={handleSubmitClick}>Submit</BaseBtn>
       <BaseBtn variant="contained" color="primary" startIcon={<AddOutlinedIcon/>} onClick={handleCreateClick}>Create</BaseBtn>
       <ToggleButtonGroup
@@ -226,7 +244,12 @@ function MyTimesheetWindow() {
 
   return (
     <WindowLayout title="My Timesheet" buttons={buttons}>
-      {view === 'table' && <MyTimesheetTable filters={filters} />}
+      {error && (
+        <Box sx={{ mb: 2 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      )}
+      {view === 'table' && <MyTimesheetTable filters={filters} isLoading={isLoading} />}
       {view === 'calendar' && <MyTimesheetCalenderTable/>}
       
       <MyTimesheetFilterPopover

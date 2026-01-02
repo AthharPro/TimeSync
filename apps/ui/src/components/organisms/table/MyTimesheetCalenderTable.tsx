@@ -16,7 +16,7 @@ import { useTasks } from '../../../hooks/task/useTasks';
 import { useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store/store';
-import { IconButton } from '@mui/material';
+import { IconButton, Box, CircularProgress, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CustomRow from './other/CustomRow';
 
@@ -66,6 +66,7 @@ const MyTimesheetCalendarTable = () => {
     createEmptyCalendarRow,
     deleteCalendar,
     loadTimesheets,
+    isLoading,
   } = useMyTimesheet();
 
   const weekDays = currentWeekDays;
@@ -638,8 +639,50 @@ const MyTimesheetCalendarTable = () => {
     },
   ];
 
-  if (projectsLoading) return <div>Loading projects...</div>;
-  if (projectsError) return <div>Error loading projects</div>;
+  if (isLoading) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (projectsLoading) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (projectsError) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <Alert severity="error">Error loading projects</Alert>
+      </Box>
+    );
+  }
 
   return (
     <DataTable

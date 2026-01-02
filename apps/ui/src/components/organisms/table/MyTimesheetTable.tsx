@@ -1,4 +1,4 @@
-import { Checkbox } from '@mui/material';
+import { Checkbox, Box, CircularProgress, Alert } from '@mui/material';
 import DataTable from '../../templates/other/DataTable';
 import { DataTableColumn } from '../../../interfaces';
 import { BillableType, DailyTimesheetStatus } from '@tms/shared';
@@ -49,9 +49,10 @@ const createDebouncedUpdate = (
 
 interface MyTimesheetTableProps {
   filters?: TimesheetFilters;
+  isLoading?: boolean;
 }
 
-const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
+const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading = false }) => {
   const { newTimesheets, updateTimesheet, syncUpdateTimesheet, loadTimesheets } = useMyTimesheet();
 
   const { myProjects, myTeams, loading: projectsLoading, error: projectsError, loadMyProjects } =
@@ -476,11 +477,48 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
 
   // Loading / Error states
   if (projectsLoading) {
-    return <div>Loading projects...</div>;
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (projectsError) {
-    return <div>Error loading projects: {projectsError}</div>;
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <Alert severity="error">Error loading projects: {projectsError}</Alert>
+      </Box>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '400px' 
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (

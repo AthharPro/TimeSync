@@ -32,11 +32,16 @@ export const useMyTimesheet = (): IUseMyTimesheetReturn => {
   const myCalendarViewData = useSelector(
     (state: RootState) => state.myTimesheet.myCalendarViewData
   );
+  const isLoading = useSelector(
+    (state: RootState) => state.myTimesheet.loading
+  );
+  const error = useSelector(
+    (state: RootState) => state.myTimesheet.error
+  );
 
   // Placeholder states (can be moved to Redux later if needed)
   const fetchTimesheets: IMyTimesheetTableEntry[] = [];
-  const isLoading = false;
-  const error: string | null = null;
+
 
   // Calculate current week days based on currentWeekStart from Redux
   const currentWeekDays = useMemo(() => {
