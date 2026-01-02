@@ -18,6 +18,7 @@ import Dropdown from '../../atoms/other/inputField/Dropdown';
 import AutocompleteWithCreate from '../../atoms/other/inputField/AutocompleteWithCreate';
 import { useReviewTimesheet } from '../../../hooks/timesheet';
 import { useTasks } from '../../../hooks/task/useTasks';
+import StatusChip from '../../atoms/other/Icon/StatusChip';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store/store';
 import api from '../../../config/apiClient';
@@ -529,7 +530,9 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
                     disabled={entry.status !== DailyTimesheetStatus.Pending || !entry.isSupervised}
                   />
                 </TableCell>
-                <TableCell>{entry.status}</TableCell>
+                <TableCell>
+                  <StatusChip status={entry.status} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

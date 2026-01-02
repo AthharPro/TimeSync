@@ -12,18 +12,25 @@ import { useTeam } from '../../../hooks/team';
 import ReviewTimesheetFilterPopover, { ReviewTimesheetFilters } from '../popover/ReviewTimesheetFilterPopover';
 import dayjs from 'dayjs';
 import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
+import ConformationDailog from '../../molecules/other/ConformationDailog';
+import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
+import ThumbDownOutlinedIcon from '@mui/icons-material/ThumbDownOutlined';
 
 function ReviewTimesheetWindow() {
   const { approveSelectedTimesheets, rejectSelectedTimesheets } = useReviewTimesheet();
   const { myProjects, loadMyProjects } = useMyProjects();
   const { allSupervisedTeams, loadAllSupervisedTeams } = useTeam();
   const { reviewTimesheetParams, setReviewTimesheetParams } = useWindowNavigation();
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
   
   const [selectedTimesheetIds, setSelectedTimesheetIds] = useState<string[]>([]);
   const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [initialEmployeeId, setInitialEmployeeId] = useState<string | null>(null);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
 
   // Load projects and teams on mount
   useEffect(() => {
@@ -123,39 +130,40 @@ function ReviewTimesheetWindow() {
 
   const handleApprove = async () => {
     if (selectedTimesheetIds.length === 0) {
-      alert('Please select at least one timesheet to approve.');
+      showError('Please select at least one timesheet to approve.');
       return;
     }
 
     if (!currentEmployeeId) {
-      alert('No employee selected.');
+      showError('No employee selected.');
       return;
     }
 
-    const confirmed = window.confirm(
-      `Are you sure you want to approve ${selectedTimesheetIds.length} timesheet${selectedTimesheetIds.length > 1 ? 's' : ''}?`
-    );
+    setIsApproveDialogOpen(true);
+  };
 
-    if (!confirmed) {
+  const handleConfirmApprove = async () => {
+    setIsApproveDialogOpen(false);
+    if (!currentEmployeeId) {
       return;
     }
 
     try {
       const result = await approveSelectedTimesheets(currentEmployeeId, selectedTimesheetIds);
-      alert(`Successfully approved ${result.approved} timesheet${result.approved > 1 ? 's' : ''}`);
+      showSuccess(`Successfully approved ${result.approved} timesheet${result.approved > 1 ? 's' : ''}`);
     } catch (error: any) {
-      alert(`Failed to approve timesheets: ${error.message || 'Unknown error'}`);
+      showError(`Failed to approve timesheets: ${error.message || 'Unknown error'}`);
     }
   };
 
   const handleReject = () => {
     if (selectedTimesheetIds.length === 0) {
-      alert('Please select at least one timesheet to reject.');
+      showError('Please select at least one timesheet to reject.');
       return;
     }
 
     if (!currentEmployeeId) {
-      alert('No employee selected.');
+      showError('No employee selected.');
       return;
     }
 
@@ -169,9 +177,9 @@ function ReviewTimesheetWindow() {
 
     try {
       const result = await rejectSelectedTimesheets(currentEmployeeId, selectedTimesheetIds, reason);
-      alert(`Successfully rejected ${result.rejected} timesheet${result.rejected > 1 ? 's' : ''}`);
+      showSuccess(`Successfully rejected ${result.rejected} timesheet${result.rejected > 1 ? 's' : ''}`);
     } catch (error: any) {
-      alert(`Failed to reject timesheets: ${error.message || 'Unknown error'}`);
+      showError(`Failed to reject timesheets: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -228,6 +236,18 @@ function ReviewTimesheetWindow() {
         onClose={() => setRejectDialogOpen(false)}
         onConfirm={handleRejectConfirm}
         timesheetCount={selectedTimesheetIds.length}
+      />
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
+      <ConformationDailog
+        open={isApproveDialogOpen}
+        title="Approve Timesheets"
+        message={`Are you sure you want to approve ${selectedTimesheetIds.length} timesheet${selectedTimesheetIds.length > 1 ? 's' : ''}?`}
+        confirmText="Approve"
+        cancelText="Cancel"
+        icon={<ThumbUpOutlinedIcon />}
+        confirmButtonColor="success"
+        onConfirm={handleConfirmApprove}
+        onCancel={() => setIsApproveDialogOpen(false)}
       />
     </>
   );

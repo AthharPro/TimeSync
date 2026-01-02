@@ -18,6 +18,7 @@ import { useProjects } from '../../../hooks/project/useProjects';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
+import StatusChip from '../../atoms/other/Icon/StatusChip';
 
 function ProjectWindow() {
   const { projects, loading: isLoading, error, loadProjects, deleteProject } = useProjects();
@@ -190,30 +191,7 @@ function ProjectWindow() {
         key: 'status',
         label: 'Status',
         width: 80,
-        render: (row) => (
-          <Box
-            sx={{
-              px: 1,
-              py: 0.5,
-              borderRadius: 1,
-              display: 'inline-block',
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              bgcolor: row.status === 'Active' 
-                ? 'success.light' 
-                : row.status === 'Completed'
-                ? 'info.light'
-                : 'warning.light',
-              color: row.status === 'Active' 
-                ? 'success.dark' 
-                : row.status === 'Completed'
-                ? 'info.dark'
-                : 'warning.dark',
-            }}
-          >
-            {row.status}
-          </Box>
-        ),
+        render: (row) => <StatusChip status={row.status} />,
       },
        {
               label: '',

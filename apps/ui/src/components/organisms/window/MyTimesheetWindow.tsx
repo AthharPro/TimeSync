@@ -16,13 +16,24 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
 import MyTimesheetFilterPopover, { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
 import dayjs from 'dayjs';
 import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
+import AppSnackbar from '../../molecules/other/AppSnackbar';
+import { useSnackbar } from '../../../hooks/useSnackbar';
+import ConformationDailog from '../../molecules/other/ConformationDailog';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 
 function MyTimesheetWindow() {
   const { addNewTimesheet, currentWeekDays, goToPreviousWeek, goToNextWeek, createEmptyCalendarRow, submitTimesheets, submitCurrentWeekTimesheets, newTimesheets, deleteSelectedTimesheets } = useMyTimesheet();
   const { myTimesheetParams, setMyTimesheetParams } = useWindowNavigation();
+  const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const [view, setView] = useState('table');
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [submitDialogMessage, setSubmitDialogMessage] = useState('');
+  const [deleteDialogMessage, setDeleteDialogMessage] = useState('');
+  const [selectedCount, setSelectedCount] = useState(0);
   
   // Default filters for table view: current year and current month
   const defaultTableFilters = useMemo(() => {
@@ -98,80 +109,69 @@ function MyTimesheetWindow() {
   };
 
   const handleSubmitClick = async () => {
+    if (view === 'table') {
+      // Table view: submit selected timesheets
+      const count = newTimesheets.filter((ts) => ts.isChecked).length;
+      
+      if (count === 0) {
+        showError('Please select at least one timesheet to submit');
+        return;
+      }
+
+      setSelectedCount(count);
+      setSubmitDialogMessage('Submit selected timesheets?\n\nNote: Timesheets with 0 hours or missing project/task/description will be skipped.');
+      setIsSubmitDialogOpen(true);
+    } else {
+      // Calendar view: submit all draft timesheets in current week
+      const weekStart = currentWeekDays[0];
+      const weekEnd = currentWeekDays[currentWeekDays.length - 1];
+      
+      setSubmitDialogMessage(`Submit all draft timesheets for the week of ${weekStart.monthName} ${weekStart.dayNumber} - ${weekEnd.monthName} ${weekEnd.dayNumber}?\n\nOnly timesheets in Draft status with valid hours, project, and task will be submitted.\nTimesheets that are already Pending, Approved, or Rejected will be skipped.`);
+      setIsSubmitDialogOpen(true);
+    }
+  };
+
+  const handleConfirmSubmit = async () => {
+    setIsSubmitDialogOpen(false);
     try {
       if (view === 'table') {
-        // Table view: submit selected timesheets
-        const selectedCount = newTimesheets.filter((ts) => ts.isChecked).length;
-        
-        if (selectedCount === 0) {
-          alert('Please select at least one timesheet to submit');
-          return;
-        }
-
-        // Confirm submission (validation happens in the hook)
-        const confirmed = window.confirm(
-          `Submit selected timesheets?\n\nNote: Timesheets with 0 hours or missing project/task/description will be skipped.`
-        );
-
-        if (!confirmed) {
-          return;
-        }
-
         // Submit selected timesheets
         const result = await submitTimesheets();
-        
-        alert(`Successfully submitted ${result.updated} timesheet${result.updated > 1 ? 's' : ''}`);
+        showSuccess(`Successfully submitted ${result.updated} timesheet${result.updated > 1 ? 's' : ''}`);
       } else {
-        // Calendar view: submit all draft timesheets in current week
-        const weekStart = currentWeekDays[0];
-        const weekEnd = currentWeekDays[currentWeekDays.length - 1];
-        
-        // Confirm submission (validation happens in the hook)
-        const confirmed = window.confirm(
-          `Submit all draft timesheets for the week of ${weekStart.monthName} ${weekStart.dayNumber} - ${weekEnd.monthName} ${weekEnd.dayNumber}?\n\nOnly timesheets in Draft status with valid hours, project, and task will be submitted.\nTimesheets that are already Pending, Approved, or Rejected will be skipped.`
-        );
-
-        if (!confirmed) {
-          return;
-        }
-
         // Submit current week timesheets
         const result = await submitCurrentWeekTimesheets();
-        
-        alert(`Successfully submitted ${result.updated} draft timesheet${result.updated > 1 ? 's' : ''} for the current week.\nStatus changed from Draft to Pending.`);
+        showSuccess(`Successfully submitted ${result.updated} draft timesheet${result.updated > 1 ? 's' : ''} for the current week. Status changed from Draft to Pending.`);
       }
     } catch (error: any) {
       console.error('Submit error:', error);
-      alert(`Failed to submit timesheets: ${error.message || 'Unknown error'}`);
+      showError(`Failed to submit timesheets: ${error.message || 'Unknown error'}`);
     }
   };
 
   const handleDeleteClick = async () => {
+    // Get selected timesheets count
+    const count = newTimesheets.filter((ts) => ts.isChecked).length;
+    
+    if (count === 0) {
+      showError('Please select at least one timesheet to delete');
+      return;
+    }
+
+    setSelectedCount(count);
+    setDeleteDialogMessage(`Delete ${count} selected timesheet${count > 1 ? 's' : ''}?\n\nNote: Only draft timesheets can be deleted.`);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleteDialogOpen(false);
     try {
-      // Get selected timesheets count
-      const selectedCount = newTimesheets.filter((ts) => ts.isChecked).length;
-      
-      if (selectedCount === 0) {
-        alert('Please select at least one timesheet to delete');
-        return;
-      }
-
-      // Confirm deletion
-      const confirmed = window.confirm(
-        `Delete ${selectedCount} selected timesheet${selectedCount > 1 ? 's' : ''}?\n\nNote: Only draft timesheets can be deleted.`
-      );
-
-      if (!confirmed) {
-        return;
-      }
-
       // Delete selected timesheets
       const result = await deleteSelectedTimesheets();
-      
-      alert(`Successfully deleted ${result.deleted} timesheet${result.deleted > 1 ? 's' : ''}`);
+      showSuccess(`Successfully deleted ${result.deleted} timesheet${result.deleted > 1 ? 's' : ''}`);
     } catch (error: any) {
       console.error('Delete error:', error);
-      alert(`Failed to delete timesheets: ${error.message || 'Unknown error'}`);
+      showError(`Failed to delete timesheets: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -235,6 +235,29 @@ function MyTimesheetWindow() {
         onClose={handleFilterClose}
         onApplyFilters={handleApplyFilters}
         currentFilters={filters}
+      />
+      <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
+      <ConformationDailog
+        open={isDeleteDialogOpen}
+        title="Delete Timesheets"
+        message={deleteDialogMessage}
+        confirmText="Delete"
+        cancelText="Cancel"
+        icon={<DeleteOutlineIcon />}
+        confirmButtonColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsDeleteDialogOpen(false)}
+      />
+      <ConformationDailog
+        open={isSubmitDialogOpen}
+        title="Submit Timesheets"
+        message={submitDialogMessage}
+        confirmText="Submit"
+        cancelText="Cancel"
+        icon={<SendOutlinedIcon />}
+        confirmButtonColor="primary"
+        onConfirm={handleConfirmSubmit}
+        onCancel={() => setIsSubmitDialogOpen(false)}
       />
     </WindowLayout>
   );

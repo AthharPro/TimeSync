@@ -17,6 +17,7 @@ import Dropdown from '../../atoms/other/inputField/Dropdown';
 import { ITimesheetTableEntry } from '../../../interfaces/component/organism/ITable';
 import { IMyTimesheetTableEntry } from '../../../interfaces/layout/ITableProps';
 import { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
+import StatusChip from '../../atoms/other/Icon/StatusChip';
 
 // Optimized debounced update that delays both Redux and backend updates
 const createDebouncedUpdate = (
@@ -464,7 +465,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters }) => {
     {
       key: 'status',
       label: 'Status',
-      render: (row) => row.status,
+      render: (row) => <StatusChip status={row.status} />,
       width: '5%',
     },
   ];
