@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ListItem,
   ListItemIcon,
@@ -8,11 +8,14 @@ import {
 } from '@mui/material';
 import type { IEmployeeListItemProps } from '../../../interfaces/common/IProjectTeam';
 import { useTheme } from '@mui/material/styles';
+import EmployeeAllocationDialog from './EmployeeAllocationDialog';
+// import { flushSync } from 'react-dom';
 
 const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
   employee,
   isSelected,
   onToggle,
+  onAllocationChange,
 }) => {
   const theme = useTheme();
   const displayName =
@@ -20,14 +23,38 @@ const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
     [employee.firstName, employee.lastName].filter(Boolean).join(' ').trim() ||
     employee.email ||
     'Unknown User';
+
+  const [allocDialogOpen, setAllocDialogOpen] = useState(false);
+  const [currentEmployee, setCurrentEmployee] = useState<any | null>(null);
+
   const handleToggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     onToggle(employee);
+
+    if (!isSelected || e === undefined) {
+      setCurrentEmployee(employee);
+      setAllocDialogOpen(true);
+    }
   };
+
+  const handleListItemClick = (e: React.MouseEvent) => {
+  // If dialog is open, ignore any clicks bubbling from it
+  if (allocDialogOpen) return;
+
+  onToggle(employee);
+
+  // Only open dialog when selecting
+  if (!isSelected) {
+    setCurrentEmployee(employee);
+    setAllocDialogOpen(true);
+  }
+};
+
   return (
     <ListItem
       component="button"
-      onClick={() => onToggle(employee)}
+      onClick={handleListItemClick}
+      
       sx={{
         mb: 1,
         border: '2px solid',
@@ -105,6 +132,28 @@ const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
           )}
         </Box>
       </Box>
+      <EmployeeAllocationDialog
+        open={allocDialogOpen}
+        employee={currentEmployee}
+        onClose={() => {
+          setAllocDialogOpen(false);
+          setCurrentEmployee(null);
+        }}
+        onConfirm={(allocation) => {
+          if (currentEmployee) {
+            const id = currentEmployee._id || currentEmployee.id;
+            if (typeof onAllocationChange === 'function') {
+              onAllocationChange(id, allocation);
+            }
+            // update local selection display if the employee object is the same reference
+            if (currentEmployee) {
+              currentEmployee.allocation = allocation;
+            }
+          }
+          setAllocDialogOpen(false);
+          setCurrentEmployee(null);
+        }}
+      />
     </ListItem>
   );
 };

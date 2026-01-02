@@ -108,31 +108,31 @@ function ProjectWindow() {
       {
         key: 'projectName',
         label: 'Project Name',
-        width: 200,
+        width: 'auto',
         render: (row) => row.projectName,
       },
       {
         key: 'costCenter',
         label: 'Cost Center',
-        width: 100,
+        width: 'auto',
         render: (row) => row.costCenter ,
       },
       {
         key: 'clientName',
         label: 'Client Name',
-        width: 120,
+        width: 'auto',
         render: (row) => row.clientName,
       },
       {
         key: 'projectType',
         label: 'Project Type',
-        width: 80,
+        width: 'auto',
         render: (row) => row.projectType,
       },
       {
         key: 'projectManager',
         label: 'Project Manager',
-        width: 150,
+        width: 'auto',
         render: (row) => {
           // Derive manager details from supervisor + teamMembers
           const managerMember = row.teamMembers.find(
@@ -155,7 +155,7 @@ function ProjectWindow() {
       {
         key: 'teamMembers',
         label: 'Team Members',
-        width: 100,
+        width: 'auto',
         render: (row) => (
           <TeamMembersCell
             teamMembers={row.teamMembers}
@@ -166,7 +166,7 @@ function ProjectWindow() {
       {
         key: 'dateRange',
         label: 'Start & End Date',
-        width: 120,
+        width: 'auto',
         render: (row) => (
           <DateRangeCell startDate={row.startDate} endDate={row.endDate} />
         ),
@@ -174,13 +174,13 @@ function ProjectWindow() {
       {
         key: 'billable',
         label: 'Billable Type',
-        width: 80,
+        width: 'auto',
         render: (row) => row.billable ? 'Billable' : 'Non-Billable',
       },
       {
         key: 'status',
         label: 'Status',
-        width: 80,
+        width: 'auto',
         render: (row) => <StatusChip status={row.status} />,
       },
        {
