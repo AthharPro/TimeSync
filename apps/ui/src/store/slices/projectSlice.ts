@@ -114,9 +114,7 @@ export const fetchProjects = createAsyncThunk<
   { rejectValue: string }
 >('project/fetchProjects', async (_, thunkAPI) => {
   try {
-    console.log('fetchProjects: Starting API call...');
     const response = await listProjects();
-    console.log('fetchProjects: API call completed, response:', response);
     
     // The backend returns { projects: [...] }
     // listProjectsAPI() returns response.data which should be { projects: [...] }

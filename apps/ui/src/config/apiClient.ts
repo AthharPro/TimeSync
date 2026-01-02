@@ -45,12 +45,6 @@ const api = axios.create({
 
 // ✨ 1. Add access token to all requests
 api.interceptors.request.use((config) => {
-  console.log('API Request Interceptor:', {
-    url: config.url,
-    baseURL: config.baseURL,
-    method: config.method,
-    hasToken: !!ACCESS_TOKEN,
-  });
   if (ACCESS_TOKEN) {
     config.headers.Authorization = `Bearer ${ACCESS_TOKEN}`;
   }
@@ -63,12 +57,6 @@ api.interceptors.request.use((config) => {
 // ✨ 2. Handle refresh token logic and transform MongoDB responses
 api.interceptors.response.use(
   (res) => {
-    console.log('API Response Interceptor Success:', {
-      url: res.config.url,
-      status: res.status,
-      hasData: !!res.data,
-      responseType: res.config.responseType,
-    });
     // Transform _id to id in response data, but skip for blob responses
     if (res.data && res.config.responseType !== 'blob') {
       res.data = transformMongoResponse(res.data);

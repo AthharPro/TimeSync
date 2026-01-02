@@ -49,7 +49,6 @@ export const listHandler = catchErrors(async (req, res) => {
 
 export const listMyProjectsHandler = catchErrors(async (req, res) => {
   const userId = req.userId as string;
-  console.log('User ID in listMyProjectsHandler:', userId);
   const result = await listMyProjects(userId);
   return res.status(OK).json(result);
 });

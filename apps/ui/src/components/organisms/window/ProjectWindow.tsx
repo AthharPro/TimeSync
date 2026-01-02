@@ -22,15 +22,7 @@ import { useSnackbar } from '../../../hooks/useSnackbar';
 function ProjectWindow() {
   const { projects, loading: isLoading, error, loadProjects, deleteProject } = useProjects();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
-  
-  // Debug logging
-  useEffect(() => {
-    console.log('ProjectWindow state:', { 
-      projectsCount: projects.length, 
-      isLoading, 
-      error 
-    });
-  }, [projects, isLoading, error]);
+
   
   const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -42,7 +34,6 @@ function ProjectWindow() {
 
   // Load projects on component mount
   useEffect(() => {
-    console.log('ProjectWindow: Loading projects...');
     loadProjects().catch((err) => {
       console.error('ProjectWindow: Error loading projects:', err);
     });
@@ -88,7 +79,6 @@ function ProjectWindow() {
   };
 
   const handleFilter = () => {
-    console.log('Open filter');
     // TODO: Implement filter functionality
   };
 

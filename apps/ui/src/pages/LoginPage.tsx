@@ -1,6 +1,6 @@
 import LoginLeftPanel from '../components/organisms/auth/LoginLeftPanel';
 import TwoColumnLayout from '../components/templates/auth/TwoColumnLayout';
-import LoginBackgroundImage from '../assets/images/LoginBackgroundImage.jpg';
+import LoginBackgroundImage from '../assets/images/LoginBackgroundImage.png';
 import WebSiteLogo from '../assets/images/WebSiteLogo.png';
 import LoginFormSection from '../components/organisms/auth/LoginFormSection';
 

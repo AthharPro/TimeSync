@@ -30,10 +30,7 @@ const getWeekStart = (date: Date): Date => {
   return new Date(d.setDate(diff));
 };
 
-// Transform individual daily timesheet entries into weekly aggregated format
-// Database stores one document per day per project/task
-// This function groups those daily entries into weekly buckets (Monday to Sunday)
-// and organizes them by category (Project/Team) and work items
+
 const transformDailyToWeekly = (dailyTimesheets: any[]): any[] => {
   
   // Group timesheets by user and week
@@ -57,8 +54,7 @@ const transformDailyToWeekly = (dailyTimesheets: any[]): any[] => {
     const day = new Date(entry.date).getDay();
     const dayIndex = day === 0 ? 6 : day - 1; // Convert to Monday=0, Sunday=6
     
-    // Determine category based on whether it's project or team work
-    // Priority: If teamId exists, it's Team work; else if projectId exists, it's Project work; otherwise Other
+    
     const category = entry.teamId ? 'Team' : (entry.projectId ? 'Project' : 'Other');
     
     // Find or create category
@@ -174,8 +170,7 @@ const buildTimesheetQuery = async (supervisorId: string, userRole: UserRole, par
     query.status = { $in: list.filter(Boolean) };
   }
 
-  // Filter by projectId when projectIds are specified
-  // This ensures only timesheets for the selected projects are included
+
   if (projectIds) {
     const list = Array.isArray(projectIds) ? projectIds : [projectIds];
     if (list.length) {
@@ -185,11 +180,7 @@ const buildTimesheetQuery = async (supervisorId: string, userRole: UserRole, par
     }
   }
 
-  // Handle team filtering with awareness of isDepartment property
-  // NOTE: When filtering by team for reports, we want all timesheets from team members,
-  // not just timesheets with teamId set. The teamId field in timesheet is for team work,
-  // but team filtering in reports means "show work by members of this team".
-  // The actual user filtering happens in ensureSupervisorScope().
+ 
   let teamFilterMode: 'department' | 'non-department' | 'mixed' = 'department';
   let selectedTeamIdsList: string[] = [];
   if (teamIds) {
@@ -233,7 +224,7 @@ const ensureSupervisorScope = async (
       const projectMembers = Array.from(new Set(projects.flatMap((p: any) => p.employees.map((m: any) => String(m)))));
       return projectMembers;
     } else if (selectedTeamIds && selectedTeamIds.length > 0) {
-      // For team-wise filter, get members of those teams (works for all team filter modes: department, non-department, mixed)
+      // For team-wise filter, get members of those teams 
       const teams = await TeamModel.find({ _id: { $in: selectedTeamIds } }).select('members').lean();
       const teamMembers = Array.from(new Set(teams.flatMap((t: any) => t.members.map((m: any) => String(m)))));
       return teamMembers;
@@ -431,8 +422,6 @@ export const generateDetailedTimesheetReportHandler: RequestHandler = async (req
     };
   });
 
-  // Return JSON preview data (weekly aggregated view of daily timesheet entries)
-  // This is used by the frontend to show a preview table before generating PDF/Excel
   if (format === 'json') {
     return res.json({ data });
   }
@@ -484,9 +473,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     )
   )));
 
-  // When filtering by team-wise, also include the selected team IDs in the lookup
-  // This ensures team names are available even when timesheets don't have teamId set
-  const teamIdsToFetch = selectedTeamIds && selectedTeamIds.length > 0 
+   const teamIdsToFetch = selectedTeamIds && selectedTeamIds.length > 0 
     ? Array.from(new Set([...allTeamIds, ...selectedTeamIds]))
     : allTeamIds;
 
@@ -528,18 +515,15 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
   const userMap = new Map<string, { name: string; email: string }>();
   users.forEach((u: any) => userMap.set(String(u._id), { name: `${u.firstName} ${u.lastName}`, email: u.email }));
 
-  // For individual user filters, also include team IDs from user's team memberships
-  // This ensures team names are available even if timesheet entries don't have teamId set
+ 
   const userTeamIds = Array.from(new Set(users.flatMap((u: any) => 
     (u.teams || []).map((teamId: any) => String(teamId)).filter(Boolean)
   )));
   
-  // Combine team IDs from timesheets and user memberships
-  // Also include projectIds that are actually team IDs
+  
   const allTeamIdsWithUserTeams = Array.from(new Set([...allTeamIds, ...userTeamIds, ...Array.from(projectIdsThatAreTeams)]));
   
-  // Update teamIdsToFetch to include user team memberships for individual user filters
-  // This ensures all teams the user is associated with are available for team name lookup
+  
   const isIndividualUserFilter = employeeIds && Array.isArray(employeeIds) && employeeIds.length > 0 && (!selectedTeamIds || selectedTeamIds.length === 0);
   
   const finalTeamIdsToFetch = isIndividualUserFilter && allTeamIdsWithUserTeams.length > 0
@@ -574,9 +558,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     ? finalTeamMap.get(selectedTeamIds[0]) || null
     : null;
 
-  // For individual user filters, create a map of user IDs to their team memberships
-  // This helps determine the correct team name when timesheet entries have missing/incorrect teamId
-  const userTeamMap = new Map<string, string[]>(); // userId -> array of team IDs
+    const userTeamMap = new Map<string, string[]>(); 
   users.forEach((u: any) => {
     const userId = String(u._id);
     const userTeams = (u.teams || []).map((teamId: any) => String(teamId)).filter(Boolean);
@@ -623,8 +605,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
       (cat.items || [])
         .filter((it: any) => {
           if (cat.category === 'Team') {
-            // If a non-department team is selected in filters, show all work
-            // Otherwise, only show department team work
+            
             const tid = it.teamId ? String(it.teamId) : '';
             if (!tid) return false;
             if (hasNonDeptTeamFilter) {
@@ -668,10 +649,9 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
         else if (cat.category === 'Project') {
           const projectIdStr = it.projectId ? String(it.projectId) : null;
           
-          // Check if projectId is actually a team ID (legacy data issue)
+          // Check if projectId is actually a team ID 
           if (projectIdStr && projectIdsThatAreTeams.has(projectIdStr)) {
-            // This projectId is actually a team ID - treat it as team work
-            // For individual user filters, if user has only one team membership, use that team name
+          
             if (isIndividualUserFilter) {
               const userTeams = userTeamMap.get(employeeKey);
               if (userTeams && userTeams.length === 1) {
@@ -701,8 +681,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
             title = `Project: ${projectName}`;
           }
         } else if (cat.category === 'Team') {
-          // For individual user filters, if user has only one team membership, use that team name
-          // This ensures correct team name display (similar to team-wise filtering)
+          
           if (isIndividualUserFilter) {
             const userTeams = userTeamMap.get(employeeKey);
             if (userTeams && userTeams.length === 1) {
