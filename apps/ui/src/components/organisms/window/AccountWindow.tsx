@@ -13,6 +13,9 @@ import { useAccount } from '../../../hooks/account';
 import { IAccountTableRow } from '../../../interfaces/component/organism/ITable';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
+import ConformationDailog from '../../molecules/other/ConformationDailog';
+import ToggleOffOutlinedIcon from '@mui/icons-material/ToggleOffOutlined';
+import ToggleOnOutlinedIcon from '@mui/icons-material/ToggleOnOutlined';
 
 function AccountWindow() {
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
@@ -24,6 +27,8 @@ function AccountWindow() {
   const [activeFilters, setActiveFilters] = useState({ role: 'all', status: 'all' });
   const { newAccountDetails, loadAccounts, updateAccount } = useAccount();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [accountToToggle, setAccountToToggle] = useState<IAccountTableRow | null>(null);
 
   const isFilterOpen = Boolean(filterAnchorEl);
 
@@ -94,24 +99,36 @@ function AccountWindow() {
   };
 
   const handleDelete = async (id: string) => {
+    // Find the account to get its current data
+    const account = newAccountDetails.find(acc => acc.id === id);
+    if (account) {
+      setAccountToToggle(account);
+      setIsStatusDialogOpen(true);
+    }
+  };
+
+  const handleConfirmStatusToggle = async () => {
+    setIsStatusDialogOpen(false);
+    if (!accountToToggle) {
+      return;
+    }
+
     try {
-      // Find the account to get its current data
-      const account = newAccountDetails.find(acc => acc.id === id);
-      if (account) {
-        // Toggle the status: if Active, make Inactive; if Inactive, make Active
-        const newStatus = account.status === 'Active' ? 'Inactive' : 'Active';
-        
-        await updateAccount(id, {
-          designation: account.designation,
-          contactNumber: account.contactNumber,
-          status: newStatus,
-        });
-        loadAccounts();
-        showSuccess(`Account status changed to ${newStatus} successfully`);
-      }
+      // Toggle the status: if Active, make Inactive; if Inactive, make Active
+      const newStatus = accountToToggle.status === 'Active' ? 'Inactive' : 'Active';
+      
+      await updateAccount(accountToToggle.id!, {
+        designation: accountToToggle.designation || '',
+        contactNumber: accountToToggle.contactNumber || '',
+        status: newStatus,
+      });
+      loadAccounts();
+      showSuccess(`Account status changed to ${newStatus} successfully`);
     } catch (error) {
       console.error('Failed to update account status:', error);
       showError('Failed to update account status. Please try again.');
+    } finally {
+      setAccountToToggle(null);
     }
   };
 
@@ -169,6 +186,24 @@ function AccountWindow() {
         onApplyFilter={handleApplyFilter}
       />
       <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
+      <ConformationDailog
+        open={isStatusDialogOpen}
+        title={accountToToggle?.status === 'Active' ? 'Deactivate Account' : 'Activate Account'}
+        message={
+          accountToToggle?.status === 'Active'
+            ? `Are you sure you want to deactivate "${accountToToggle.firstName} ${accountToToggle.lastName}"? This will prevent the user from accessing the system.`
+            : `Are you sure you want to activate "${accountToToggle?.firstName} ${accountToToggle?.lastName}"? This will allow the user to access the system.`
+        }
+        confirmText={accountToToggle?.status === 'Active' ? 'Deactivate' : 'Activate'}
+        cancelText="Cancel"
+        icon={accountToToggle?.status === 'Active' ? <ToggleOffOutlinedIcon /> : <ToggleOnOutlinedIcon />}
+        confirmButtonColor={accountToToggle?.status === 'Active' ? 'warning' : 'success'}
+        onConfirm={handleConfirmStatusToggle}
+        onCancel={() => {
+          setIsStatusDialogOpen(false);
+          setAccountToToggle(null);
+        }}
+      />
     </>
   );
 }

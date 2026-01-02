@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import { NotificationModel, INotificationDocument } from '../models/notification.model';
 import { NotificationType } from '@tms/shared';
 import { io } from '../main';
+import { mapNotificationToDTO } from '../utils/notification.mapper';
+import { NotificationDTO } from '../types/notification.dto';
 
 interface CreateNotificationParams {
   userId: string;
@@ -72,7 +74,7 @@ export const getUserNotifications = async (
   userId: string,
   limit = 50,
   skip = 0
-): Promise<{ notifications: INotificationDocument[]; total: number; unreadCount: number }> => {
+): Promise<{ notifications: NotificationDTO[]; total: number; unreadCount: number }> => {
   const userObjectId = new mongoose.Types.ObjectId(userId);
 
   const [notifications, total, unreadCount] = await Promise.all([
@@ -86,7 +88,7 @@ export const getUserNotifications = async (
   ]);
 
   return {
-    notifications: notifications as INotificationDocument[],
+    notifications: notifications.map(mapNotificationToDTO),
     total,
     unreadCount,
   };
@@ -98,7 +100,7 @@ export const getUserNotifications = async (
 export const markNotificationAsRead = async (
   notificationId: string,
   userId: string
-): Promise<INotificationDocument | null> => {
+): Promise<NotificationDTO | null> => {
   const notification = await NotificationModel.findOneAndUpdate(
     {
       _id: new mongoose.Types.ObjectId(notificationId),
@@ -113,7 +115,9 @@ export const markNotificationAsRead = async (
     { new: true }
   ).lean();
 
-  return notification as INotificationDocument | null;
+  if (!notification) return null;
+
+  return mapNotificationToDTO(notification); 
 };
 
 /**

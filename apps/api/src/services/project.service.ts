@@ -87,8 +87,9 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     case UserRole.Supervisor: {
 
       const projects = await ProjectModel.find({ 
+        status: true, // Only show active projects
         $or: [
-          { employees: userId }, // Private projects where user is assigned
+          { 'employees.user': new mongoose.Types.ObjectId(userId) }, // Private projects where user is assigned
           { isPublic: true }      // Public projects (all users can add time)
         ]
       })
@@ -96,9 +97,13 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
         .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       
-      // Also get teams where user is a member
       const teams = await TeamModel.find({
-        members: userId
+        members: userId,
+        status: true,
+        $or: [
+          { isDepartment: true },
+          { isDepartment: { $exists: false } } // For backward compatibility
+        ]
       })
         .sort({ createdAt: -1 })
         .select('_id teamName isDepartment');
@@ -108,14 +113,21 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     case UserRole.SupervisorAdmin:
     case UserRole.Admin:
     case UserRole.SuperAdmin: {
-      // SupervisorAdmin/Admin/SuperAdmin can see ALL projects including inactive ones (status: false)
-      const projects = await ProjectModel.find({})
+      // SupervisorAdmin/Admin/SuperAdmin can only see active projects (status: true)
+      const projects = await ProjectModel.find({ status: true })
         .sort({ createdAt: -1 })
         .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       
-      // They can see all teams including inactive ones
-      const teams = await TeamModel.find({})
+      // They can see active teams only where isDepartment is true
+      // Non-department teams (isDepartment: false) are for grouping users for review purposes only
+      const teams = await TeamModel.find({ 
+        status: true,
+        $or: [
+          { isDepartment: true },
+          { isDepartment: { $exists: false } } // For backward compatibility
+        ]
+      })
         .sort({ createdAt: -1 })
         .select('_id teamName isDepartment');
       
@@ -131,16 +143,21 @@ export const listMyProjects = async (userId: string) => {
   const projects = await ProjectModel.find({ 
     status: true, 
     $or: [
-      { 'employees.user': userId }, // Private projects where user is assigned
+      { 'employees.user': new mongoose.Types.ObjectId(userId) }, // Private projects where user is assigned
       { isPublic: true }      // Public projects (all users can add time)
     ]
   })
     .sort({ createdAt: -1 })
   
-  // Also find teams where user is a member
+  // Also find teams where user is a member AND isDepartment is true
+  // Only department teams (isDepartment: true) should be available for timesheet entry
   const teams = await TeamModel.find({
     status: true,
-    members: userId
+    members: new mongoose.Types.ObjectId(userId),
+    $or: [
+      { isDepartment: true },
+      { isDepartment: { $exists: false } } // For backward compatibility
+    ]
   })
     .sort({ createdAt: -1 })
     .select('_id teamName isDepartment');

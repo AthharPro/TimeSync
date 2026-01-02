@@ -43,7 +43,7 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data, totalUsers
                   borderRadius: 8,
                   fontSize: 12
                 }}
-                formatter={(value: number) => [`${value} users`, 'Submitted']}
+                formatter={(value) => [`${value ?? 0} users`, 'Submitted']}
               />
               <Bar 
                 dataKey="submissions" 

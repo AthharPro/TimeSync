@@ -26,7 +26,7 @@ const formatDateForDisplay = (date: Date | string): string => {
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday (week start)
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
   return new Date(d.setDate(diff));
 };
 
@@ -221,7 +221,9 @@ const ensureSupervisorScope = async (
     } else if (selectedProjectIds && selectedProjectIds.length > 0) {
       // For project-wise filter, get all members of the selected projects
       const projects = await ProjectModel.find({ _id: { $in: selectedProjectIds } }).select('employees').lean();
-      const projectMembers = Array.from(new Set(projects.flatMap((p: any) => p.employees.map((m: any) => String(m)))));
+      const projectMembers = Array.from(new Set(projects.flatMap((p: any) => 
+        p.employees.map((emp: any) => typeof emp === 'string' ? String(emp) : String(emp.user || emp))
+      )));
       return projectMembers;
     } else if (selectedTeamIds && selectedTeamIds.length > 0) {
       // For team-wise filter, get members of those teams 
@@ -244,7 +246,9 @@ const ensureSupervisorScope = async (
     } else if (selectedProjectIds && selectedProjectIds.length > 0) {
       // For project-wise filter, get members of the selected projects that are supervised
       const projects = await ProjectModel.find({ _id: { $in: selectedProjectIds } }).select('employees').lean();
-      const projectMembers = Array.from(new Set(projects.flatMap((p: any) => p.employees.map((m: any) => String(m)))));
+      const projectMembers = Array.from(new Set(projects.flatMap((p: any) => 
+        p.employees.map((emp: any) => typeof emp === 'string' ? String(emp) : String(emp.user || emp))
+      )));
       return projectMembers.filter((id: string) => memberIds.includes(id));
     } else if (selectedTeamIds && selectedTeamIds.length > 0) {
       // For team-wise filter, get members of those teams that are supervised (works for all team filter modes: department, non-department, mixed)
@@ -274,12 +278,10 @@ export const generateDetailedTimesheetReportHandler: RequestHandler = async (req
   // Convert string IDs to ObjectIds for MongoDB query
   const scopedObjectIds = scopedIds.map(id => new mongoose.Types.ObjectId(id));
 
-  // Fetch individual daily timesheet entries from database
-  // Each document represents one day's work on a specific project/task
+ 
   const timesheets = await Timesheet.find({ ...query, userId: { $in: scopedObjectIds } }).lean();
   
-  // Transform flat daily timesheet entries into weekly aggregated format
-  // Groups by user and week, then organizes by category and work item
+ 
   const weeklyTimesheets = transformDailyToWeekly(timesheets as any[]);
   
   const users = await UserModel.find({ _id: { $in: scopedObjectIds } }).select('_id firstName lastName email').lean();
@@ -298,8 +300,7 @@ export const generateDetailedTimesheetReportHandler: RequestHandler = async (req
     )
   )));
 
-  // Fetch project and team names (and team isDepartment)
-  // Convert string IDs to ObjectIds for MongoDB query
+ 
   const projectObjectIds = allProjectIds.map(id => new mongoose.Types.ObjectId(id));
   const teamObjectIds = allTeamIds.map(id => new mongoose.Types.ObjectId(id));
   
@@ -477,8 +478,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     ? Array.from(new Set([...allTeamIds, ...selectedTeamIds]))
     : allTeamIds;
 
-  // Fetch project and team names (and team isDepartment)
-  // Convert string IDs to ObjectIds for MongoDB query
+ 
   const projectObjectIds = allProjectIds.map(id => new mongoose.Types.ObjectId(id));
   const teamObjectIds = teamIdsToFetch.map(id => new mongoose.Types.ObjectId(id));
   
@@ -586,6 +586,10 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
     })() : null;
     (t.data || [])
       .filter((cat: any) => {
+        // Exclude 'Other' and 'Leave' categories
+        if (cat.category === 'Other' || cat.category === 'Leave') {
+          return false;
+        }
         if (!workType || workType === 'both') return true;
         if (workType === 'project') {
           // For project filter, only show actual projects (not projectIds that are teams)
@@ -708,9 +712,8 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
             const teamName = teamIdStr ? finalTeamMap.get(teamIdStr) || `Unknown Team (${teamIdStr})` : 'Team';
             title = `Team: ${teamName}`;
           }
-        } else if (cat.category === 'Other') {
-          title = 'Leave';
         } else {
+          // Use category name as-is, don't convert 'Other' to 'Leave'
           title = cat.category;
         }
         
