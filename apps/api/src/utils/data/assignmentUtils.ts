@@ -46,7 +46,14 @@ export const getSupervisedUserIds = async (supervisorId: string): Promise<string
       supervisedProjects.flatMap(p => {
         if (!p.employees) return [];
         return p.employees.map(e => {
-          // Handle both ObjectId and populated User objects
+          // Handle employee objects that have 'user' field (new structure)
+          if (e && typeof e === 'object' && 'user' in e) {
+            const user = e.user;
+            if (typeof user === 'string') return user;
+            if (user && typeof user === 'object' && '_id' in user) return user._id.toString();
+            return user.toString();
+          }
+          // Handle direct user references (old structure, for backward compatibility)
           if (typeof e === 'string') return e;
           if (e && typeof e === 'object' && '_id' in e) return e._id.toString();
           return e.toString();
