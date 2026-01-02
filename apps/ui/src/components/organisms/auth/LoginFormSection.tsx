@@ -5,71 +5,112 @@ import BaseBtn from '../../atoms/other/button/BaseBtn';
 import LoginSchema from '../../../validations/auth/LoginSchema';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { replace, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ILoginData } from '../../../interfaces/auth';
 import { useAuth } from '../../../contexts/AuthContext';
 import { UserRole } from '@tms/shared';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
+import { useEffect } from 'react';
   
 const LoginFormSection: React.FC = () => {
   const navigate = useNavigate();
-  const { login,user } = useAuth()!;
+  const { login, user, accessToken } = useAuth()!;
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors, isSubmitting },
+    reset,
   } = useForm<ILoginData>({
     resolver: yupResolver(LoginSchema),
-    mode: 'onChange',
+    mode: 'onSubmit',
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   });
 
+  // If user is already logged in, redirect to appropriate page
+  useEffect(() => {
+    if (user && accessToken) {
+      console.log('👤 User already logged in, redirecting...');
+      
+      if (!user.isChangedPwd) {
+        navigate('/resetpasswordfirstlogin', { replace: true });
+        return;
+      }
+
+      switch(user.role) {
+        case UserRole.SuperAdmin:
+          navigate('/super-admin', { replace: true });
+          break;
+        case UserRole.Admin:
+          navigate('/admin', { replace: true });
+          break;
+        case UserRole.Emp:
+          navigate('/employee', { replace: true });
+          break;
+        case UserRole.Supervisor:
+          navigate('/employee', { replace: true });
+          break;
+        case UserRole.SupervisorAdmin:
+          navigate('/admin', { replace: true });
+          break;
+      }
+    }
+  }, [user, accessToken, navigate]);
+
   const onSubmit = async (data: ILoginData) => {
-    console.log(data);
+    console.log('🔐 Login attempt:', { email: data.email });
+    
     const res = await login(data.email, data.password);
+    
+    console.log('🔐 Login response:', { success: res.success, hasUser: !!res.user });
     
     if (res.success && res.user) {
       showSuccess('Login successful! Redirecting...');
       
-      // Store user reference for type safety in setTimeout callback
-      const user = res.user;
+      // Store user reference for type safety
+      const loggedInUser = res.user;
       
-      // Delay navigation to allow snackbar to show
-      setTimeout(() => {
-        // Check if user needs to change password on first login
-        if (!user.isChangedPwd) {
-          navigate('/resetpasswordfirstlogin', { replace: true });
-          return;
-        }
+      // Check if user needs to change password on first login
+      if (!loggedInUser.isChangedPwd) {
+        console.log('🔑 First login detected, redirecting to password reset');
+        navigate('/resetpasswordfirstlogin', { replace: true });
+        return;
+      }
 
-        // Redirect based on user role
-        switch(user.role) {
-          case UserRole.SuperAdmin:
-            navigate('/super-admin', { replace: true });
-            break;
-          case UserRole.Admin:
-            navigate('/admin', { replace: true });
-            break;
-          case UserRole.Emp:
-            navigate('/employee', { replace: true });
-            break;
-          case UserRole.Supervisor:
-            navigate('/employee', { replace: true });
-            break;
-          case UserRole.SupervisorAdmin:
-            navigate('/admin', { replace: true });
-            break;
-          default:
-            navigate('/login', { replace: true });
-        }
-      }, 1000); // 1 second delay to show snackbar
+      // Redirect based on user role immediately
+      console.log('Navigating to dashboard for role:', loggedInUser.role);
+      
+      switch(loggedInUser.role) {
+        case UserRole.SuperAdmin:
+          navigate('/super-admin', { replace: true });
+          break;
+        case UserRole.Admin:
+          navigate('/admin', { replace: true });
+          break;
+        case UserRole.Emp:
+          navigate('/employee', { replace: true });
+          break;
+        case UserRole.Supervisor:
+          navigate('/employee', { replace: true });
+          break;
+        case UserRole.SupervisorAdmin:
+          navigate('/admin', { replace: true });
+          break;
+        default:
+          console.error('❌ Unknown role, redirecting to login');
+          navigate('/login', { replace: true });
+      }
     } else {
       // Handle error from login response
       const errorMessage = res.error?.response?.data?.message || 
                           res.error?.message || 
                           'Invalid email or password. Please try again.';
+      console.error('Login failed:', errorMessage);
       showError(errorMessage);
     }
   };
@@ -108,10 +149,10 @@ const LoginFormSection: React.FC = () => {
           <BaseBtn
             type="submit"
             sx={{ mb: 2 }}
-            disabled={!isValid}
+            disabled={isSubmitting}
             fullWidth={true}
           >
-            Login
+            {isSubmitting ? 'Logging in...' : 'Login'}
           </BaseBtn>
           <Box
             sx={{
