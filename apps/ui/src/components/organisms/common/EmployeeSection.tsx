@@ -84,7 +84,14 @@ const EmployeeSection: React.FC<IEmployeeSectionProps> = ({
       >
         {selectedEmployees.length > 0 ? (
           <Box sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                gap: 2,
+                alignItems: 'stretch',
+              }}
+            >
               {selectedEmployees.map((employee) => (
                 <Paper
                   key={employee.id}
@@ -92,9 +99,13 @@ const EmployeeSection: React.FC<IEmployeeSectionProps> = ({
                   sx={{
                     p: 2,
                     position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
                     backgroundColor: theme.palette.background.default,
                     border: `2px solid ${theme.palette.secondary.main}`,
                     borderRadius: 3,
+                    minHeight: 100,
                     '&:hover': {
                       borderColor: theme.palette.text.secondary,
                       backgroundColor: theme.palette.background.paper,
@@ -122,78 +133,54 @@ const EmployeeSection: React.FC<IEmployeeSectionProps> = ({
                     <CloseIcon fontSize="small" />
                   </IconButton>
 
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box
+                    sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}
+                  >
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 600,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {employee.name}
+                    </Typography>
+
+                    {employee.designation && (
                       <Typography
-                        variant="subtitle2"
+                        variant="caption"
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        {employee.designation}
+                      </Typography>
+                    )}
+
+                    {employee.email && (
+                      <Typography
+                        variant="caption"
                         sx={{
-                          fontWeight: 600,
-                          color: theme.palette.text.primary,
-                          mb: 0.5,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
+                          color: 'text.secondary',
+                          fontSize: '0.7rem',
                         }}
                       >
-                        {employee.name}
+                        {employee.email}
                       </Typography>
+                    )}
 
-                      {employee.designation && (
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            mb: 1,
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: theme.palette.text.secondary,
-                              fontWeight: 500,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {employee.designation}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {employee.email && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: theme.palette.text.secondary,
-                            fontSize: '0.7rem',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {employee.email}
-                        </Typography>
-                      )}
-                      <Box sx={{ height: 4 }} >
-                      {/* Show employee allocation if available */}
-                      {employee.allocation !== undefined && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: theme.palette.text.secondary,
-                            fontSize: '0.7rem',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Allocation: {employee.allocation}%
-                        </Typography>
-                      )}
-                      </Box>
-                    </Box>
+                    {employee.allocation !== undefined && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          mt: 0.5,
+                          fontWeight: 500,
+                          color: theme.palette.secondary.main,
+                        }}
+                      >
+                        Allocation: {employee.allocation}%
+                      </Typography>
+                    )}
                   </Box>
                 </Paper>
               ))}
@@ -279,5 +266,3 @@ const EmployeeSection: React.FC<IEmployeeSectionProps> = ({
 };
 
 export default EmployeeSection;
-
-
