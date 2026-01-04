@@ -6,3 +6,4 @@ export * from './report.controller';
 export * from "./team.controller";
 export * from './review.controller';
 export * from './notification.controller';
+export * from './editRequest.controller';
