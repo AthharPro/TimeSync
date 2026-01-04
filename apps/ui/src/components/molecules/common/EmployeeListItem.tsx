@@ -9,7 +9,6 @@ import {
 import type { IEmployeeListItemProps } from '../../../interfaces/common/IProjectTeam';
 import { useTheme } from '@mui/material/styles';
 import EmployeeAllocationDialog from './EmployeeAllocationDialog';
-// import { flushSync } from 'react-dom';
 
 const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
   employee,

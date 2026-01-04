@@ -175,11 +175,12 @@ export default function ProjectStaffManager({
       subtitle="Add or remove project members and set a supervisor"
       maxWidth='md'
     >
-      <Box>
+      <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
         {error && (
           <Box sx={{ color: 'error.main', mb: 1, fontSize: 14 }}>{error}</Box>
         )}
-        <SelectedEmployeeChips
+        <Box sx={{ flex: '0 0 50%'}}>
+          <SelectedEmployeeChips
           employees={selectedEmployees}
           onRemove={handleRemoveEmployee}
           onAllocationChange={handleAllocationChange}
@@ -192,7 +193,9 @@ export default function ProjectStaffManager({
           onSupervisorChange={setSupervisor}
           caption="Choose a supervisor from selected employees"
         />
-        <StaffSelector
+        </Box>
+        <Box sx={{ flex: '0 0 50%'}}>
+          <StaffSelector
           selectedEmployees={selectedEmployees}
           availableEmployees={filteredEmployees}
           searchTerm={searchTerm}
@@ -201,11 +204,13 @@ export default function ProjectStaffManager({
           onRemoveEmployee={handleRemoveEmployee}
           title="Add more employees"
         />
+        </Box>
+        
       </Box>
       <Box>
         <Divider sx={{ mt: 2 }} />
       </Box>
-      <Box
+      <Box // this box should be fixed at the bottom
         sx={{
           mt: 3,
           display: 'flex',

@@ -19,7 +19,7 @@ const EmployeePicker: React.FC<EmployeePickerProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
-      <Box sx={{ flex: '0 0 50%',  }}>
+      <Box sx={{ flex: '0 0 50%' }}>
         <Paper
           elevation={0}
           sx={{ backgroundColor: theme.palette.background.paper }}
