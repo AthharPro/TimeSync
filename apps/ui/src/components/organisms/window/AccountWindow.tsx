@@ -11,17 +11,14 @@ import AccountFilterPopover from '../popover/AccountFilterPopover';
 import { UserRole, User } from '@tms/shared';
 import { useAccount } from '../../../hooks/account';
 import { IAccountTableRow } from '../../../interfaces/component/organism/ITable';
+import { IAccountWindowProps } from '../../../interfaces/component/organism/IWindow';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ToggleOffOutlinedIcon from '@mui/icons-material/ToggleOffOutlined';
 import ToggleOnOutlinedIcon from '@mui/icons-material/ToggleOnOutlined';
 
-interface AccountWindowProps {
-  roleToCreate?: UserRole;
-}
-
-function AccountWindow({ roleToCreate = UserRole.Emp }: AccountWindowProps) {
+function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
   const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
