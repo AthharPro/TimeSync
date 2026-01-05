@@ -16,7 +16,6 @@ const StaffSelector: React.FC<IStaffSelectorProps> = ({
 }) => {
   return (
     <>
-      <Divider sx={{ my: 2 }} />
       <Typography variant="h6" sx={{ fontWeight: 600 }}>
         {title}
       </Typography>

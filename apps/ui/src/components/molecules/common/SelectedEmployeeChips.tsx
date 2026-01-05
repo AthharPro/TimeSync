@@ -121,7 +121,7 @@ const SelectedEmployeeChips: React.FC<ISelectedEmployeeChipsProps> = ({
                   {/* Show allocation if present */}
                   <Box sx={{ ml: 1 }}>
                     <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontSize: '0.7rem' }}>
-                      {hasAllocation ? `${allocation}%` : ''}
+                      {hasAllocation ? `${allocation}%` : '0%'}
                     </Typography>
                   </Box>
                 </Box>

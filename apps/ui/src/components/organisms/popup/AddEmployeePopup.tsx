@@ -143,8 +143,7 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
       onBack={handleCancel}
       title="Build Your Team"
       subtitle="Search and select employees to add to your Team"
-      maxWidth="lg"
-      paperHeight={'625px'}
+      maxWidth="md"
     >
       <Box>
         {isLoading && (
@@ -174,7 +173,7 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
           flexDirection: 'row',
           gap: 2,
           justifyContent: 'flex-end',
-          mt: 2,
+          mt: 3,
         }}
       >
         <BaseBtn onClick={handleCancel} variant="outlined">

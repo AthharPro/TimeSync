@@ -21,6 +21,7 @@ export interface IEmployeeListItemProps {
   employee: IEmployee;
   isSelected: boolean;
   onToggle: (employee: IEmployee) => void;
+  onAllocationChange?: (employeeId: string, allocation: number) => void;
 }
 
 export interface EmployeePickerProps {

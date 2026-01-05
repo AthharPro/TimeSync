@@ -57,7 +57,7 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
     >
       <DialogTitle sx={{ pb: 1 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box display="flex" alignItems="center" gap={1}>
+          <Box display="flex" alignItems="center" gap={2}>
             {onBack && (
               <IconButton
                 aria-label="back"
