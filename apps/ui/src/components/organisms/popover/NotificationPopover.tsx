@@ -136,6 +136,21 @@ const NotificationPopover: React.FC<NotificationPopoverProps> = ({
       onClose();
     }
 
+    // Handle TimesheetEditRequest notification - navigate to Review Timesheets, Edit Request tab
+    if (notification.type === NotificationType.TimesheetEditRequest) {
+      // Set navigation parameters to open Edit Request tab with Pending filter
+      setReviewTimesheetParams({
+        tab: 'editRequest',
+        editRequestStatus: 'Pending'
+      });
+      
+      // Navigate to Review Timesheets
+      setSelectedButton('Review Timesheets');
+      
+      // Close the notification popover
+      onClose();
+    }
+
     // Handle TimesheetApproved notification - navigate to My Timesheets
     if (notification.type === NotificationType.TimesheetApproved) {
       // Extract year and month from notification createdAt date

@@ -2,6 +2,7 @@ import { EditRequest, EditRequestStatus } from '../models/editRequest.model';
 import { IEditRequestDocument, CreateEditRequestParams, ApproveEditRequestParams, RejectEditRequestParams } from '../interfaces';
 import mongoose from 'mongoose';
 import { UserModel } from '../models/user.model';
+import ProjectModel from '../models/project.model';
 import { createBulkNotifications } from './notification.service';
 import { NotificationType } from '@tms/shared';
 
@@ -49,21 +50,52 @@ export const createEditRequest = async (
     teams: user.teams
   });
 
-  // Find all supervisors from user's teams
+  // Collect all supervisor IDs from teams and projects
+  const supervisorIds = new Set<string>();
+
+  // 1. Find supervisors from user's teams
   const teamIds = user.teams.map((team: any) => team._id);
   console.log('Team IDs:', teamIds);
+  console.log('Team IDs length:', teamIds.length);
   
-  const supervisors = await UserModel.find({
-    teams: { $in: teamIds },
-    role: { $in: ['Admin', 'Manager'] },
-    _id: { $ne: userId }
-  }).distinct('_id');
-  console.log('Found Supervisors:', supervisors);
+  if (teamIds.length > 0) {
+    const teamSupervisors = await UserModel.find({
+      teams: { $in: teamIds },
+      role: { $in: ['Admin', 'Manager'] },
+      _id: { $ne: userId }
+    }).distinct('_id');
+    console.log('Team Supervisors found:', teamSupervisors);
+    teamSupervisors.forEach(id => supervisorIds.add(id.toString()));
+  } else {
+    console.log('WARNING: User has no teams assigned!');
+  }
+
+  // 2. Find supervisors from user's projects
+  const userProjects = await ProjectModel.find({
+    'employees.user': new mongoose.Types.ObjectId(userId),
+    supervisor: { $ne: null, $exists: true }
+  }).populate('supervisor');
+  
+  console.log('Projects where user is employee:', userProjects.length);
+  userProjects.forEach(project => {
+    if (project.supervisor && project.supervisor._id.toString() !== userId) {
+      supervisorIds.add(project.supervisor._id.toString());
+      console.log('Added project supervisor:', {
+        projectName: project.projectName,
+        supervisorId: project.supervisor._id,
+        supervisorName: `${(project.supervisor as any).firstName} ${(project.supervisor as any).lastName}`
+      });
+    }
+  });
+
+  const supervisors = Array.from(supervisorIds);
+  console.log('Total unique supervisors found:', supervisors.length, supervisors);
 
   // Send notifications to all supervisors
   if (supervisors.length > 0) {
-    await createBulkNotifications(
-      supervisors.map((id) => id.toString()),
+    console.log('Creating notifications for supervisors:', supervisors);
+    const notifications = await createBulkNotifications(
+      supervisors,
       {
         type: NotificationType.TimesheetEditRequest,
         title: 'Timesheet Edit Request',
@@ -72,6 +104,7 @@ export const createEditRequest = async (
         relatedModel: 'EditRequest'
       }
     );
+    console.log('Notifications created successfully:', notifications.length);
   } else {
     console.log('WARNING: No supervisors found to notify!');
   }
