@@ -15,6 +15,7 @@ import ViewTeamMembers from '../team/ViewTeamMembers';
 import { useTeam } from '../../../hooks/team';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
+import TeamFilterPopover from '../popover/TeamFilterPopover';
 
 function TeamWindow() {
   const { teams, loading, loadAllTeams, deleteTeam } = useTeam();
@@ -25,6 +26,10 @@ function TeamWindow() {
   const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<ITeam | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
+  const [activeFilters, setActiveFilters] = useState({ supervisor: 'all', status: 'all' });
+
+  const isFilterOpen = Boolean(filterAnchorEl);
 
   // Load teams on mount
   useEffect(() => {
@@ -39,13 +44,19 @@ function TeamWindow() {
     setIsCreatePopupOpen(true);
   };
 
-  const handleFilter = () => {
-    // TODO: Implement filter functionality
+  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
   };
 
-  const handleAddProject = () => {
-    // TODO: Implement add project functionality
+  const handleCloseFilter = () => {
+    setFilterAnchorEl(null);
   };
+
+  const handleApplyFilter = (filters: { supervisor: string; status: string }) => {
+    setActiveFilters(filters);
+    handleCloseFilter();
+  };
+
   const handleEditTeam = (team: ITeam) => {
     setEditingTeam(team);
     setIsStaffManagerOpen(true);
@@ -98,13 +109,15 @@ function TeamWindow() {
   const handleCloseViewTeam = () => {
     setViewTeam(null);
   };
+
   const theme = useTheme();
+
   const button = (
     <>
       <BaseBtn
         variant="outlined"
         startIcon={<FilterAltOutlinedIcon />}
-        onClick={handleFilter}
+        onClick={handleFilterClick}
       >
         Filter
       </BaseBtn>
@@ -114,10 +127,24 @@ function TeamWindow() {
     </>
   );
 
-  // Filter teams to only show active teams (status=true)
-  const activeTeams = useMemo(
-    () => teams.filter(team => team.status !== false),
-    [teams]
+  // Filter teams based on active filters
+  const filteredTeams = useMemo(
+    () => teams.filter(team => {
+      // Status filter
+      const statusMatch = 
+        activeFilters.status === 'all' ? team.status !== false :
+        activeFilters.status === 'active' ? team.status !== false :
+        team.status === false;
+
+      // Supervisor filter
+      const supervisorMatch = 
+        activeFilters.supervisor === 'all' ? true :
+        activeFilters.supervisor === 'with' ? team.supervisor !== null :
+        team.supervisor === null;
+
+      return statusMatch && supervisorMatch;
+    }),
+    [teams, activeFilters]
   );
 
   const columns: DataTableColumn<ITeam>[] = useMemo(
@@ -192,11 +219,11 @@ function TeamWindow() {
     ],
     [theme, handleEditTeam, handleDeleteTeam]
   );
-  return (
 
+  return (
     <>
       <WindowLayout title="Team" buttons={button}>
-        <DataTable columns={columns} rows={activeTeams} getRowKey={(row) => row.id} />
+        <DataTable columns={columns} rows={filteredTeams} getRowKey={(row) => row.id} />
       </WindowLayout>
       <CreateTeamPopUp
         open={isCreatePopupOpen}
@@ -229,9 +256,14 @@ function TeamWindow() {
         onClose={handleCloseViewTeam}
         team={viewTeam}
       />
+      <TeamFilterPopover
+        anchorEl={filterAnchorEl}
+        open={isFilterOpen}
+        onClose={handleCloseFilter}
+        onApplyFilter={handleApplyFilter}
+      />
       <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </>
-    
   );
 }
 
