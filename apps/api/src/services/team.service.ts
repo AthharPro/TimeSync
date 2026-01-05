@@ -131,11 +131,15 @@ export const listTeamsForUser = async (userId: string, userRole: UserRole) => {
 export const listMyMemberTeams = async (userId: string) => {
   // Only return teams where isDepartment is true (or not set, for backward compatibility)
   const teams = await TeamModel.find({ 
-    status: true, 
-    members: new mongoose.Types.ObjectId(userId),
-    $or: [
-      { isDepartment: true },
-      { isDepartment: { $exists: false } }
+    $and: [
+      { status: true },
+      { members: new mongoose.Types.ObjectId(userId) },
+      {
+        $or: [
+          { isDepartment: true },
+          { isDepartment: { $exists: false } }
+        ]
+      }
     ]
   })
     .sort({ createdAt: -1 })
@@ -147,11 +151,15 @@ export const listMyMemberTeams = async (userId: string) => {
 export const listSupervisedTeams = async (supervisorId: string) => {
   // Only return teams where isDepartment is true (or not set, for backward compatibility)
   const teams = await TeamModel.find({ 
-    supervisor: supervisorId, 
-    status: true,
-    $or: [
-      { isDepartment: true },
-      { isDepartment: { $exists: false } }
+    $and: [
+      { supervisor: new mongoose.Types.ObjectId(supervisorId) },
+      { status: true },
+      {
+        $or: [
+          { isDepartment: true },
+          { isDepartment: { $exists: false } }
+        ]
+      }
     ]
   })
     .select('_id teamName')

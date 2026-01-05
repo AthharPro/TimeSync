@@ -98,11 +98,15 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       
       const teams = await TeamModel.find({
-        members: userId,
-        status: true,
-        $or: [
-          { isDepartment: true },
-          { isDepartment: { $exists: false } } // For backward compatibility
+        $and: [
+          { members: new mongoose.Types.ObjectId(userId) },
+          { status: true },
+          {
+            $or: [
+              { isDepartment: true },
+              { isDepartment: { $exists: false } } // For backward compatibility
+            ]
+          }
         ]
       })
         .sort({ createdAt: -1 })
@@ -113,19 +117,24 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     case UserRole.SupervisorAdmin:
     case UserRole.Admin:
     case UserRole.SuperAdmin: {
-      // SupervisorAdmin/Admin/SuperAdmin can only see active projects (status: true)
+      // SupervisorAdmin/Admin/SuperAdmin can see all active projects (status: true)
       const projects = await ProjectModel.find({ status: true })
         .sort({ createdAt: -1 })
         .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
       
-      // They can see active teams only where isDepartment is true
+      // For their own timesheets, they should only see teams where they are members
       // Non-department teams (isDepartment: false) are for grouping users for review purposes only
       const teams = await TeamModel.find({ 
-        status: true,
-        $or: [
-          { isDepartment: true },
-          { isDepartment: { $exists: false } } // For backward compatibility
+        $and: [
+          { members: new mongoose.Types.ObjectId(userId) },
+          { status: true },
+          {
+            $or: [
+              { isDepartment: true },
+              { isDepartment: { $exists: false } } // For backward compatibility
+            ]
+          }
         ]
       })
         .sort({ createdAt: -1 })
