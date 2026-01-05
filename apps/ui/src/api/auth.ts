@@ -1,7 +1,8 @@
 import API  from "../config/apiClient";
-import { IChangePwdFirstLogin, ILoginDetails } from "../interfaces/auth";
+import { ILoginData, IChangePwdFirstLogin } from "../interfaces/auth";
+import { UserRole } from "@tms/shared";
 
-export const login = async (data: ILoginDetails) => {
+export const login = async (data: ILoginData) => {
   return await API.post("/auth/login", data);
 };
 
@@ -44,6 +45,15 @@ export const sendPasswordResetEmail = async (email: string) => {
   }
 };
 
+export const verifyPasswordResetLink = async (token: string, verificationCode: string) => {
+  try {
+    return await API.get(`/auth/password/reset?token=${token}&verificationCode=${verificationCode}`);
+  } catch (error) {
+    console.error("Password reset link verification failed:", error);
+    throw error;
+  }
+};
+
 export const verifyPasswordResetToken = async (token: string) => {
   try {
     return await API.post('/auth/password/reset/verify-token', {}, {
@@ -68,5 +78,31 @@ export const resetPassword = async (data: {
     console.error("Password reset failed:", error);
     throw error;
   }
+};
+
+export const registerUser = async (
+  data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    designation: string;
+    contactNumber: string;
+  },
+  role: UserRole
+) => {
+  try {
+    const endpoint = role === UserRole.Admin ? '/api/user/admin' : '/api/user/employee';
+    return await API.post(endpoint, data);
+  } catch (error) {
+    console.error("User registration failed:", error);
+    throw error;
+  }
+};
+
+export const bulkRegisterUsers = async (
+  users: any[],
+  role: UserRole
+) => {
+  return await API.post('/api/user/bulk', { users, role });
 };
 

@@ -1,4 +1,4 @@
-import UserModel from '../../models/user.model';
+import {UserModel} from '../../models/user.model';
 import ProjectModel from '../../models/project.model';
 import TeamModel from '../../models/team.model';
 import { UserRole } from '@tms/shared';

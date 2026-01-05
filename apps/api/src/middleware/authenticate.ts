@@ -6,13 +6,18 @@ import { UserRole } from "@tms/shared";
 
 const authenticate = (requiredRoles?: UserRole[]): RequestHandler => {
   return (req, res, next) => {
-    const accessToken = req.cookies?.accessToken as string | undefined;
+    try {
+    let accessToken: string | undefined;
 
-    appAssert(
-      accessToken,
-      UNAUTHORIZED,
-      "Not authorized"
-    );
+    // Try Authorization: Bearer <token>
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      accessToken = authHeader.split(" ")[1];
+    }
+
+    console.log("Access Token:", accessToken);
+
+    appAssert(accessToken, UNAUTHORIZED, "Not authorized");
 
     const { error, payload } = verifyToken(accessToken);
 
@@ -23,25 +28,22 @@ const authenticate = (requiredRoles?: UserRole[]): RequestHandler => {
     );
 
     appAssert(
-      payload.userId && payload.sessionId && payload.role,
+      payload.userId && payload.role,
       UNAUTHORIZED,
       "Invalid token payload"
     );
 
     req.userId = payload.userId;
     req.userRole = payload.role;
-    req.sessionId = payload.sessionId;
 
-    const userRole = payload.role as UserRole;
-
-    if (requiredRoles && !requiredRoles.includes(userRole)) {
-      appAssert(
-        false,
-        FORBIDDEN,
-        "Access denied: insufficient permissions"
-      );
+    if (requiredRoles && !requiredRoles.includes(payload.role as UserRole)) {
+      appAssert(false, FORBIDDEN, "Access denied: insufficient permissions");
     }
-    next();
+
+    return next();
+  } catch (err) {
+      return next(err);
+  }
   };
 };
 

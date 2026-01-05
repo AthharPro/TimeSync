@@ -2,7 +2,6 @@ import { ErrorRequestHandler, Response } from "express";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../constants/http";
 import { z } from "zod";
 import { AppError } from "../utils/error";
-import { clearAuthCookies, REFRESH_PATH } from "../utils/auth";
 
 const handleZodError = (res: Response, err: z.ZodError) => {
   const errors = err.issues.map((err) => ({
@@ -23,12 +22,11 @@ const handleAppError = (res: Response, error: AppError) => {
   });
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+const errorHandler: ErrorRequestHandler = (err, req, res) => {
   console.error(`PATH: ${req.path}`, err);
 
-  if (req.path === REFRESH_PATH) {
-    clearAuthCookies(res);
+  if (req.path === "/auth/refresh") {
+    res.clearCookie("refreshToken", { path: "/auth/refresh" });
   }
 
   if (err instanceof z.ZodError) {

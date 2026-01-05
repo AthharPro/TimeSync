@@ -6,9 +6,27 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import HistoryIcon from '@mui/icons-material/History';
+import MyTimesheetWindow from '../components/organisms/window/MyTimesheetWindow';
+import { useWindowNavigation } from '../hooks/useWindowNavigation';
+import { useEffect } from 'react';
+import DashboardWindow from '../components/organisms/window/DashboardWindow';
+import ProjectWindow from '../components/organisms/window/ProjectWindow';
+import ReportWindow from '../components/organisms/window/ReportWindow';
+import AccountWindow from '../components/organisms/window/AccountWindow';
+import TeamWindow from '../components/organisms/window/TeamWindow';
+import HistoryWindow from '../components/organisms/window/HistoryWindow';
+import ReviewTimesheetWindow from '../components/organisms/window/ReviewTimesheetWindow';
+import { useAuth } from '../contexts/AuthContext';
+import { UserRole } from '@tms/shared';
 
 
 const AdminPage = () => {
+  const { selectedButton, setSelectedButton } = useWindowNavigation();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    setSelectedButton("Dashboard");
+  }, [setSelectedButton]);
 
     const items = [
     [
@@ -19,13 +37,22 @@ const AdminPage = () => {
       { text: 'Teams', icon: <BusinessOutlinedIcon /> },
       { text: 'My Timesheets', icon: <AssignmentIcon /> },
       { text: 'History', icon: <HistoryIcon /> },
-      { text: 'Review Timesheets', icon: <RateReviewIcon /> },
+            ...(user?.role === UserRole.SupervisorAdmin 
+        ? [{ text: 'Review Timesheets', icon: <RateReviewIcon /> }] 
+        : [])
     ]
   ];
 
   return (
     <MainLayout items={items}>
-     Hiii
+      {selectedButton === "Dashboard" && <DashboardWindow/>}
+      {selectedButton === "Projects" && <ProjectWindow/>}
+      {selectedButton === "Reports" && <ReportWindow onReset={() => undefined}/>}
+      {selectedButton === "Accounts" && <AccountWindow/>}
+      {selectedButton === "Teams" && <TeamWindow/>}
+      {selectedButton === "My Timesheets" && <MyTimesheetWindow />}
+      {selectedButton === "History" && <HistoryWindow/>}
+      {selectedButton === "Review Timesheets" && <ReviewTimesheetWindow/>}
     </MainLayout>
   );
 };

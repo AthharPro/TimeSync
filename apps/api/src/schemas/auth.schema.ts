@@ -1,10 +1,13 @@
 import z from 'zod';
-import { emailSchema, passwordSchema, userAgentSchema } from './main.schema';
+import { emailSchema, passwordSchema } from './main.schema';
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: passwordSchema,
-  userAgent: userAgentSchema,
+  password: passwordSchema
+});
+
+export const changePasswordSchema = z.object({
+  newPassword: passwordSchema,
 });
 
 export const registerSchema = loginSchema
@@ -16,9 +19,6 @@ export const registerSchema = loginSchema
     path: ['confirmPassword'],
   });
 
-export const changePasswordSchema = z.object({
-  newPassword: passwordSchema,
-});
 
 export const VerificationCodeSchema = z.string().min(1).max(24);
 

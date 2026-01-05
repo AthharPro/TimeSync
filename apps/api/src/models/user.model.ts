@@ -16,8 +16,7 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     password: { type: String, required: true },
     role: { type: String, enum: Object.values(UserRole), required: true },
     status: { type: Boolean, default: true }, 
-    isChangedPwd: { type: Boolean, default: false },
-    isVerified: { type: Boolean, default: false },
+    isChangedPwd: { type: Boolean, default: false }
   },
   {
     timestamps: true,
@@ -52,26 +51,9 @@ userSchema.methods.comparePassword = async function (val: string) {
 userSchema.methods.omitPassword = function () {
   const user = this.toObject();
   delete user.password;
-  delete user.__v;
   return user;
-};
-
-userSchema.statics.findAllByRole = async function (role: UserRole): Promise<IUserDocument[]> {
-  return this.find({ role, status: true }).sort({ firstName: 1 }).select('-password');
-};
-
-userSchema.statics.findAllByRoles = async function (roles: UserRole[]): Promise<IUserDocument[]> {
-  return this.find({ role: { $in: roles }, status: true }).sort({ firstName: 1 }).select('-password');
-};
-
-userSchema.statics.findAllActive = async function (): Promise<IUserDocument[]> {
-  return this.find({ status: true }).sort({ firstName: 1 }).select('-password');
-};
-
-userSchema.statics.findAllIncludingInactive = async function (roles: UserRole[]): Promise<IUserDocument[]> {
-  return this.find({ role: { $in: roles } }).sort({ firstName: 1 }).select('-password');
 };
 
 const UserModel = mongoose.model<IUserDocument, IUserModel>('User', userSchema);
 
-export default UserModel;
+export { UserModel };

@@ -1,59 +1,45 @@
 import jwt, { VerifyOptions, SignOptions } from 'jsonwebtoken';
 import { JWT_REFRESH_SECRET, JWT_SECRET } from '../../constants/env';
-import { IUserDocument, ISessionDocument } from '../../interfaces';
+import { IAccessTokenPayload, IRefreshTokenPayload, ITokenOptions } from '../../interfaces';
 
-export type RefreshTokenPayload = {
-  sessionId: ISessionDocument["_id"];
-};
-
-export type AccessTokenPayload = {
-  userId: IUserDocument["_id"];
-  role: IUserDocument["role"];
-  sessionId: ISessionDocument["_id"];
-};
-
-type SignOptionsAndSecret = SignOptions & {
-  secret: string;
-};
-
-const defaults: SignOptions = {
+const DEFAULT_SIGN_OPTIONS: SignOptions = {
   audience: 'user',
 };
 
-const accessTokenSignOptions: SignOptionsAndSecret = {
-  expiresIn: '45m',
-  secret: JWT_SECRET,
-};
-
-export const refreshTokenSignOptions: SignOptionsAndSecret = {
+export const refreshTokenSignOptions: ITokenOptions = {
   expiresIn: '30d',
   secret: JWT_REFRESH_SECRET,
 };
 
+const ACCESS_TOKEN_OPTIONS: ITokenOptions = {
+  expiresIn: '45m',
+  secret: JWT_SECRET
+};
+
+export const REFRESH_TOKEN_OPTIONS: ITokenOptions = {
+  expiresIn: '30d',
+  secret: JWT_REFRESH_SECRET
+};
+
 export const signToken = (
-  payload: AccessTokenPayload | RefreshTokenPayload,
-  options?: SignOptionsAndSecret
+  payload: IAccessTokenPayload | IRefreshTokenPayload,
+  options?: ITokenOptions
 ) => {
-  const { secret, ...signOpts } = options || accessTokenSignOptions;
+  const { secret, ...signOpts } = options || ACCESS_TOKEN_OPTIONS;
   return jwt.sign(payload, secret, {
-    ...defaults,
+    ...DEFAULT_SIGN_OPTIONS,
     ...signOpts,
   });
 };
 
-export const verifyToken = <TPayload extends object = AccessTokenPayload>(
+export const verifyToken = <TPayload extends object = IAccessTokenPayload>(
   token: string,
-  options?: VerifyOptions & {
-    secret?: string;
-  }
+  options?: VerifyOptions & { secret?: string }
 ) => {
   const { secret = JWT_SECRET, ...verifyOpts } = options || {};
   try {
-    const payload = jwt.verify(token, secret, {
-      ...verifyOpts,
-    }) as TPayload;
     return {
-      payload,
+      payload: jwt.verify(token, secret, verifyOpts) as TPayload,
     };
   } catch (error: unknown) {
     return {

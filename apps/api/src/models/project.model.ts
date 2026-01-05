@@ -1,29 +1,33 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose from 'mongoose';
+import { IProjectDocument } from '../interfaces';
+import { BillableType } from '@tms/shared';
 
-export interface IProjectDocument extends Document {
-  _id: mongoose.Types.ObjectId;
-  name: string;
-  description?: string;
-  supervisor?: mongoose.Types.ObjectId;
-  employees?: mongoose.Types.ObjectId[];
-  status: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
-const ProjectSchema = new Schema<IProjectDocument>(
+
+const projectSchema = new mongoose.Schema<IProjectDocument>(
   {
-    name: { type: String, required: true },
-    description: { type: String },
-    supervisor: { type: Schema.Types.ObjectId, ref: 'User' },
-    employees: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    projectName: { type: String, required: true },
+    startDate:{ type: Date},
+    endDate:{ type: Date},
+    description:{ type: String},
+    isPublic: { type: Boolean, required: true },
+    clientName: { type: String},
+    costCenter: { type: String},
+    projectType: { type: String},
+    billable: { type: String, enum: Object.values(BillableType)},
+    employees: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        allocation: { type: Number, default: 0 },
+      },
+    ],
     status: { type: Boolean, default: true },
+    supervisor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, 
   },
   {
     timestamps: true,
   }
 );
 
-const ProjectModel = mongoose.model<IProjectDocument>('Project', ProjectSchema);
-
+const ProjectModel = mongoose.model<IProjectDocument>('Project', projectSchema);
 export default ProjectModel;

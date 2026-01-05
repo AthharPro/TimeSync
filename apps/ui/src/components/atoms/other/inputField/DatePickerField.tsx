@@ -1,36 +1,80 @@
-import React from 'react';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { IDatePickerFieldProps } from '../../../../interfaces/component';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePickerFieldProps } from '../../../../interfaces';
 
-const DatePickerField = React.forwardRef<HTMLDivElement, IDatePickerFieldProps>(
-  ({ label, value, onChange, minDate, maxDate, format = 'YYYY-MM-DD', slotProps, ...rest }, ref) => {
-    return (
-      <LocalizationProvider dateAdapter={AdapterDayjs} >
-        <DatePicker
-          label={label}
-          value={value}
-          onChange={onChange}
-          minDate={minDate}
-          maxDate={maxDate}
-          format={format}
-          slotProps={slotProps || {
-            textField: {
-              fullWidth: true,
-              size: 'small',
+const DatePickerField = ({
+  value,
+  onChange,
+  open = false,
+  onOpen,
+  onClose,
+  onClick,
+  width = '130px',
+  variant = 'standard',
+  size = 'small',
+  sx = {},
+  label,
+  minDate,
+  views,
+  openTo,
+  disabled = false,
+}: DatePickerFieldProps) => {
+  const handleDateChange = (newValue: unknown) => {
+    // Convert Dayjs or other PickerValue types to Date
+    if (newValue instanceof Date) {
+      onChange(newValue);
+    } else if (newValue && typeof newValue === 'object' && 'toDate' in newValue) {
+      // Handle Dayjs objects
+      onChange((newValue as any).toDate());
+    } else {
+      onChange(null);
+    }
+  };
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <DatePicker
+        value={value}
+        onChange={handleDateChange}
+        open={open}
+        onOpen={onOpen}
+        onClose={onClose}
+        minDate={minDate}
+        label={label}
+        views={views}
+        openTo={openTo}
+        disabled={disabled}
+        slots={{
+          openPickerIcon: () => null,
+        }}
+        slotProps={{
+          textField: {
+            size,
+            variant,
+            InputProps: {
+              disableUnderline: variant === 'standard',
             },
-          }}
-          ref={ref}
-          {...rest}
-        />
-      </LocalizationProvider>
-    );
-  }
-);
-
-DatePickerField.displayName = 'DatePickerField';
+            onClick: (e) => {
+              e.stopPropagation();
+              if (!disabled) {
+                onClick?.(e);
+              }
+            },
+            sx: {
+              width,
+              cursor: 'pointer',
+              '& .MuiInputBase-input.Mui-disabled': {
+                WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                color: 'rgba(0, 0, 0, 0.87)',
+              },
+              ...sx,
+            },
+          },
+        }}
+      />
+    </LocalizationProvider>
+  );
+};
 
 export default DatePickerField;
-
-
