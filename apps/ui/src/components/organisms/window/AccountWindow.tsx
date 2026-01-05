@@ -17,7 +17,11 @@ import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ToggleOffOutlinedIcon from '@mui/icons-material/ToggleOffOutlined';
 import ToggleOnOutlinedIcon from '@mui/icons-material/ToggleOnOutlined';
 
-function AccountWindow() {
+interface AccountWindowProps {
+  roleToCreate?: UserRole;
+}
+
+function AccountWindow({ roleToCreate = UserRole.Emp }: AccountWindowProps) {
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
   const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
@@ -164,7 +168,7 @@ function AccountWindow() {
       </WindowLayout>
       <CreateAccountPopUp
         open={isCreatePopupOpen}
-        role={UserRole.Emp}
+        role={roleToCreate}
         onClose={handleClosePopup}
         onSuccess={handleCreateSuccess}
       />

@@ -5,6 +5,7 @@ import { useWindowNavigation } from '../hooks/useWindowNavigation';
 import { useEffect } from 'react';
 import DashboardWindow from '../components/organisms/window/DashboardWindow';
 import AccountWindow from '../components/organisms/window/AccountWindow';
+import { UserRole } from '@tms/shared';
 
 const SuperAdminPage = () => {
   const { selectedButton, setSelectedButton } = useWindowNavigation();
@@ -23,7 +24,7 @@ const SuperAdminPage = () => {
   return (
     <MainLayout items={items}>
       {selectedButton === "Dashboard" && <DashboardWindow/>}
-      {selectedButton === "Accounts" && <AccountWindow/>}
+      {selectedButton === "Accounts" && <AccountWindow roleToCreate={UserRole.Admin}/>}
     </MainLayout>
   );
 };
