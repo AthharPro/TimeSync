@@ -6,6 +6,7 @@ import StatusChip from '../../atoms/other/Icon/StatusChip';
 import ActionButton from '../../molecules/other/ActionButton';
 import { IAccountTableProps } from '../../../interfaces/component/organism/ITable';
 import { UserRole } from '@tms/shared';
+import EmployeeCell from '../../molecules/account/EmployeeCell';
 
 const AccountTable = ({ 
   rows, 
@@ -43,11 +44,15 @@ const AccountTable = ({
       key: 'employee_id', 
       render: (row) => row.employee_id || '-' 
     },
-    { label: 'Email', key: 'email', render: (row) => row.email },
     {
-      label: 'Name',
-      key: 'name',
-      render: (row) => `${row.firstName} ${row.lastName}`.trim(),
+      label: 'Employee',
+      key: 'employee',
+      render: (row) => (
+        <EmployeeCell
+          name={`${row.firstName} ${row.lastName}`.trim()}
+          email={row.email}
+        />
+      ),
     },
     {
       label: 'Designation',
