@@ -11,13 +11,8 @@ import {
   Divider,
 } from '@mui/material';
 import { UserRole } from '@tms/shared';
+import { AccountFilterPopoverProps } from '../../../interfaces/popover/IPopover';
 
-interface AccountFilterPopoverProps {
-  anchorEl: HTMLElement | null;
-  open: boolean;
-  onClose: () => void;
-  onApplyFilter: (filters: { role: string; status: string }) => void;
-}
 
 const AccountFilterPopover: React.FC<AccountFilterPopoverProps> = ({
   anchorEl,

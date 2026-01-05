@@ -10,13 +10,8 @@ import {
   Button,
   Divider,
 } from '@mui/material';
+import { TeamFilterPopoverProps } from '../../../interfaces/popover/IPopover';
 
-interface TeamFilterPopoverProps {
-  anchorEl: HTMLElement | null;
-  open: boolean;
-  onClose: () => void;
-  onApplyFilter: (filters: { supervisor: string; status: string }) => void;
-}
 
 const TeamFilterPopover: React.FC<TeamFilterPopoverProps> = ({
   anchorEl,

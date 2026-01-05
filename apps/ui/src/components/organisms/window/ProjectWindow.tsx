@@ -19,6 +19,7 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
 import StatusChip from '../../atoms/other/Icon/StatusChip';
+import ProjectFilterPopover from '../popover/ProjectFilterPopover';
 
 function ProjectWindow() {
   const { projects, loading: isLoading, error, loadProjects, deleteProject } = useProjects();
@@ -32,6 +33,10 @@ function ProjectWindow() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
+  const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
+  const [activeFilters, setActiveFilters] = useState({ projectType: 'all', status: 'all', billable: 'all', visibility: 'all', costCenter: 'all' });
+
+  const isFilterOpen = Boolean(filterAnchorEl);
 
   // Load projects on component mount
   useEffect(() => {
@@ -79,8 +84,17 @@ function ProjectWindow() {
     loadProjects();
   };
 
-  const handleFilter = () => {
-    // TODO: Implement filter functionality
+  const handleFilter = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseFilter = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleApplyFilter = (filters: { projectType: string; status: string; billable: string; visibility: string; costCenter: string }) => {
+    setActiveFilters(filters);
+    handleCloseFilter();
   };
 
   const handleConfirmDelete = async () => {
@@ -102,6 +116,46 @@ function ProjectWindow() {
     setIsDeleteDialogOpen(false);
     setProjectToDelete(null);
   };
+
+  // Filter projects based on active filters
+  const filteredProjects = useMemo(
+    () => {
+      console.log('Active filters:', activeFilters);
+      console.log('Sample project data:', projects[0]);
+      
+      return projects.filter(project => {
+        // Project Type filter
+        const projectTypeMatch = 
+          activeFilters.projectType === 'all' ? true :
+          project.projectType === activeFilters.projectType;
+
+        // Status filter - Active means status is 'Active', Inactive means 'Completed' or 'On Hold'
+        const statusMatch = 
+          activeFilters.status === 'all' ? true :
+          activeFilters.status === 'active' ? project.status === 'Active' :
+          project.status === 'Completed' || project.status === 'On Hold';
+
+        // Billable filter
+        const billableMatch = 
+          activeFilters.billable === 'all' ? true :
+          activeFilters.billable === 'billable' ? project.billable === true :
+          project.billable === false;
+
+        // Visibility filter - handle both lowercase and capitalized values
+        const visibilityMatch = 
+          activeFilters.visibility === 'all' ? true :
+          project.projectVisibility && project.projectVisibility.toLowerCase() === activeFilters.visibility.toLowerCase();
+
+        // Cost Center filter - exact match
+        const costCenterMatch = 
+          activeFilters.costCenter === 'all' ? true :
+          project.costCenter === activeFilters.costCenter;
+
+        return projectTypeMatch && statusMatch && billableMatch && visibilityMatch && costCenterMatch;
+      });
+    },
+    [projects, activeFilters]
+  );
 
   const columns: DataTableColumn<IProject>[] = useMemo(
     () => [
@@ -260,7 +314,7 @@ function ProjectWindow() {
           >
             
           </Box>
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <Box
             sx={{
               display: 'flex',
@@ -276,7 +330,7 @@ function ProjectWindow() {
         ) : (
           <DataTable
             columns={columns}
-            rows={projects}
+            rows={filteredProjects}
             getRowKey={(row) => row.id}
           />
         )}
@@ -326,6 +380,14 @@ function ProjectWindow() {
           onSaved={handleStaffSaved}
         />
       )}
+
+      <ProjectFilterPopover
+        anchorEl={filterAnchorEl}
+        open={isFilterOpen}
+        onClose={handleCloseFilter}
+        onApplyFilter={handleApplyFilter}
+      />
+
       <AppSnackbar snackbar={snackbar} onClose={hideSnackbar} />
     </>
   );
