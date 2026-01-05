@@ -88,30 +88,43 @@ function ReviewTimesheetWindow() {
   // Handle navigation from notification
   useEffect(() => {
     if (reviewTimesheetParams) {
-      const { employeeId, month, status } = reviewTimesheetParams;
+      const { employeeId, month, status, tab, editRequestStatus } = reviewTimesheetParams;
       
-      // Set initial employee ID to auto-open drawer
-      if (employeeId) {
-        setInitialEmployeeId(employeeId);
-      }
-      
-      // Apply filters based on notification params
-      if (month || status) {
-        const newFilters = { ...filters };
+      // Handle tab navigation
+      if (tab === 'editRequest') {
+        setTabValue('2'); // Switch to Edit Request tab
         
-        if (month) {
-          const monthDate = dayjs(month, 'YYYY-MM');
-          newFilters.month = month;
-          newFilters.year = monthDate.format('YYYY');
-          newFilters.startDate = monthDate.startOf('month').format('YYYY-MM-DD');
-          newFilters.endDate = monthDate.endOf('month').format('YYYY-MM-DD');
+        // Apply edit request status filter if provided
+        if (editRequestStatus) {
+          setEditRequestFilters({ status: editRequestStatus });
+        }
+      } else {
+        // Default to Review tab
+        setTabValue('1');
+        
+        // Set initial employee ID to auto-open drawer
+        if (employeeId) {
+          setInitialEmployeeId(employeeId);
         }
         
-        if (status) {
-          newFilters.status = status as any;
+        // Apply filters based on notification params
+        if (month || status) {
+          const newFilters = { ...filters };
+          
+          if (month) {
+            const monthDate = dayjs(month, 'YYYY-MM');
+            newFilters.month = month;
+            newFilters.year = monthDate.format('YYYY');
+            newFilters.startDate = monthDate.startOf('month').format('YYYY-MM-DD');
+            newFilters.endDate = monthDate.endOf('month').format('YYYY-MM-DD');
+          }
+          
+          if (status) {
+            newFilters.status = status as any;
+          }
+          
+          setFilters(newFilters);
         }
-        
-        setFilters(newFilters);
       }
       
       // Clear the params after processing

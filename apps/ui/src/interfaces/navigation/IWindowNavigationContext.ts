@@ -4,6 +4,8 @@ export interface ReviewTimesheetNavParams {
   employeeId?: string;
   month?: string;
   status?: string;
+  tab?: 'review' | 'editRequest'; // Add tab parameter to specify which tab to open
+  editRequestStatus?: 'All' | 'Pending' | 'Approved' | 'Rejected'; // Add edit request status filter
 }
 
 export interface MyTimesheetNavParams {
