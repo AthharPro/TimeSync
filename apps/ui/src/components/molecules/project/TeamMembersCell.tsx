@@ -7,6 +7,7 @@ import { BaseBtn } from '../../atoms';
 const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
   teamMembers,
   onViewTeam,
+  disabled = false,
 }) => {
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" gap={1} minHeight="40px">
@@ -19,16 +20,15 @@ const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
           </Tooltip>
         ))}
       </AvatarGroup> */}
-      {onViewTeam && (
-        <BaseBtn
-          size="small"
-          variant="outlined"
-          startIcon={<GroupIcon />}
-          onClick={onViewTeam}
-        >
-          View Team
-        </BaseBtn>
-      )}
+      <BaseBtn
+        size="small"
+        variant="outlined"
+        startIcon={<GroupIcon />}
+        onClick={onViewTeam}
+        disabled={disabled || !onViewTeam}
+      >
+        View Team
+      </BaseBtn>
     </Box>
   );
 };

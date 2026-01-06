@@ -7,11 +7,11 @@ const ProjectVisibility: React.FC<IProjectVisibilityProps> = ({ value, onChange,
   const theme = useTheme();
   return (
     <FormControl size="small" fullWidth variant="outlined" error={error}>
-      <InputLabel required id="visibility-label">Visibility</InputLabel>
+      <InputLabel required id="visibility-label">Visibility Type</InputLabel>
       <Select
         labelId="visibility-label"
         value={value}
-        label="Visibility"
+        label="Visibility Type"
         onChange={(e) => onChange(e.target.value as string)}
         MenuProps={{
           PaperProps: {
