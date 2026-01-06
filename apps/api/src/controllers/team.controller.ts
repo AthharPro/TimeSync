@@ -67,7 +67,8 @@ export const updateStaffHandler = catchErrors(async (req, res) => {
   console.log('updateStaffHandler - Members type:', typeof members, Array.isArray(members));
   console.log('updateStaffHandler - Supervisor:', supervisor);
   
-  const result = await updateTeamStaff(id, { members, supervisor });
+  const performedBy = req.userId as string; // Get the authenticated user ID
+  const result = await updateTeamStaff(id, { members, supervisor }, performedBy);
   return res.status(OK).json(result);
 });
 

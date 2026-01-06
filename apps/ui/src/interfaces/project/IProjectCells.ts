@@ -10,8 +10,8 @@ export interface ITeamMembersCellProps {
 }
 
 export interface IDateRangeCellProps {
-  startDate: Date;
-  endDate: Date | null;
+  startDate: Date | string;
+  endDate: Date | string | null;
 }
 
 export interface IProjectActionButtonsProps {

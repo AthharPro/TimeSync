@@ -11,6 +11,7 @@ import {userRoutes,authRoutes,timesheetRoutes,projectRoutes,taskRoutes,teamRoute
 import notificationRoutes from "./routes/notification.route";
 import historyRoutes from "./routes/history.route";
 import { ensureInternalProject } from './utils/data/systemDataUtils';
+import { initTimesheetReminderJob } from './jobs/timesheetReminder.job';
 
 const port = Number(PORT);
 
@@ -64,7 +65,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/edit-request', editRequestRoutes);
 
-
 app.use(errorHandler);
 
 server.listen(port, async () => {
@@ -72,6 +72,8 @@ server.listen(port, async () => {
     await connectDB();
 
     await ensureInternalProject();
+    
+    initTimesheetReminderJob();
     
     console.log(`Server is running on port ${PORT} in ${NODE_ENV} environment`);
   } catch (error) {
