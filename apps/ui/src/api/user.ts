@@ -19,6 +19,11 @@ export const updateUser = async (
   return response.data;
 };
 
+export const getUserSupervisors = async (userId: string) => {
+  const response = await API.get(`/api/user/${userId}/supervisors`);
+  return response.data;
+};
+
   export const getAllActiveUsers = async () => {
     const response = await API.get("/api/user/active");
     return response;

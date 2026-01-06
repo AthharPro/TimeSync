@@ -1,7 +1,7 @@
 import { CREATED, OK } from '../constants';
 import { userRegisterSchema } from '../schemas';
 import { catchErrors } from '../utils';
-import { createUser, getAllUsers, updateUserById ,getAllActiveUsers} from '../services';
+import { createUser, getAllUsers, updateUserById, getAllActiveUsers, getUserSupervisors } from '../services';
 import { UserRole } from '@tms/shared';
 import { Request, Response } from 'express';
 
@@ -53,8 +53,9 @@ export const getAllUsersHandler = catchErrors(async (req: Request, res: Response
 export const updateUserHandler = catchErrors(async (req: Request, res: Response) => {
   const { id } = req.params;
   const updateData = req.body;
+  const performedBy = req.userId as string;
 
-  const user = await updateUserById(id, updateData);
+  const user = await updateUserById(id, updateData, performedBy);
 
   return res.status(OK).json(user);
 });
@@ -109,3 +110,9 @@ export const getAllActiveUsersHandler = () =>
     const users = await getAllActiveUsers();
     return res.status(OK).json(users);
   });
+
+export const getUserSupervisorsHandler = catchErrors(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const supervisors = await getUserSupervisors(id);
+  return res.status(OK).json(supervisors);
+});

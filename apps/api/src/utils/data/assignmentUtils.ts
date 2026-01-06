@@ -153,7 +153,7 @@ export const getSupervisorsForUser = async (userId: string): Promise<string[]> =
 
   // Get supervisors from projects where user is assigned
   const projects = await ProjectModel.find({ 
-    employees: userId,
+    'employees.user': userId,
     status: true 
   }).select('supervisor').lean();
 

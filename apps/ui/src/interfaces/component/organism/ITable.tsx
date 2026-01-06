@@ -67,4 +67,5 @@ export interface IAccountTableProps {
   disableEdit?: boolean;
   showDelete?: boolean;
   disableDelete?: boolean;
+  currentUserRole?: string;
 }
