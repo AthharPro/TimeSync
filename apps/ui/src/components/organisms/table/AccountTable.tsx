@@ -15,7 +15,8 @@ const AccountTable = ({
   onRowClick,
   disableEdit = false,
   showDelete = true,
-  disableDelete = false
+  disableDelete = false,
+  currentUserRole
 }: IAccountTableProps) => {
   
   const formatRole = (role: string | undefined): string => {
@@ -35,6 +36,15 @@ const AccountTable = ({
       default:
         return role;
     }
+  };
+
+  // Check if the current user can edit/delete a specific row
+  const canModifyRow = (row: IAccountTableRow): boolean => {
+    // SuperAdmin rows can only be modified by SuperAdmins
+    if (row.role === UserRole.SuperAdmin) {
+      return currentUserRole === UserRole.SuperAdmin;
+    }
+    return true;
   };
 
   const columns: DataTableColumn<IAccountTableRow>[] = [
@@ -87,18 +97,21 @@ const AccountTable = ({
     {
       label: 'Action',
       key: 'action',
-      render: (row) => (
-        <span onClick={(e) => e.stopPropagation()}>
-          <ActionButton
-            onEdit={() => onEditRow?.(row)}
-            onDelete={() => row.id && onDelete?.(row.id)}
-            disableEdit={disableEdit}
-            showDelete={showDelete}
-            disableDelete={disableDelete}
-            deleteLabel={row.status === 'Active' ? 'Deactivate' : 'Activate'}
-          />
-        </span>
-      ),
+      render: (row) => {
+        const canModify = canModifyRow(row);
+        return (
+          <span onClick={(e) => e.stopPropagation()}>
+            <ActionButton
+              onEdit={() => onEditRow?.(row)}
+              onDelete={() => row.id && onDelete?.(row.id)}
+              disableEdit={disableEdit || !canModify}
+              showDelete={showDelete}
+              disableDelete={disableDelete || !canModify}
+              deleteLabel={row.status === 'Active' ? 'Deactivate' : 'Activate'}
+            />
+          </span>
+        );
+      },
     },
   ];
 

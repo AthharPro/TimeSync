@@ -1,10 +1,11 @@
-import { APP_ORIGIN, CONFLICT, INTERNAL_SERVER_ERROR ,UNAUTHORIZED} from '../constants';
+import { APP_ORIGIN, CONFLICT, INTERNAL_SERVER_ERROR, UNAUTHORIZED, FORBIDDEN } from '../constants';
 import {UserModel} from '../models';
 import { generateRandomPassword, appAssert } from '../utils';
 import { CreateUserParams, ChangePasswordParams } from '../interfaces/user';
 import { getWelcomeTmsTemplate, sendEmail } from '../utils/email';
 import { createHistoryLog, generateHistoryDescription } from '../utils/history';
 import { HistoryActionType, HistoryEntityType } from '../interfaces/history';
+import { UserRole } from '@tms/shared';
 
 export const createUser = async (data: CreateUserParams, createdBy?: string) => {
   const existingUser = await UserModel.exists({
@@ -83,6 +84,20 @@ export const updateUserById = async (
   const user = await UserModel.findById(userId);
   
   appAssert(user, INTERNAL_SERVER_ERROR, 'User not found');
+
+  // Prevent Admins and SupervisorAdmins from modifying SuperAdmin accounts
+  if (performedBy) {
+    const performer = await UserModel.findById(performedBy);
+    
+    if (performer && user.role === UserRole.SuperAdmin) {
+      // Only SuperAdmin can modify SuperAdmin accounts
+      appAssert(
+        performer.role === UserRole.SuperAdmin,
+        FORBIDDEN,
+        'You do not have permission to modify Super Admin accounts'
+      );
+    }
+  }
 
   const oldStatus = user.status;
   const changes: string[] = [];
@@ -179,5 +194,30 @@ export const changePassword = async (data: ChangePasswordParams) => {
   return {
     user: user.omitPassword(),
     message: 'Password changed successfully',
+  };
+};
+
+export const getUserSupervisors = async (userId: string) => {
+  const { getSupervisorsForUser } = await import('../utils/data/assignmentUtils');
+  
+  // Get supervisor IDs
+  const supervisorIds = await getSupervisorsForUser(userId);
+  
+  // Filter out the user themselves (in case they are their own supervisor)
+  const filteredSupervisorIds = supervisorIds.filter(id => id !== userId);
+  
+  // Fetch supervisor details
+  const supervisors = await UserModel.find({ 
+    _id: { $in: filteredSupervisorIds } 
+  })
+    .select('_id firstName lastName email')
+    .lean();
+  
+  return {
+    supervisors: supervisors.map(supervisor => ({
+      _id: supervisor._id.toString(),
+      name: `${supervisor.firstName} ${supervisor.lastName}`,
+      email: supervisor.email,
+    })),
   };
 };

@@ -325,10 +325,10 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
     
     if (project) {
       // Use project ID instead of name to match timesheet creation
-      createEmptyCalendarRow(project._id, undefined, '', BillableType.Billable);
+      createEmptyCalendarRow(project._id, undefined, '', BillableType.NonBillable);
     } else if (team) {
       // Use team ID instead of name to match timesheet creation  
-      createEmptyCalendarRow(undefined, team._id, '', BillableType.Billable);
+      createEmptyCalendarRow(undefined, team._id, '', BillableType.NonBillable);
     }
   };
 
@@ -414,7 +414,10 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
       calendarRow.myTimesheetEntriesIds.forEach((timesheetId) => {
         const timesheet = newTimesheets.find((t) => t.id === timesheetId);
         if (timesheet) {
+          // Update Redux state immediately
           updateTimesheet(timesheetId, { billableType: newBillableType });
+          // Sync to backend
+          syncUpdateTimesheet(timesheetId, { billableType: newBillableType });
         }
       });
     } else {
@@ -594,7 +597,7 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
         return (
           <TaskRow
             task={row.task || ''}
-            billableType={row.billableType ?? BillableType.Billable}
+            billableType={row.billableType ?? BillableType.NonBillable}
             rowId={row.id}
             projectId={entityId || ''}
             availableTasks={availableTasksForRow}
@@ -633,33 +636,6 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
         );
       },
     })),
-    {
-      key: 'actions',
-      label: '',
-      width: '50px',
-      render: (row: ExtendedTimesheetRow) => {
-        if (row.isProjectRow || row.isCreateTaskRow) return null;
-
-        return (
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteTask(row.id);
-            }}
-            sx={{
-              color: '#666',
-              '&:hover': {
-                color: '#d32f2f',
-                backgroundColor: 'rgba(211, 47, 47, 0.04)',
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        );
-      },
-    },
   ];
 
   if (isLoading) {

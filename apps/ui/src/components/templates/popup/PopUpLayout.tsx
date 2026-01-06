@@ -33,7 +33,7 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
     } else if (maxWidth === 'xs') {
       return { width: '444px', minWidth: '444px', maxWidth: '444px' };
     } else {
-      return { width: '680px', minWidth: '680px', maxWidth: '680px' };
+      return { width: '800px', minWidth: '800px', maxWidth: '800px' };
     }
   };
 
@@ -46,7 +46,7 @@ const PopUpLayout: React.FC<IPopupLayoutProps> = ({
       PaperProps={{
         sx: {
           borderRadius: 2,
-          minHeight: '300px',
+          minHeight: '500px',
           height: paperHeight,
           display: 'flex',
           flexDirection: 'column',

@@ -17,6 +17,7 @@ import { useSnackbar } from '../../../hooks/useSnackbar';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ToggleOffOutlinedIcon from '@mui/icons-material/ToggleOffOutlined';
 import ToggleOnOutlinedIcon from '@mui/icons-material/ToggleOnOutlined';
+import { useAuth } from '../../../contexts/AuthContext';
 
 function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
@@ -30,6 +31,7 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [accountToToggle, setAccountToToggle] = useState<IAccountTableRow | null>(null);
+  const { user: currentUser } = useAuth();
 
   const isFilterOpen = Boolean(filterAnchorEl);
 
@@ -61,6 +63,11 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   };
 
   const handleEditRow = (row: IAccountTableRow) => {
+    // Prevent non-SuperAdmins from editing SuperAdmin accounts
+    if (row.role === UserRole.SuperAdmin && currentUser?.role !== UserRole.SuperAdmin) {
+      showError('You do not have permission to edit Super Admin accounts');
+      return;
+    }
     setSelectedAccount(row);
     setIsEditPopupOpen(true);
   };
@@ -103,6 +110,11 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
     // Find the account to get its current data
     const account = newAccountDetails.find(acc => acc.id === id);
     if (account) {
+      // Prevent non-SuperAdmins from deactivating SuperAdmin accounts
+      if (account.role === UserRole.SuperAdmin && currentUser?.role !== UserRole.SuperAdmin) {
+        showError('You do not have permission to modify Super Admin accounts');
+        return;
+      }
       setAccountToToggle(account);
       setIsStatusDialogOpen(true);
     }
@@ -161,6 +173,7 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
           onEditRow={handleEditRow} 
           onDelete={handleDelete}
           onRowClick={handleRowClick}
+          currentUserRole={currentUser?.role}
         />
       </WindowLayout>
       <CreateAccountPopUp
