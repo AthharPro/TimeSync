@@ -260,7 +260,8 @@ function MyTimesheetWindow() {
       )}
       <BaseBtn variant='outlined' startIcon={<EditNoteOutlinedIcon/>} onClick={handleRequestToEdit}>Request To Edit</BaseBtn>
       <BaseBtn variant='outlined' startIcon={<PublishOutlinedIcon/>} onClick={handleSubmitClick}>Submit</BaseBtn>
-      <BaseBtn variant="contained" color="primary" startIcon={<AddOutlinedIcon/>} onClick={handleCreateClick}>Create</BaseBtn>
+      {view === 'table' && <BaseBtn variant="contained" color="primary" startIcon={<AddOutlinedIcon/>} onClick={handleCreateClick}>Create</BaseBtn>}
+      
       <ToggleButtonGroup
         color="primary"
         size='small'
