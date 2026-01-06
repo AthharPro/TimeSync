@@ -5,6 +5,11 @@ export const listProjects = async () => {
   return response.data;
 };
 
+export const listMyProjects = async () => {
+  const response = await API.get('/api/project/project');
+  return response.data;
+};
+
 export const listSupervisedProjects = async () => {
   const response = await API.get('/api/project/supervised');
   return response.data;

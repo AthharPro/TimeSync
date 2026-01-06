@@ -117,7 +117,7 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     case UserRole.SupervisorAdmin:
     case UserRole.Admin:
     case UserRole.SuperAdmin: {
-      // SupervisorAdmin/Admin/SuperAdmin can see all active projects (status: true)
+      // Admin/SupervisorAdmin/SuperAdmin can see ALL active projects in the Projects window
       const projects = await ProjectModel.find({ status: true })
         .sort({ createdAt: -1 })
         .populate({ path: 'employees.user', select: 'firstName lastName email designation' })

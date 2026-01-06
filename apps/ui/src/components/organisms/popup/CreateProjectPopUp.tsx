@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AddEmployeePopup from './AddEmployeePopup';
 import { IEmployee } from '../../../interfaces/user/IUser';
 import { useForm } from 'react-hook-form';
@@ -42,10 +42,18 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
     },
   });
 
+  // Reset form when modal closes or opens
+  useEffect(() => {
+    if (!open) {
+      // Reset form when modal closes
+      reset();
+      setSelectedEmployees([]);
+    }
+  }, [open, reset]);
+
   const handleCancel = () => {
+    // Just close the modal, form reset will be handled by useEffect
     onClose();
-    reset();
-    setSelectedEmployees([]);
   };
 
   const handleOpenEmployeeDialog = () => {
@@ -84,9 +92,8 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
 
       await createProject(projectData);
       
-      // Reset form and close modal
-      reset();
-      setSelectedEmployees([]);
+      // Close modal and trigger callback
+      // Form will be reset automatically by useEffect when modal closes
       onProjectCreated?.();
       onClose();
     } catch (error) {

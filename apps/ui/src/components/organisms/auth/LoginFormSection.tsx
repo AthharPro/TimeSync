@@ -106,12 +106,9 @@ const LoginFormSection: React.FC = () => {
           navigate('/login', { replace: true });
       }
     } else {
-      // Handle error from login response
-      const errorMessage = res.error?.response?.data?.message || 
-                          res.error?.message || 
-                          'Invalid email or password. Please try again.';
-      console.error('Login failed:', errorMessage);
-      showError(errorMessage);
+      // Handle error from login response - always show user-friendly message
+      console.error('Login failed:', res.error);
+      showError('Login failed due to invalid credentials. Please try again.');
     }
   };
 
