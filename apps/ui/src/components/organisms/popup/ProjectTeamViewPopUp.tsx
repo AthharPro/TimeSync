@@ -22,7 +22,7 @@ const ProjectTeamViewPopUp: React.FC<ITeamViewModalProps> = ({ open, onClose, pr
       open={open}
       onClose={onClose}
       title={`${project.projectName}`}
-      maxWidth="xs"
+      maxWidth="md"
       actions={
         <Box
           sx={{

@@ -59,7 +59,8 @@ export const updateStaffHandler = catchErrors(async (req, res) => {
     employees?: { user: string; allocation?: number }[];
     supervisor?: string | null;
   };
-  const result = await updateProjectStaff(id, { employees, supervisor });
+  const performedBy = req.userId as string; // Get the authenticated user ID
+  const result = await updateProjectStaff(id, { employees, supervisor }, performedBy);
   return res.status(OK).json(result);
 });
 

@@ -169,19 +169,19 @@ function ProjectWindow() {
         key: 'costCenter',
         label: 'Cost Center',
         width: 'auto',
-        render: (row) => row.costCenter ,
+        render: (row) => row.costCenter || '-',
       },
       {
         key: 'clientName',
         label: 'Client Name',
         width: 'auto',
-        render: (row) => row.clientName,
+        render: (row) => row.clientName || '-',
       },
       {
         key: 'projectType',
         label: 'Project Type',
         width: 'auto',
-        render: (row) => row.projectType,
+        render: (row) => row.projectType || '-',
       },
       {
         key: 'projectManager',
@@ -213,7 +213,7 @@ function ProjectWindow() {
         render: (row) => (
           <TeamMembersCell
             teamMembers={row.teamMembers}
-            onViewTeam={() => handleViewTeam(row)}
+            onViewTeam={row.projectName === 'Internal' ? undefined : () => handleViewTeam(row)}
           />
         ),
       },
@@ -240,12 +240,18 @@ function ProjectWindow() {
        {
               label: '',
               key: 'actions',
-              render: (row) => (
-                <ActionButton
-                  onEdit={() => handleEdit(row)}
-                  onDelete={() => handleDelete(row)}
-                />
-              ),
+              render: (row) => {
+                // Don't show edit/delete actions for "Internal" project
+                if (row.projectName === 'Internal') {
+                  return null;
+                }
+                return (
+                  <ActionButton
+                    onEdit={() => handleEdit(row)}
+                    onDelete={() => handleDelete(row)}
+                  />
+                );
+              },
             },
     ],
     []
