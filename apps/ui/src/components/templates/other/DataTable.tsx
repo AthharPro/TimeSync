@@ -56,7 +56,7 @@ function DataTable<T>({ columns, rows, getRowKey, onRowClick, enableHover = fals
                       sx={{ 
                         width: col.width || 'auto',
                         borderRight: colIndex < columns.length - 1 ? '1px dotted #edededff' : 'none',
-                        py: 0.75,
+                        py: 0.5,
                       }}
                     >
                       {col.render(row)}

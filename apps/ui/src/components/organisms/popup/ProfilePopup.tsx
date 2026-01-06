@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Avatar, Divider, Chip, Grid } from '@mui/material';
 import PopupLayout from '../../templates/popup/PopUpLayout';
 import BaseBtn from '../../atoms/other/button/BaseBtn';
@@ -10,6 +10,8 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import WorkIcon from '@mui/icons-material/Work';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import { getMyMemberTeams } from '../../../api/team';
+import { listProjects } from '../../../api/project';
 
 interface ProfilePopupProps {
   open: boolean;
@@ -19,9 +21,12 @@ interface ProfilePopupProps {
 
 const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overrideUser }) => {
   const { user: authUser } = useAuth();
+  const [supervisors, setSupervisors] = useState<Array<{ name: string; email: string }>>([]); 
+  const [loading, setLoading] = useState(false);
   
   // Use override user or auth user, fallback to dummy data
   const user = overrideUser ?? authUser ?? {
+    _id: '',
     firstName: 'John',
     lastName: 'Doe',
     email: 'john.doe@example.com',
@@ -30,8 +35,75 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overri
     contactNumber: '+1 234 567 8900',
     role: UserRole.Emp,
     status: true,
-    isChangedPassword: true,
+    isChangedPwd: true,
   };
+
+  // Fetch supervisors when popup opens
+  useEffect(() => {
+    const fetchSupervisors = async () => {
+      const userId = user?._id;
+      if (!open || !userId) return;
+      
+      setLoading(true);
+      const supervisorMap = new Map<string, { name: string; email: string }>();
+      
+      try {
+        // Fetch teams where user is a member
+        const teamsResponse = await getMyMemberTeams();
+        if (teamsResponse?.teams) {
+          teamsResponse.teams.forEach((team: any) => {
+            if (team.supervisor && typeof team.supervisor === 'object') {
+              const supervisorId = team.supervisor._id;
+              const supervisorName = `${team.supervisor.firstName} ${team.supervisor.lastName}`;
+              const supervisorEmail = team.supervisor.email || '';
+              
+              if (!supervisorMap.has(supervisorId)) {
+                supervisorMap.set(supervisorId, { 
+                  name: supervisorName, 
+                  email: supervisorEmail 
+                });
+              }
+            }
+          });
+        }
+        
+        // Fetch all projects and filter by user
+        const projectsResponse = await listProjects();
+        if (projectsResponse?.projects) {
+          // Filter projects where user is assigned
+          const userProjects = projectsResponse.projects.filter((project: any) => 
+            project.employees?.some((emp: any) => {
+              const empId = typeof emp === 'string' ? emp : emp.user?._id || emp.user;
+              return empId === userId;
+            })
+          );
+          
+          userProjects.forEach((project: any) => {
+            if (project.supervisor && typeof project.supervisor === 'object') {
+              const supervisorId = project.supervisor._id;
+              const supervisorName = `${project.supervisor.firstName} ${project.supervisor.lastName}`;
+              const supervisorEmail = project.supervisor.email || '';
+              
+              if (!supervisorMap.has(supervisorId)) {
+                supervisorMap.set(supervisorId, { 
+                  name: supervisorName, 
+                  email: supervisorEmail 
+                });
+              }
+            }
+          });
+        }
+        
+        setSupervisors(Array.from(supervisorMap.values()));
+      } catch (error) {
+        console.error('Error fetching supervisors:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSupervisors();
+  }, [open, user?._id]);
 
   const getInitials = () => {
     return `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase();
@@ -157,13 +229,30 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overri
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <SupervisorAccountIcon sx={{ mr: 2, color: 'text.secondary' }} />
-          <Box>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+          <SupervisorAccountIcon sx={{ mr: 2, mt: 0.5, color: 'text.secondary' }} />
+          <Box sx={{ flex: 1 }}>
             <Typography variant="caption" color="text.secondary">
               Supervisors
             </Typography>
-            <Typography variant="body1">-</Typography>
+            {loading ? (
+              <Typography variant="body1">Loading...</Typography>
+            ) : supervisors.length > 0 ? (
+              <Box sx={{ mt: 1 }}>
+                {supervisors.map((supervisor, index) => (
+                  <Box key={index} sx={{ mb: index < supervisors.length - 1 ? 1.5 : 0 }}>
+                    <Typography variant="body1" fontWeight={500}>
+                      {supervisor.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                      {supervisor.email}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body1">No supervisors assigned</Typography>
+            )}
           </Box>
         </Box>
       </Box>
