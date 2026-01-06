@@ -1,6 +1,7 @@
 import { UserModel } from '../models/user.model';
 import ProjectModel from '../models/project.model';
 import { Timesheet } from '../models/timesheet.model';
+import HistoryModel from '../models/history.model';
 import { DailyTimesheetStatus, UserRole } from '@tms/shared';
 
 /**
@@ -157,32 +158,20 @@ export const getWeeklyTimesheetSubmissionsService = async (
  * Recent activities
  */
 export const getRecentActivitiesService = async () => {
-  const today = new Date();
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-
-  const recentTimesheets = await Timesheet.find({
-    date: { $gte: weekStart },
-    status: {
-      $in: [
-        DailyTimesheetStatus.Pending,
-        DailyTimesheetStatus.Approved,
-      ],
-    },
-  })
-    .populate('userId', 'firstName lastName')
-    .populate('projectId', 'projectName')
-    .sort({ updatedAt: -1 })
+  const recentHistories = await HistoryModel.find({})
+    .sort({ createdAt: -1 })
     .limit(10)
     .lean();
 
-  const activities = recentTimesheets.map((ts: any) => ({
-    id: ts._id.toString(),
-    user: `${ts.userId?.firstName ?? ''} ${ts.userId?.lastName ?? ''}`.trim() || 'Unknown',
-    action: `Submitted timesheet (${ts.hours} hours)`,
-    project: ts.projectId?.projectName || 'Unassigned',
-    timestamp: ts.updatedAt,
+  const activities = recentHistories.map((history: any) => ({
+    id: history._id.toString(),
+    user: history.performedByName,
+    email: history.performedByEmail,
+    action: history.description,
+    entityType: history.entityType,
+    entityName: history.entityName,
+    actionType: history.actionType,
+    timestamp: history.createdAt,
   }));
 
   return { activities };
@@ -192,7 +181,11 @@ export const getRecentActivitiesService = async () => {
  * Project progress
  */
 export const getProjectProgressService = async () => {
-  const projects = await ProjectModel.find({ status: true })
+  const projects = await ProjectModel.find({ 
+    status: true,
+    startDate: { $exists: true, $ne: null },
+    endDate: { $exists: true, $ne: null }
+  })
     .select('projectName startDate endDate createdAt')
     .limit(10)
     .lean();
@@ -200,12 +193,8 @@ export const getProjectProgressService = async () => {
   const projectProgress = projects.map((project: any) => ({
     id: project._id.toString(),
     projectName: project.projectName,
-    startDate: project.startDate || project.createdAt,
-    endDate:
-      project.endDate ||
-      new Date(
-        new Date(project.createdAt).getTime() + 90 * 24 * 60 * 60 * 1000
-      ),
+    startDate: project.startDate,
+    endDate: project.endDate,
   }));
 
   return { projects: projectProgress };

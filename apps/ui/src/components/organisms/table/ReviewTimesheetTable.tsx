@@ -124,7 +124,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
       label: 'Employee',
       key: 'employee',
       render: (row) => (
-        <Box sx={{ py: 1 }}>
+        <Box sx={{ py: 0.5 }}>
           <Typography variant="body2" fontWeight={500}>
             {row.name}
           </Typography>
@@ -138,14 +138,14 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
     {
       label: 'Designation',
       key: 'designation',
-      render: (row) => <Box sx={{ py: 1 }}>{row.designation || 'N/A'}</Box>,
+      render: (row) => <Box sx={{ py: 0.5 }}>{row.designation || 'N/A'}</Box>,
       width: '25%',
     },
     {
       label: 'Pending Timesheets',
       key: 'pendingTimesheetCount',
       render: (row) => (
-        <Box sx={{ py: 1 }}>
+        <Box sx={{ py: 0.5 }}>
           {row.pendingTimesheetCount !== undefined ? row.pendingTimesheetCount : 0}
         </Box>
       ),

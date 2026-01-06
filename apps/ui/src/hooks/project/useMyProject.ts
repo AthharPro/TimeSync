@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { listProjects } from '../../api/project';
+import { listMyProjects } from '../../api/project';
 import { MyProject } from '../../interfaces/project/IProject';
 
 export interface MyTeam {
@@ -26,7 +26,7 @@ export const useMyProjects = (): UseMyProjectsReturn => {
     try {
       setLoading(true);
       setError(null);
-      const response = await listProjects();
+      const response = await listMyProjects();
       console.log('useMyProjects - API Response:', response);
       // Backend returns { projects: [...], teams: [...] }
       const projects = response.projects || [];
