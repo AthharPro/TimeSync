@@ -265,6 +265,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         const teamName = this.cleanProjectName(teamTitles[0].split('Team:')[1].trim());
         mainTitle = `Timesheet Entries for ${teamName}`;
         
+        // Check space for title + table (checkPageBreak already accounts for footer)
+        const requiredSpace = 60 + 30 + 25; // title + header + 1 row minimum
+        this.checkPageBreak(requiredSpace);
+        
         // Add main team title
         this.addProjectTitle(mainTitle);
         
@@ -279,6 +283,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         // Single project only
         const projectName = this.cleanProjectName(projectTitles[0].split('Project:')[1].trim());
         mainTitle = `Timesheet Entries for ${projectName}`;
+        
+        // Check space for title + table (checkPageBreak already accounts for footer)
+        const requiredSpace = 60 + 30 + 25; // title + header + 1 row minimum
+        this.checkPageBreak(requiredSpace);
         
         // Add main project title
         this.addProjectTitle(mainTitle);
@@ -296,7 +304,17 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         
         // Create separate table for each project/team with its own title
         groupedEntries.forEach((group, index) => {
-          // Add spacing between tables
+          // Check if we have enough space for spacing + title + table header + at least 1 row
+          // Note: checkPageBreak already accounts for footer space
+          const spacing = index > 0 ? 20 : 0;
+          const titleSpace = 60;
+          const headerHeight = 30;
+          const rowHeight = 25;
+          const minRowsForTable = 1; // Allow table to start with just 1 row
+          const requiredSpace = spacing + titleSpace + headerHeight + (rowHeight * minRowsForTable);
+          this.checkPageBreak(requiredSpace);
+          
+          // Add spacing between tables (after page break check)
           if (index > 0) {
             this.currentY += 20;
           }
@@ -312,6 +330,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       // Fallback - no clear project/team info
       else {
         mainTitle = 'Timesheet Entries';
+        
+        // Check space for title + table (checkPageBreak already accounts for footer)
+        const requiredSpace = 60 + 30 + 25; // title + header + 1 row minimum
+        this.checkPageBreak(requiredSpace);
         
         // Add main title
         this.addProjectTitle(mainTitle);
@@ -546,7 +568,7 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
   }
 
   private addProjectTitle(title: string): void {
-    this.checkPageBreak(60);
+    // Note: Page break check should be done by caller to ensure title and table stay together
 
     this.doc
       .fontSize(18)

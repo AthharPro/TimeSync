@@ -72,6 +72,7 @@ export interface EmployeeSelectProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   disabled?: boolean;
+  multiple?: boolean;
 }
 
 export interface ProjectTeamItem {

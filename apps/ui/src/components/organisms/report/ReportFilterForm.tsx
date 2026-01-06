@@ -47,6 +47,7 @@ export const ReportFilterForm = ({
   } = useUserFilterType({ userRole, canSeeAllData });
 
   const prevResetTriggerRef = useRef(resetTrigger);
+  const prevFilterTypeRef = useRef(userFilterType);
 
   useEffect(() => {
     if (resetTrigger !== undefined && resetTrigger > (prevResetTriggerRef.current ?? 0)) {
@@ -63,6 +64,48 @@ export const ReportFilterForm = ({
       prevResetTriggerRef.current = resetTrigger;
     }
   }, [resetTrigger, updateFilter, resetFilterType]);
+
+  // Clear relevant filter fields when filter type changes
+  useEffect(() => {
+    if (prevFilterTypeRef.current !== userFilterType) {
+      // Clear previous filter type data
+      if (prevFilterTypeRef.current === 'team') {
+        setSelectedTeamId('');
+      } else if (prevFilterTypeRef.current === 'project') {
+        setSelectedProjectId('');
+      }
+
+      // Clear filter based on new type
+      if (userFilterType === 'individual') {
+        // Clear team and project when switching to individual
+        updateFilter({
+          ...currentFilter,
+          teamId: undefined,
+          projectId: undefined,
+          employeeIds: [],
+        });
+      } else if (userFilterType === 'team') {
+        // Clear project and employees when switching to team
+        updateFilter({
+          ...currentFilter,
+          projectId: undefined,
+          employeeIds: [],
+          teamId: undefined,
+        });
+      } else if (userFilterType === 'project') {
+        // Clear team and employees when switching to project
+        updateFilter({
+          ...currentFilter,
+          teamId: undefined,
+          employeeIds: [],
+          projectId: undefined,
+        });
+      }
+
+      prevFilterTypeRef.current = userFilterType;
+    }
+  }, [userFilterType]);
+
   // Date range handlers
   const handleStartDateChange = (date: Dayjs | null) => {
     updateFilter({
