@@ -87,7 +87,6 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     case UserRole.Supervisor: {
 
       const projects = await ProjectModel.find({ 
-        status: true, // Only show active projects
         $or: [
           { 'employees.user': new mongoose.Types.ObjectId(userId) }, // Private projects where user is assigned
           { isPublic: true }      // Public projects (all users can add time)
@@ -117,8 +116,8 @@ export const listProjects = async (userId: string, userRole: UserRole) => {
     case UserRole.SupervisorAdmin:
     case UserRole.Admin:
     case UserRole.SuperAdmin: {
-      // Admin/SupervisorAdmin/SuperAdmin can see ALL active projects in the Projects window
-      const projects = await ProjectModel.find({ status: true })
+      // Admin/SupervisorAdmin/SuperAdmin can see ALL projects in the Projects window
+      const projects = await ProjectModel.find({})
         .sort({ createdAt: -1 })
         .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
         .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
@@ -412,7 +411,10 @@ export const softDeleteProject = async (projectId: string) => {
     projectId,
     { $set: { status: false } },
     { new: true }
-  );
+  )
+    .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
+    .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
+    
   appAssert(project, INTERNAL_SERVER_ERROR, 'Project delete failed');
 
   // Handle supervisor role management
@@ -472,7 +474,30 @@ export const softDeleteProject = async (projectId: string) => {
     );
   }
 
-  return { projectId };
+  return { project };
+};
+
+export const activateProject = async (projectId: string) => {
+  const existing = await ProjectModel.findById(projectId).select('projectName status');
+
+  // Prevent activating the "Internal" project if it somehow got deactivated
+  appAssert(
+    existing?.projectName !== 'Internal' || existing?.status !== false,
+    CONFLICT,
+    'The Internal project cannot be manually activated'
+  );
+
+  const project = await ProjectModel.findByIdAndUpdate(
+    projectId,
+    { $set: { status: true } },
+    { new: true }
+  )
+    .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
+    .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
+    
+  appAssert(project, INTERNAL_SERVER_ERROR, 'Project activation failed');
+
+  return { project };
 };
 
 export const listSupervisedProjects = async (supervisorId: string) => {

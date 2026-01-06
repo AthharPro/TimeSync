@@ -25,7 +25,10 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   onRemoveEmployee,
   onCancel,
   onSubmit,
+  projectVisibility,
 }) => {
+  const isPublic = projectVisibility === 'public';
+
   return (
     <form onSubmit={onSubmit}>
       <Box
@@ -36,44 +39,41 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
           gap: 5,
         }}
       >
-        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5 }}>
-          {/* Project Name Field */}
+        {/* Visibility Type - First Field */}
+        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
           <Controller
-            name="projectName"
+            name="projectVisibility"
             control={control}
             render={({ field }) => (
-              <BaseTextField
-                {...field}
+              <ProjectVisibility
                 value={field.value || ''}
-                label="Project Name"
-                placeholder="Enter Project Name"
-                variant="outlined"
-                id="project-name"
-                error={!!errors.projectName}
-                helperText={errors.projectName?.message || ' '}
-              />
-            )}
-          />
-          {/* Client Name Field */}
-          <Controller
-            name="clientName"
-            control={control}
-            render={({ field }) => (
-              <BaseTextField
-                {...field}
-                value={field.value || ''}
-                label="Client Name"
-                placeholder="Enter Client Name"
-                variant="outlined"
-                id="client-name"
-                error={!!errors.clientName}
-                helperText={errors.clientName?.message || ' '}
+                onChange={field.onChange}
+                error={!!errors.projectVisibility}
+                helperText={errors.projectVisibility?.message}
               />
             )}
           />
         </Box>
-        
-        {/* Description Field */}
+
+        {/* Project Name Field - Always visible */}
+        <Controller
+          name="projectName"
+          control={control}
+          render={({ field }) => (
+            <BaseTextField
+              {...field}
+              value={field.value || ''}
+              label="Project Name"
+              placeholder="Enter Project Name"
+              variant="outlined"
+              id="project-name"
+              error={!!errors.projectName}
+              helperText={errors.projectName?.message || ' '}
+            />
+          )}
+        />
+
+        {/* Description Field - Always visible */}
         <Controller
           name="description"
           control={control}
@@ -90,125 +90,136 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
             />
           )}
         />
-        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
-          {/* Project Visibility Dropdown */}
-          <Controller
-            name="projectVisibility"
-            control={control}
-            render={({ field }) => (
-              <ProjectVisibility
-                value={field.value || ''}
-                onChange={field.onChange}
-                error={!!errors.projectVisibility}
-                helperText={errors.projectVisibility?.message}
-              />
-            )}
-          />
 
-          {/* Billable Dropdown */}
-          <Controller
-            name="billable"
-            control={control}
-            render={({ field }) => (
-              <BillableSelect
-                value={field.value || ''}
-                onChange={field.onChange}
-                error={!!errors.billable}
-                helperText={errors.billable?.message}
-              />
-            )}
-          />
-        </Box>
-
-        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
-          {/* Project Type Dropdown */}
-          <Controller
-            name="projectType"
-            control={control}
-            render={({ field }) => (
-              <ProjectType
-                value={field.value || ''}
-                onChange={field.onChange}
-                error={!!errors.billable}
-                helperText={errors.billable?.message}
-              />
-            )}
-          />
-
-          {/* Cost Center Dropdown */}
-          <Controller
-            name="costCenter"
-            control={control}
-            render={({ field }) => (
-              <CostCenterSelect
-                value={field.value || ''}
-                onChange={field.onChange}
-                error={!!errors.billable}
-                helperText={errors.billable?.message}
-              />
-            )}
-          />
-        </Box>
-
-        <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
-          {/* Start Date */}
-          <Controller
-            name="startDate"
-            control={control}
-            render={({ field }) => (
-              <DatePickerAtom
-                label="Start Date"
-                value={field.value ? dayjs(field.value) : null}
-                onChange={(date) => field.onChange(date ? date.toDate() : null)}
-              />
-            )}
-          />
-
-          {/* End Date */}
-          <Controller
-            name="endDate"
-            control={control}
-            render={({ field }) => (
+        {/* Private Project Fields - Only show when private */}
+        {!isPublic && (
+          <>
+            {/* Billable Dropdown - Only for private projects */}
+            <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
               <Controller
-                name="startDate"
+                name="billable"
                 control={control}
-                render={({ field: startField }) => (
-                  <DatePickerAtom
-                    label="End Date"
-                    value={field.value ? dayjs(field.value) : null}
-                    onChange={(date) =>
-                      field.onChange(date ? date.toDate() : null)
-                    }
-                    minDate={
-                      startField.value ? dayjs(startField.value) : undefined
-                    }
+                render={({ field }) => (
+                  <BillableSelect
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    error={!!errors.billable}
+                    helperText={errors.billable?.message}
                   />
                 )}
               />
-            )}
-          />
-        </Box>
-
-        {/* Employee Section */}
-        <EmployeeSection
-          selectedEmployees={selectedEmployees}
-          onAddEmployeesClick={onAddEmployeesClick}
-          onRemoveEmployee={onRemoveEmployee}
-        />
-        {/* Supervisor Dropdown */}
-        <Box sx={{ mb: 1 }}>
-          <Controller
-            name="supervisor"
-            control={control}
-            render={({ field }) => (
-              <SupervisorSelector
-                selectedEmployees={selectedEmployees}
-                supervisor={field.value || ''}
-                onSupervisorChange={field.onChange}
+            </Box>
+            <Box style={{ display: 'flex', flexDirection: 'row', gap: 5 }}>
+              {/* Client Name Field */}
+              <Controller
+                name="clientName"
+                control={control}
+                render={({ field }) => (
+                  <BaseTextField
+                    {...field}
+                    value={field.value || ''}
+                    label="Client Name"
+                    placeholder="Enter Client Name"
+                    variant="outlined"
+                    id="client-name"
+                    error={!!errors.clientName}
+                    helperText={errors.clientName?.message || ' '}
+                  />
+                )}
               />
-            )}
-          />
-        </Box>
+            </Box>
+
+            <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
+              {/* Project Type Dropdown */}
+              <Controller
+                name="projectType"
+                control={control}
+                render={({ field }) => (
+                  <ProjectType
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    error={!!errors.billable}
+                    helperText={errors.billable?.message}
+                  />
+                )}
+              />
+
+              {/* Cost Center Dropdown */}
+              <Controller
+                name="costCenter"
+                control={control}
+                render={({ field }) => (
+                  <CostCenterSelect
+                    value={field.value || ''}
+                    onChange={field.onChange}
+                    error={!!errors.billable}
+                    helperText={errors.billable?.message}
+                  />
+                )}
+              />
+            </Box>
+
+            <Box style={{ display: 'flex', flexDirection: 'row', gap: 5, marginBottom: 10 }}>
+              {/* Start Date */}
+              <Controller
+                name="startDate"
+                control={control}
+                render={({ field }) => (
+                  <DatePickerAtom
+                    label="Start Date"
+                    value={field.value ? dayjs(field.value) : null}
+                    onChange={(date) => field.onChange(date ? date.toDate() : null)}
+                  />
+                )}
+              />
+
+              {/* End Date */}
+              <Controller
+                name="endDate"
+                control={control}
+                render={({ field }) => (
+                  <Controller
+                    name="startDate"
+                    control={control}
+                    render={({ field: startField }) => (
+                      <DatePickerAtom
+                        label="End Date"
+                        value={field.value ? dayjs(field.value) : null}
+                        onChange={(date) =>
+                          field.onChange(date ? date.toDate() : null)
+                        }
+                        minDate={
+                          startField.value ? dayjs(startField.value) : undefined
+                        }
+                      />
+                    )}
+                  />
+                )}
+              />
+            </Box>
+
+            {/* Employee Section */}
+            <EmployeeSection
+              selectedEmployees={selectedEmployees}
+              onAddEmployeesClick={onAddEmployeesClick}
+              onRemoveEmployee={onRemoveEmployee}
+            />
+            {/* Supervisor Dropdown */}
+            <Box sx={{ mb: 1 }}>
+              <Controller
+                name="supervisor"
+                control={control}
+                render={({ field }) => (
+                  <SupervisorSelector
+                    selectedEmployees={selectedEmployees}
+                    supervisor={field.value || ''}
+                    onSupervisorChange={field.onChange}
+                  />
+                )}
+              />
+            </Box>
+          </>
+        )}
 
         <Box>
           <Divider />

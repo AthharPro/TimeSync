@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { listProjects, deleteProject, updateProjectStaff, createProject as createProjectAPI } from '../../api/project';
+import { listProjects, deleteProject, activateProject as activateProjectAPI, updateProjectStaff, createProject as createProjectAPI } from '../../api/project';
 import { IProject } from '../../interfaces/project/IProject';
 import { CostCenter, ProjectType } from '../../interfaces/project/IProject';
 
@@ -102,6 +102,7 @@ const transformProject = (project: any): SerializedProject => {
     endDate: project.endDate ? (typeof project.endDate === 'string' ? project.endDate : new Date(project.endDate).toISOString()) : null,
     billable,
     status,
+    isActive: project.status ?? true, // Store the backend boolean status
     createdAt: project.createdAt ? (typeof project.createdAt === 'string' ? project.createdAt : new Date(project.createdAt).toISOString()) : now,
     updatedAt: project.updatedAt ? (typeof project.updatedAt === 'string' ? project.updatedAt : new Date(project.updatedAt).toISOString()) : now,
   };
@@ -172,18 +173,42 @@ export const fetchProjects = createAsyncThunk<
   }
 });
 
-// Delete project
+// Delete project (Put on hold)
 export const deleteProjectAction = createAsyncThunk<
-  string, // projectId
+  SerializedProject, // Returns updated project
   string, // projectId
   { rejectValue: string }
 >('project/deleteProject', async (projectId, thunkAPI) => {
   try {
-    await deleteProject(projectId);
-    return projectId;
+    const response = await deleteProject(projectId);
+    const projectData = response.project;
+    if (!projectData) {
+      return thunkAPI.rejectWithValue('Invalid response structure from server');
+    }
+    return transformProject(projectData);
   } catch (error: any) {
     return thunkAPI.rejectWithValue(
-      error.response?.data?.message || 'Failed to delete project'
+      error.response?.data?.message || 'Failed to put project on hold'
+    );
+  }
+});
+
+// Activate project
+export const activateProjectAction = createAsyncThunk<
+  SerializedProject,
+  string, // projectId
+  { rejectValue: string }
+>('project/activateProject', async (projectId, thunkAPI) => {
+  try {
+    const response = await activateProjectAPI(projectId);
+    const projectData = response.project;
+    if (!projectData) {
+      return thunkAPI.rejectWithValue('Invalid response structure from server');
+    }
+    return transformProject(projectData);
+  } catch (error: any) {
+    return thunkAPI.rejectWithValue(
+      error.response?.data?.message || 'Failed to activate project'
     );
   }
 });
@@ -277,11 +302,27 @@ const projectSlice = createSlice({
       .addCase(deleteProjectAction.pending, (state) => {
         state.error = null;
       })
-      .addCase(deleteProjectAction.fulfilled, (state, action: PayloadAction<string>) => {
-        state.projects = state.projects.filter((p) => p.id !== action.payload);
+      .addCase(deleteProjectAction.fulfilled, (state, action: PayloadAction<SerializedProject>) => {
+        const index = state.projects.findIndex((p) => p.id === action.payload.id);
+        if (index !== -1) {
+          state.projects[index] = action.payload;
+        }
       })
       .addCase(deleteProjectAction.rejected, (state, action) => {
-        state.error = action.payload || 'Failed to delete project';
+        state.error = action.payload || 'Failed to put project on hold';
+      })
+      // Activate project
+      .addCase(activateProjectAction.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(activateProjectAction.fulfilled, (state, action: PayloadAction<SerializedProject>) => {
+        const index = state.projects.findIndex((p) => p.id === action.payload.id);
+        if (index !== -1) {
+          state.projects[index] = action.payload;
+        }
+      })
+      .addCase(activateProjectAction.rejected, (state, action) => {
+        state.error = action.payload || 'Failed to activate project';
       })
       // Update project staff - don't set loading to avoid blocking the UI
       .addCase(updateProjectStaffAction.pending, (state) => {

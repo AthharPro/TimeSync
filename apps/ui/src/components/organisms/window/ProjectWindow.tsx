@@ -22,7 +22,7 @@ import StatusChip from '../../atoms/other/Icon/StatusChip';
 import ProjectFilterPopover from '../popover/ProjectFilterPopover';
 
 function ProjectWindow() {
-  const { projects, loading: isLoading, error, loadProjects, deleteProject } = useProjects();
+  const { projects, loading: isLoading, error, loadProjects, deleteProject, activateProject } = useProjects();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
 
   
@@ -53,6 +53,17 @@ function ProjectWindow() {
   const handleDelete = (project: IProject) => {
     setProjectToDelete(project);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleActivate = async (project: IProject) => {
+    try {
+      await activateProject(project.id);
+      showSuccess('Project activated successfully');
+      // Projects are automatically updated in Redux store
+    } catch (error) {
+      console.error('Failed to activate project:', error);
+      showError('Failed to activate project. Please try again.');
+    }
   };
 
   const handleViewTeam = (project: IProject) => {
@@ -103,11 +114,11 @@ function ProjectWindow() {
         await deleteProject(projectToDelete.id);
         setIsDeleteDialogOpen(false);
         setProjectToDelete(null);
-        showSuccess('Project deleted successfully');
+        showSuccess('Project put on hold successfully');
         // Projects are automatically updated in Redux store
       } catch (error) {
-        console.error('Failed to delete project:', error);
-        showError('Failed to delete project. Please try again.');
+        console.error('Failed to put project on hold:', error);
+        showError('Failed to put project on hold. Please try again.');
       }
     }
   };
@@ -210,12 +221,16 @@ function ProjectWindow() {
         key: 'teamMembers',
         label: 'Team Members',
         width: 'auto',
-        render: (row) => (
-          <TeamMembersCell
-            teamMembers={row.teamMembers}
-            onViewTeam={row.projectName === 'Internal' ? undefined : () => handleViewTeam(row)}
-          />
-        ),
+        render: (row) => {
+          const isPublicOrInternal = row.projectName === 'Internal' || row.projectVisibility?.toLowerCase() === 'public';
+          return (
+            <TeamMembersCell
+              teamMembers={row.teamMembers}
+              onViewTeam={isPublicOrInternal ? undefined : () => handleViewTeam(row)}
+              disabled={isPublicOrInternal}
+            />
+          );
+        },
       },
       {
         key: 'dateRange',
@@ -241,14 +256,21 @@ function ProjectWindow() {
               label: '',
               key: 'actions',
               render: (row) => {
-                // Don't show edit/delete actions for "Internal" project
+                // Don't show any actions for "Internal" project
                 if (row.projectName === 'Internal') {
                   return null;
                 }
+                
+                // For public projects, disable edit but keep delete/activate
+                const isPublic = row.projectVisibility?.toLowerCase() === 'public';
+                const isInactive = row.isActive === false;
+                
                 return (
                   <ActionButton
                     onEdit={() => handleEdit(row)}
-                    onDelete={() => handleDelete(row)}
+                    onDelete={isInactive ? () => handleActivate(row) : () => handleDelete(row)}
+                    disableEdit={isPublic}
+                    deleteLabel={isInactive ? 'Activate' : 'On Hold'}
                   />
                 );
               },
@@ -360,11 +382,11 @@ function ProjectWindow() {
 
       <ConformationDailog
         open={isDeleteDialogOpen}
-        title="Delete Project"
-        message={`Are you sure you want to delete "${
+        title="Put Project On Hold"
+        message={`Are you sure you want to put "${
           projectToDelete?.projectName || 'this project'
-        }"?`}
-        confirmText="Delete"
+        }" on hold?`}
+        confirmText="On Hold"
         cancelText="Cancel"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}

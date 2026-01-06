@@ -173,7 +173,7 @@ export default function ProjectStaffManager({
       onClose={onClose}
       title="Manage Project Members"
       subtitle="Add or remove project members and set a supervisor"
-      maxWidth='md'
+      maxWidth='lg'
     >
       <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
         {error && (

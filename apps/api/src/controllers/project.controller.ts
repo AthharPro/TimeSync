@@ -10,6 +10,7 @@ import {
   listMyProjects,
   updateProjectStaff,
   softDeleteProject,
+  activateProject,
   listSupervisedProjects,
 } from '../services/project.service';
 import { UserRole } from '@tms/shared';
@@ -17,9 +18,6 @@ import { UserRole } from '@tms/shared';
 
 export const createHandler = catchErrors(async (req, res) => {
   const parsedUi = createProjectFromUiSchema.parse(req.body);
-  // Convert isPublic string to boolean
- 
-  const isPublicBoolean = parsedUi.isPublic?.toLowerCase() === 'public';
   
   const normalized = createProjectNormalizedSchema.parse({
     projectName: parsedUi.projectName,
@@ -28,7 +26,7 @@ export const createHandler = catchErrors(async (req, res) => {
     endDate: parsedUi.endDate,
     clientName: parsedUi.clientName,
     costCenter: parsedUi.costCenter,
-    isPublic: isPublicBoolean,
+    isPublic: parsedUi.isPublic,
     projectType: parsedUi.projectType,
     billable: parsedUi.billable,
     employees: parsedUi.employees,
@@ -67,6 +65,12 @@ export const updateStaffHandler = catchErrors(async (req, res) => {
 export const deleteHandler = catchErrors(async (req, res) => {
   const { id } = req.params as { id: string };
   const result = await softDeleteProject(id);
+  return res.status(OK).json(result);
+});
+
+export const activateHandler = catchErrors(async (req, res) => {
+  const { id } = req.params as { id: string };
+  const result = await activateProject(id);
   return res.status(OK).json(result);
 });
 
