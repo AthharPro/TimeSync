@@ -283,7 +283,7 @@ function MyTimesheetWindow() {
         </Box>
       )}
       {view === 'table' && <MyTimesheetTable filters={filters} isLoading={isLoading} />}
-      {view === 'calendar' && <MyTimesheetCalenderTable/>}
+      {view === 'calendar' && <MyTimesheetCalenderTable onError={showError} />}
       
       <MyTimesheetFilterPopover
         anchorEl={filterAnchorEl}
