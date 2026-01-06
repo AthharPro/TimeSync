@@ -242,6 +242,7 @@ export const updateTeamStaff = async (
     console.log('Team update - Members array not provided, skipping user team membership updates');
   }
 
+  // Create history logs for supervisor change
   if (data.supervisor !== undefined) {
     const previousSupervisorId = existing?.supervisor 
       ? (existing.supervisor as any)._id?.toString() || null 
@@ -250,6 +251,42 @@ export const updateTeamStaff = async (
       ? (team.supervisor as any)._id?.toString?.() || team.supervisor.toString()
       : null;
 
+    // Log supervisor change if it changed
+    if (previousSupervisorId !== newSupervisorId) {
+      try {
+        const actor = performedBy ? await UserModel.findById(performedBy) : null;
+        const actorId = performedBy || team._id;
+        const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'System';
+        const actorEmail = actor ? actor.email : 'system@timesync.com';
+
+        const newSupervisor = newSupervisorId ? await UserModel.findById(newSupervisorId) : null;
+        const newSupervisorName = newSupervisor ? `${newSupervisor.firstName} ${newSupervisor.lastName}` : 'None';
+
+        await createHistoryLog({
+          actionType: HistoryActionType.TEAM_SUPERVISOR_CHANGED,
+          entityType: HistoryEntityType.TEAM,
+          entityId: team._id,
+          entityName: team.teamName,
+          performedBy: actorId,
+          performedByName: actorName,
+          performedByEmail: actorEmail,
+          description: generateHistoryDescription(
+            HistoryActionType.TEAM_SUPERVISOR_CHANGED,
+            team.teamName,
+            { newSupervisorName }
+          ),
+          metadata: {
+            oldSupervisorId: previousSupervisorId,
+            newSupervisorId,
+            newSupervisorName,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to create history log for team supervisor change:', error);
+      }
+    }
+
+    // Update supervisor role
     if (newSupervisorId && previousSupervisorId !== newSupervisorId) {
       const sup = await UserModel.findById(newSupervisorId).select('role firstName lastName');
       if (sup) {
@@ -265,6 +302,7 @@ export const updateTeamStaff = async (
       }
     }
     
+    // Downgrade previous supervisor role if needed
     if (
       previousSupervisorId &&
       (previousSupervisorId !== newSupervisorId || !newSupervisorId)

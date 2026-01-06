@@ -33,16 +33,16 @@ export interface MyProjectsState {
 export interface IProject {
   id: string;
   projectName: string;
-  costCenter: CostCenter;
+  costCenter: CostCenter | '';
   clientName: string;
   projectVisibility: string;
   description: string;
-  projectType: ProjectType;
+  projectType: ProjectType | '';
   projectManager?: IProjectManager;
   supervisor?: string | null;
   teamMembers: ITeamMember[];
-  startDate: Date;
-  endDate: Date | null;
+  startDate: Date | string;
+  endDate: Date | string | null;
   billable: boolean;
   status: 'Active' | 'Completed' | 'On Hold';
   createdAt: Date;

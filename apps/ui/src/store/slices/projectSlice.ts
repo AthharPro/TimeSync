@@ -5,7 +5,7 @@ import { CostCenter, ProjectType } from '../../interfaces/project/IProject';
 
 // Serialized version of IProject for Redux storage (dates as ISO strings)
 type SerializedProject = Omit<IProject, 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> & {
-  startDate: string;
+  startDate: string | '';
   endDate: string | null;
   createdAt: string;
   updatedAt: string;
@@ -91,14 +91,14 @@ const transformProject = (project: any): SerializedProject => {
   return {
     id: project.id || project._id,
     projectName: project.projectName,
-    costCenter: (project.costCenter as CostCenter) || 'Sri Lanka',
+    costCenter: (project.costCenter as CostCenter) || '',
     clientName: project.clientName || '',
     projectVisibility: project.isPublic ? 'Public' : 'Private',
     description: project.description || '',
-    projectType: (project.projectType as ProjectType) || 'T&M',
+    projectType: (project.projectType as ProjectType) || '',
     supervisor: supervisor,
     teamMembers,
-    startDate: project.startDate ? (typeof project.startDate === 'string' ? project.startDate : new Date(project.startDate).toISOString()) : (project.createdAt ? (typeof project.createdAt === 'string' ? project.createdAt : new Date(project.createdAt).toISOString()) : now),
+    startDate: project.startDate ? (typeof project.startDate === 'string' ? project.startDate : new Date(project.startDate).toISOString()) : '',
     endDate: project.endDate ? (typeof project.endDate === 'string' ? project.endDate : new Date(project.endDate).toISOString()) : null,
     billable,
     status,
@@ -147,14 +147,14 @@ export const fetchProjects = createAsyncThunk<
         return {
           id: project.id || project._id || `error-${index}`,
           projectName: project.projectName || 'Unknown Project',
-          costCenter: 'Sri Lanka' as CostCenter,
+          costCenter: '' as CostCenter,
           clientName: project.clientName || '',
           projectVisibility: 'Private' as const,
           description: project.description || '',
-          projectType: 'T&M' as ProjectType,
+          projectType: '' as ProjectType,
           supervisor: null,
           teamMembers: [],
-          startDate: now,
+          startDate: '',
           endDate: null,
           billable: false,
           status: 'Active' as const,

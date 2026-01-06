@@ -184,6 +184,13 @@ export const updateProjectStaff = async (
     .select('supervisor employees projectName')
     .populate('supervisor', 'firstName lastName')
     .populate('employees', 'firstName lastName');
+  
+  // Prevent editing the "Internal" project
+  appAssert(
+    existing?.projectName !== 'Internal',
+    CONFLICT,
+    'The Internal project cannot be edited'
+  );
   const update: any = {};
   
   const oldEmployeeIds = existing?.employees?.map((e: any) => e._id.toString()) || [];
@@ -393,6 +400,13 @@ export const updateProjectStaff = async (
 export const softDeleteProject = async (projectId: string) => {
   // Capture the current project data before deletion
   const existing = await ProjectModel.findById(projectId).select('supervisor employees projectName');
+
+  // Prevent deleting the "Internal" project
+  appAssert(
+    existing?.projectName !== 'Internal',
+    CONFLICT,
+    'The Internal project cannot be deleted'
+  );
 
   const project = await ProjectModel.findByIdAndUpdate(
     projectId,

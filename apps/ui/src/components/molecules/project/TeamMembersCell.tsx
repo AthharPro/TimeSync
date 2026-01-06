@@ -9,7 +9,7 @@ const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
   onViewTeam,
 }) => {
   return (
-    <Box display="flex" justifyContent="space-between" alignItems="center" gap={1}>
+    <Box display="flex" justifyContent="space-between" alignItems="center" gap={1} minHeight="40px">
       {/* <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: 14 } }}>
         {teamMembers.map((member) => (
           <Tooltip key={member.id} title={member.name}>
@@ -19,14 +19,16 @@ const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
           </Tooltip>
         ))}
       </AvatarGroup> */}
-      <BaseBtn
-        size="small"
-        variant="outlined"
-        startIcon={<GroupIcon />}
-        onClick={onViewTeam}
-      >
-        View Team
-      </BaseBtn>
+      {onViewTeam && (
+        <BaseBtn
+          size="small"
+          variant="outlined"
+          startIcon={<GroupIcon />}
+          onClick={onViewTeam}
+        >
+          View Team
+        </BaseBtn>
+      )}
     </Box>
   );
 };
