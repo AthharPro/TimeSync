@@ -6,7 +6,7 @@ import { AppSnackbarProps } from '../../../interfaces/other/ISnackBar';
 const AppSnackbar: React.FC<AppSnackbarProps> = ({
   snackbar,
   onClose,
-  autoHideDuration = 6000,
+  autoHideDuration = 1000,
 }) => {
   return (
     <Snackbar
