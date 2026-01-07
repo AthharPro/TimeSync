@@ -180,7 +180,10 @@ export const getSupervisorsForUser = async (userId: string): Promise<string[]> =
 
 /**
  * Get supervisors from specific timesheets
- * Returns supervisors from the projects and teams associated with the submitted timesheets
+ * Returns supervisors from:
+ * 1. Projects referenced in the timesheets
+ * 2. Teams referenced in the timesheets
+ * 3. ALL teams that the employee is a member of (especially important for isDepartment:false teams)
  */
 export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?: any; teamId?: any; userId?: any }>): Promise<string[]> => {
   const supervisorIds = new Set<string>();
@@ -188,6 +191,7 @@ export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?
   // Extract unique project and team IDs from timesheets
   const projectIds = new Set<string>();
   const teamIds = new Set<string>();
+  const userIds = new Set<string>();
 
   timesheets.forEach(timesheet => {
     if (timesheet.projectId) {
@@ -195,6 +199,9 @@ export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?
     }
     if (timesheet.teamId) {
       teamIds.add(timesheet.teamId.toString());
+    }
+    if (timesheet.userId) {
+      userIds.add(timesheet.userId.toString());
     }
   });
 
@@ -220,6 +227,22 @@ export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?
     }).select('supervisor').lean();
 
     teams.forEach(team => {
+      if (team.supervisor) {
+        supervisorIds.add(team.supervisor.toString());
+      }
+    });
+  }
+
+  // IMPORTANT: Also get supervisors from ALL teams the employee(s) are members of
+  // This ensures that supervisors of isDepartment:false teams get notified
+  // even when the timesheet doesn't directly reference their team
+  if (userIds.size > 0) {
+    const employeeTeams = await TeamModel.find({
+      members: { $in: Array.from(userIds) },
+      status: true
+    }).select('supervisor').lean();
+
+    employeeTeams.forEach(team => {
       if (team.supervisor) {
         supervisorIds.add(team.supervisor.toString());
       }
