@@ -140,15 +140,43 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
 
   const timesheetData: ITimesheetTableEntry[] = useMemo(() => {
     let filteredTimesheets = newTimesheets.map((timesheet) => {
-      // Find project name from project ID
-      const project = timesheet.project ? myProjects.find(p => p._id === timesheet.project) : null;
-      // Find team name from team ID
-      const team = timesheet.team ? myTeams.find(t => t._id === timesheet.team) : null;
-      const projectName = project ? project.projectName : (team ? team.teamName : (timesheet.project || timesheet.team || ''));
+      // Priority 1: Use stored names from backend (populated data)
+      // Priority 2: Look up in current projects/teams
+      // Priority 3: Fallback to "[Deleted ...]" if nothing available
       
-      // Find task name from task ID (search in all tasks from all projects)
-      const task = allTasks.find(t => t._id === timesheet.task);
-      const taskName = task ? task.taskName : timesheet.task;
+      let projectName: string;
+      if (timesheet.projectName) {
+        // We have the name from backend - use it!
+        projectName = timesheet.projectName;
+      } else if (timesheet.teamName) {
+        // We have the team name from backend - use it!
+        projectName = timesheet.teamName;
+      } else {
+        // Try to look up in current assignments
+        const project = timesheet.project ? myProjects.find(p => p._id === timesheet.project) : null;
+        const team = timesheet.team ? myTeams.find(t => t._id === timesheet.team) : null;
+        
+        if (project) {
+          projectName = project.projectName;
+        } else if (team) {
+          projectName = team.teamName;
+        } else if (timesheet.project) {
+          projectName = '[Deleted Project]';
+        } else if (timesheet.team) {
+          projectName = '[Deleted Team]';
+        } else {
+          projectName = '';
+        }
+      }
+      
+      // Use stored task name if available, otherwise look it up
+      let taskName: string;
+      if (timesheet.taskName) {
+        taskName = timesheet.taskName;
+      } else {
+        const task = allTasks.find(t => t._id === timesheet.task);
+        taskName = task ? task.taskName : (timesheet.task ? '[Deleted Task]' : timesheet.task);
+      }
       
       return {
         ...timesheet,
