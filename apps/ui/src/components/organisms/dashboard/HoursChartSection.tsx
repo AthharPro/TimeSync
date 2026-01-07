@@ -57,7 +57,7 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data, totalUsers
 
         {/* Summary */}
         <Divider sx={{ my: 2 }} />
-        <Box display="flex" justifyContent="space-around">
+        <Box display="flex" justifyContent="space-evenly" gap={4}>
           <Box textAlign="center">
             <Typography variant="h5" fontWeight={600} color="primary">
               {data.reduce((acc, curr) => acc + curr.submissions, 0)}
@@ -72,14 +72,6 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data, totalUsers
             </Typography>
             <Typography variant="caption" color="text.secondary">
               Daily Average
-            </Typography>
-          </Box>
-          <Box textAlign="center">
-            <Typography variant="h5" fontWeight={600} color="error.main">
-              {totalUsers * 7 - data.reduce((acc, curr) => acc + curr.submissions, 0)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Not Submitted
             </Typography>
           </Box>
         </Box>
