@@ -31,6 +31,15 @@ jobs:
       - name: Build API (Nx)
         run: npx nx build api
 
+      - name: Copy package.json to build output
+        run: |
+          cp package.json dist/apps/api/package.json
+
+      - name: Install production dependencies
+        run: |
+          cd dist/apps/api
+          npm install --omit=dev
+
       - name: Upload API build artifact
         uses: actions/upload-artifact@v4
         with:
