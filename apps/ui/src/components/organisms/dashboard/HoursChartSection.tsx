@@ -20,7 +20,7 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data, totalUsers
         </Typography>
         <Divider sx={{ my: 2 }} />
         
-        <Box sx={{ width: '100%', height: 280 }}>
+        <Box sx={{ width: '100%', height: 280, mt: 2 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
@@ -53,27 +53,6 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data, totalUsers
               />
             </BarChart>
           </ResponsiveContainer>
-        </Box>
-
-        {/* Summary */}
-        <Divider sx={{ my: 2 }} />
-        <Box display="flex" justifyContent="space-evenly" gap={4}>
-          <Box textAlign="center">
-            <Typography variant="h5" fontWeight={600} color="primary">
-              {data.reduce((acc, curr) => acc + curr.submissions, 0)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Total Submitted
-            </Typography>
-          </Box>
-          <Box textAlign="center">
-            <Typography variant="h5" fontWeight={600} color="success.main">
-              {(data.reduce((acc, curr) => acc + curr.submissions, 0) / data.length).toFixed(1)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Daily Average
-            </Typography>
-          </Box>
         </Box>
       </CardContent>
     </Card>
