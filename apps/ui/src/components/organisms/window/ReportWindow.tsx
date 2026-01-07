@@ -114,6 +114,7 @@ function ReportWindow({ onReset }: IReportWindowProps) {
   );
 
   const hasPreviewData = groupedPreviewData && Object.keys(groupedPreviewData).length > 0;
+  const hasAppliedFilters = isFilterValid && (currentFilter.startDate || currentFilter.endDate);
 
   return (
     <WindowLayout title="Report" buttons={button}>
@@ -168,6 +169,10 @@ function ReportWindow({ onReset }: IReportWindowProps) {
                     <HelperText color="error">{displayError}</HelperText>
                   ) : hasPreviewData ? (
                     <ReportGroupedPreview groupedPreviewData={groupedPreviewData} />
+                  ) : hasAppliedFilters ? (
+                    <HelperText>
+                      Timesheets are not submitted yet
+                    </HelperText>
                   ) : (
                     <HelperText>
                       Apply the required report filters to generate and preview the report
