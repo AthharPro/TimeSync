@@ -1,4 +1,4 @@
-import { ErrorRequestHandler, Response } from "express";
+import { ErrorRequestHandler, Response, NextFunction } from "express";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../constants/http";
 import { z } from "zod";
 import { AppError } from "../utils/error";
@@ -22,7 +22,7 @@ const handleAppError = (res: Response, error: AppError) => {
   });
 };
 
-const errorHandler: ErrorRequestHandler = (err, req, res) => {
+const errorHandler: ErrorRequestHandler = (err, req, res, next: NextFunction) => {
   console.error(`PATH: ${req.path}`, err);
 
   if (req.path === "/auth/refresh") {

@@ -65,6 +65,14 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/edit-request', editRequestRoutes);
 
+// 404 handler (must come before error handler)
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
 app.use(errorHandler);
 
 server.listen(port, async () => {
