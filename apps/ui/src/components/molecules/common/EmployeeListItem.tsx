@@ -28,26 +28,32 @@ const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
 
   const handleToggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    onToggle(employee);
-
-    if (!isSelected || e === undefined) {
-      setCurrentEmployee(employee);
-      setAllocDialogOpen(true);
+    
+    // If already selected, just deselect without dialog
+    if (isSelected) {
+      onToggle(employee);
+      return;
     }
+
+    // If not selected, open dialog first before adding
+    setCurrentEmployee(employee);
+    setAllocDialogOpen(true);
   };
 
   const handleListItemClick = (e: React.MouseEvent) => {
-  // If dialog is open, ignore any clicks bubbling from it
-  if (allocDialogOpen) return;
+    // If dialog is open, ignore any clicks bubbling from it
+    if (allocDialogOpen) return;
 
-  onToggle(employee);
+    // If already selected, just deselect
+    if (isSelected) {
+      onToggle(employee);
+      return;
+    }
 
-  // Only open dialog when selecting
-  if (!isSelected) {
+    // If not selected, open dialog first before adding
     setCurrentEmployee(employee);
     setAllocDialogOpen(true);
-  }
-};
+  };
 
   return (
     <ListItem
@@ -140,13 +146,16 @@ const EmployeeListItem: React.FC<IEmployeeListItemProps> = ({
         }}
         onConfirm={(allocation) => {
           if (currentEmployee) {
+            // Set the allocation on the employee object
+            currentEmployee.allocation = allocation;
+            
+            // Add the employee with the allocation
+            onToggle(currentEmployee);
+            
+            // If there's an allocation change handler, call it
             const id = currentEmployee._id || currentEmployee.id;
             if (typeof onAllocationChange === 'function') {
               onAllocationChange(id, allocation);
-            }
-            // update local selection display if the employee object is the same reference
-            if (currentEmployee) {
-              currentEmployee.allocation = allocation;
             }
           }
           setAllocDialogOpen(false);

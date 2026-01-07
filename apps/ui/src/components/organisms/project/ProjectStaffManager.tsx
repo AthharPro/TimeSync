@@ -128,7 +128,11 @@ export default function ProjectStaffManager({
         if (supervisor === employee.id) setSupervisor('');
         return updated;
       }
-      return [...prev, { ...employee, allocation: (employee as any).allocation ?? 0 }];
+      // When adding, preserve the allocation that was set in the dialog
+      return [...prev, { 
+        ...employee, 
+        allocation: (employee as any).allocation ?? 0 
+      }];
     });
   };
 
