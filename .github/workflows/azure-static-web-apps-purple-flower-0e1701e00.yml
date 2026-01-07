@@ -30,7 +30,10 @@ jobs:
           app_location: "/"
           api_location: ""
           output_location: "dist/apps/ui"
-          app_build_command: npx nx build ui --configuration=production
+          app_build_command: |
+            echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" >> .env.production
+            echo "REACT_APP_ENV=${{ secrets.REACT_APP_ENV }}" >> .env.production
+            npx nx build ui --configuration=production
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
