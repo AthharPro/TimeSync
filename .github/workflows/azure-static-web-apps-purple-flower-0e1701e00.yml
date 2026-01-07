@@ -30,7 +30,7 @@ jobs:
           app_location: "/"
           api_location: ""
           output_location: "dist/apps/ui"
-          app_build_command: npx nx build ui
+          app_build_command: npx nx build ui --configuration=production
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
