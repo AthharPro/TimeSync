@@ -79,6 +79,7 @@ function ReviewTimesheetWindow() {
       filterBy: 'all' as const,
       projectId: 'All',
       teamId: 'All',
+      filterEmployees: 'all' as const,
     };
   }, []);
 

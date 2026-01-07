@@ -128,8 +128,11 @@ const myTimesheetSlice = createSlice({
           calendarMap.set(key, {
             id: key,
             project: ts.project,
+            projectName: ts.projectName, // Store the actual project name from backend
             team: ts.team,
+            teamName: ts.teamName, // Store the actual team name from backend
             task: ts.task,
+            taskName: ts.taskName, // Store the actual task name from backend
             billableType: ts.billableType,
             myTimesheetEntriesIds: [],
           });

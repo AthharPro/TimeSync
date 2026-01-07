@@ -182,11 +182,41 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
     );
   }
 
+  // Filter employees based on filterEmployees option
+  const filteredEmployees = employees.filter((employee) => {
+    if (!filters?.filterEmployees || filters.filterEmployees === 'all') {
+      return true; // Show all employees
+    }
+    
+    const pendingCount = employee.pendingTimesheetCount || 0;
+    
+    if (filters.filterEmployees === 'withPending') {
+      return pendingCount > 0; // Only employees with pending timesheets
+    }
+    
+    if (filters.filterEmployees === 'noPending') {
+      return pendingCount === 0; // Only employees without pending timesheets
+    }
+    
+    return true;
+  });
+
+  // Show empty state if no employees match the filter
+  if (filteredEmployees.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography color="text.secondary">
+          No employees found matching the selected filters.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: '100%' }}>
       <DataTable<IEmployee>
         columns={columns}
-        rows={employees}
+        rows={filteredEmployees}
         getRowKey={(row) => row.id}
         onRowClick={handleRowClick}
         enableHover={true}
