@@ -65,6 +65,14 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/edit-request', editRequestRoutes);
 
+// In apps/api/src/main.ts
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'TimeSync API is running!',
+  });
+});
+
 // 404 handler (must come before error handler)
 app.use((req, res, next) => {
   res.status(404).json({
