@@ -144,8 +144,9 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
       title="Build Your Team"
       subtitle="Search and select employees to add to your Team"
       maxWidth="md"
+      paperHeight="810px"
     >
-      <Box>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '600px' }}>
         {isLoading && (
           <Typography variant="body2" sx={{ mb: 1 }}>
             Loading employees...

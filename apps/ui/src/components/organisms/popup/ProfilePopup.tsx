@@ -10,8 +10,7 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import WorkIcon from '@mui/icons-material/Work';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import { getMyMemberTeams } from '../../../api/team';
-import { listProjects } from '../../../api/project';
+import { getUserSupervisors } from '../../../api/user';
 
 interface ProfilePopupProps {
   open: boolean;
@@ -45,56 +44,14 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overri
       if (!open || !userId) return;
       
       setLoading(true);
-      const supervisorMap = new Map<string, { name: string; email: string }>();
       
       try {
-        // Fetch teams where user is a member
-        const teamsResponse = await getMyMemberTeams();
-        if (teamsResponse?.teams) {
-          teamsResponse.teams.forEach((team: any) => {
-            if (team.supervisor && typeof team.supervisor === 'object') {
-              const supervisorId = team.supervisor._id;
-              const supervisorName = `${team.supervisor.firstName} ${team.supervisor.lastName}`;
-              const supervisorEmail = team.supervisor.email || '';
-              
-              if (!supervisorMap.has(supervisorId)) {
-                supervisorMap.set(supervisorId, { 
-                  name: supervisorName, 
-                  email: supervisorEmail 
-                });
-              }
-            }
-          });
-        }
+        // Use the new API endpoint to get supervisors for the specific user
+        const response = await getUserSupervisors(userId);
         
-        // Fetch all projects and filter by user
-        const projectsResponse = await listProjects();
-        if (projectsResponse?.projects) {
-          // Filter projects where user is assigned
-          const userProjects = projectsResponse.projects.filter((project: any) => 
-            project.employees?.some((emp: any) => {
-              const empId = typeof emp === 'string' ? emp : emp.user?._id || emp.user;
-              return empId === userId;
-            })
-          );
-          
-          userProjects.forEach((project: any) => {
-            if (project.supervisor && typeof project.supervisor === 'object') {
-              const supervisorId = project.supervisor._id;
-              const supervisorName = `${project.supervisor.firstName} ${project.supervisor.lastName}`;
-              const supervisorEmail = project.supervisor.email || '';
-              
-              if (!supervisorMap.has(supervisorId)) {
-                supervisorMap.set(supervisorId, { 
-                  name: supervisorName, 
-                  email: supervisorEmail 
-                });
-              }
-            }
-          });
+        if (response?.supervisors) {
+          setSupervisors(response.supervisors);
         }
-        
-        setSupervisors(Array.from(supervisorMap.values()));
       } catch (error) {
         console.error('Error fetching supervisors:', error);
       } finally {

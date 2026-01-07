@@ -557,8 +557,11 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
   const selectedTeamName = isTeamWiseFilter && selectedTeamIds.length === 1 
     ? finalTeamMap.get(selectedTeamIds[0]) || null
     : null;
+  const selectedTeamIsDepartment = isTeamWiseFilter && selectedTeamIds.length === 1 
+    ? finalTeamDeptMap.get(selectedTeamIds[0]) || false
+    : false;
 
-    const userTeamMap = new Map<string, string[]>(); 
+  const userTeamMap = new Map<string, string[]>(); 
   users.forEach((u: any) => {
     const userId = String(u._id);
     const userTeams = (u.teams || []).map((teamId: any) => String(teamId)).filter(Boolean);
@@ -566,6 +569,22 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
       userTeamMap.set(userId, userTeams);
     }
   });
+
+  // Helper function to find a user's department team (isDepartment=true)
+  const getUserDepartmentTeam = (userId: string): { teamId: string; teamName: string } | null => {
+    const userTeams = userTeamMap.get(userId) || [];
+    // Find first department team from user's teams
+    for (const teamId of userTeams) {
+      if (finalTeamDeptMap.get(teamId) === true) {
+        const teamName = finalTeamMap.get(teamId);
+        if (teamName) {
+          return { teamId, teamName };
+        }
+      }
+    }
+    return null;
+  };
+  
   
   const dataByEmployee: Record<string, { employeeName: string; employeeEmail: string; tables: Array<{ title: string; rows: any[] }> }> = {};
 
@@ -647,8 +666,19 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
         
         // When filtering team-wise with a single team, group all work under that team name
         if (isTeamWiseFilter && selectedTeamName) {
-          // For team-wise filter, use the selected team name regardless of work type
-          title = `Team: ${selectedTeamName}`;
+          // If the selected team is not a department (isDepartment=false), show the user's actual department team
+          if (!selectedTeamIsDepartment) {
+            const deptTeam = getUserDepartmentTeam(employeeKey);
+            if (deptTeam) {
+              title = `Team: ${deptTeam.teamName}`;
+            } else {
+              // Fallback to selected team name if no department team found
+              title = `Team: ${selectedTeamName}`;
+            }
+          } else {
+            // For department teams, use the selected team name regardless of work type
+            title = `Team: ${selectedTeamName}`;
+          }
         }
         else if (cat.category === 'Project') {
           const projectIdStr = it.projectId ? String(it.projectId) : null;
@@ -656,13 +686,44 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
           // Check if projectId is actually a team ID 
           if (projectIdStr && projectIdsThatAreTeams.has(projectIdStr)) {
           
-            if (isIndividualUserFilter) {
+            // Check if this is team-wise filter with multiple teams
+            if (isTeamWiseFilter && !selectedTeamName) {
+              // Multiple teams selected - show department team if the work's team is non-department
+              const workTeamIsDept = finalTeamDeptMap.get(projectIdStr);
+              if (workTeamIsDept === false) {
+                const deptTeam = getUserDepartmentTeam(employeeKey);
+                if (deptTeam) {
+                  title = `Team: ${deptTeam.teamName}`;
+                } else {
+                  // Fallback to work's team name
+                  const teamName = finalTeamMap.get(projectIdStr) || `Unknown Team (${projectIdStr})`;
+                  title = `Team: ${teamName}`;
+                }
+              } else {
+                // Work's team is a department, use it
+                const teamName = finalTeamMap.get(projectIdStr) || `Unknown Team (${projectIdStr})`;
+                title = `Team: ${teamName}`;
+              }
+            }
+            else if (isIndividualUserFilter) {
               const userTeams = userTeamMap.get(employeeKey);
               if (userTeams && userTeams.length === 1) {
-                // User has exactly one team - use that team name (like team-wise filtering)
+                // User has exactly one team
                 const userTeamId = userTeams[0];
                 const userTeamName = finalTeamMap.get(userTeamId);
-                if (userTeamName) {
+                const userTeamIsDept = finalTeamDeptMap.get(userTeamId);
+                
+                // If user's team is not a department, find their department team
+                if (userTeamIsDept === false) {
+                  const deptTeam = getUserDepartmentTeam(employeeKey);
+                  if (deptTeam) {
+                    title = `Team: ${deptTeam.teamName}`;
+                  } else {
+                    // Fallback to user's team name
+                    title = `Team: ${userTeamName || 'Unknown Team'}`;
+                  }
+                } else if (userTeamName) {
+                  // User's team is a department team, use it
                   title = `Team: ${userTeamName}`;
                 } else {
                   // Fallback to projectId as team ID
@@ -675,7 +736,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
                 title = `Team: ${teamName}`;
               }
             } else {
-              // Not individual user filter - use projectId as team ID
+              // Not individual user filter and not team-wise filter - use projectId as team ID
               const teamName = finalTeamMap.get(projectIdStr) || `Unknown Team (${projectIdStr})`;
               title = `Team: ${teamName}`;
             }
@@ -686,13 +747,51 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
           }
         } else if (cat.category === 'Team') {
           
-          if (isIndividualUserFilter) {
+          // Check if this is team-wise filter with multiple teams
+          if (isTeamWiseFilter && !selectedTeamName) {
+            // Multiple teams selected - show department team if the work's team is non-department
+            const teamIdStr = it.teamId ? String(it.teamId) : null;
+            if (teamIdStr) {
+              const workTeamIsDept = finalTeamDeptMap.get(teamIdStr);
+              if (workTeamIsDept === false) {
+                const deptTeam = getUserDepartmentTeam(employeeKey);
+                if (deptTeam) {
+                  title = `Team: ${deptTeam.teamName}`;
+                } else {
+                  // Fallback to work's team name
+                  const teamName = finalTeamMap.get(teamIdStr) || `Unknown Team (${teamIdStr})`;
+                  title = `Team: ${teamName}`;
+                }
+              } else {
+                // Work's team is a department, use it
+                const teamName = finalTeamMap.get(teamIdStr) || `Unknown Team (${teamIdStr})`;
+                title = `Team: ${teamName}`;
+              }
+            } else {
+              title = 'Team';
+            }
+          }
+          else if (isIndividualUserFilter) {
             const userTeams = userTeamMap.get(employeeKey);
             if (userTeams && userTeams.length === 1) {
-              // User has exactly one team - use that team name (like team-wise filtering)
+              // User has exactly one team
               const userTeamId = userTeams[0];
               const userTeamName = finalTeamMap.get(userTeamId);
-              if (userTeamName) {
+              const userTeamIsDept = finalTeamDeptMap.get(userTeamId);
+              
+              // If user's team is not a department, find their department team
+              if (userTeamIsDept === false) {
+                const deptTeam = getUserDepartmentTeam(employeeKey);
+                if (deptTeam) {
+                  title = `Team: ${deptTeam.teamName}`;
+                } else {
+                  // Fallback to timesheet entry's teamId if no department team found
+                  const teamIdStr = it.teamId ? String(it.teamId) : null;
+                  const teamName = teamIdStr ? finalTeamMap.get(teamIdStr) || `Unknown Team (${teamIdStr})` : 'Team';
+                  title = `Team: ${teamName}`;
+                }
+              } else if (userTeamName) {
+                // User's team is a department team, use it
                 title = `Team: ${userTeamName}`;
               } else {
                 // Fallback to timesheet entry's teamId if user team name not found
@@ -707,7 +806,7 @@ export const generateTimesheetEntriesReportHandler: RequestHandler = async (req,
               title = `Team: ${teamName}`;
             }
           } else {
-            // Not individual user filter - use timesheet entry's teamId
+            // Not individual user filter and not team-wise filter - use timesheet entry's teamId
             const teamIdStr = it.teamId ? String(it.teamId) : null;
             const teamName = teamIdStr ? finalTeamMap.get(teamIdStr) || `Unknown Team (${teamIdStr})` : 'Team';
             title = `Team: ${teamName}`;

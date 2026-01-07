@@ -26,14 +26,15 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting, isValid },
     reset,
+    watch,
   } = useForm<CreateProjectFormData>({
-    resolver: yupResolver(CreateProjectFormSchema),
+    resolver: yupResolver(CreateProjectFormSchema) as any,
     mode: 'onChange',
     reValidateMode: 'onChange',
     defaultValues: {
       projectName: '',
       description: '',
-      projectVisibility: '',
+      projectVisibility: 'private',
       billable: undefined,
       projectType: undefined,
       costCenter: undefined,
@@ -41,6 +42,9 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
       supervisor: null,
     },
   });
+
+  // Watch the projectVisibility field
+  const projectVisibility = watch('projectVisibility');
 
   // Reset form when modal closes or opens
   useEffect(() => {
@@ -75,19 +79,21 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
 
   const onSubmit = async (data: CreateProjectFormData) => {
     try {
+      const isPublic = data.projectVisibility === 'public';
+      
       // Map form data to API format
       const projectData = {
         projectName: data.projectName,
-        clientName: data.clientName,
-        billable: data.billable === 'yes' ? 'Billable' : 'Non Billable',
-        costCenter: data.costCenter,
-        projectType: data.projectType,
-        employees: selectedEmployees.map((emp) => ({ user: emp.id, allocation: emp.allocation ?? 0 })),
-        supervisor: data.supervisor || null,
+        clientName: isPublic ? undefined : data.clientName,
+        billable: isPublic ? undefined : (data.billable === 'yes' ? 'Billable' : 'Non Billable'),
+        costCenter: isPublic ? undefined : data.costCenter,
+        projectType: isPublic ? undefined : data.projectType,
+        employees: isPublic ? [] : selectedEmployees.map((emp) => ({ user: emp.id, allocation: emp.allocation ?? 0 })),
+        supervisor: isPublic ? null : (data.supervisor || null),
         description: data.description,
-        isPublic: data.projectVisibility === 'Public',
-        startDate: data.startDate || null,
-        endDate: data.endDate || null,
+        isPublic: isPublic,
+        startDate: isPublic ? null : (data.startDate || null),
+        endDate: isPublic ? null : (data.endDate || null),
       };
 
       await createProject(projectData);
@@ -115,6 +121,7 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
           onRemoveEmployee={handleRemoveEmployee}
           onCancel={handleCancel}
           onSubmit={handleSubmit(onSubmit)}
+          projectVisibility={projectVisibility}
         />
       </PopupLayout>
 

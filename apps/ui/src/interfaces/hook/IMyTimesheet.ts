@@ -18,8 +18,8 @@ export interface IUseMyTimesheetReturn {
   syncUpdateTimesheet: (id: string, updates: Partial<IMyTimesheetTableEntry>) => Promise<void>;
   goToPreviousWeek: () => void;
   goToNextWeek: () => void;
-  createEmptyCalendarRow: (project?: string, task?: string, billableType?: BillableType) => void;
-  updateCalendar: (oldId: string, newProject: string, newTask: string, newBillableType: BillableType) => void;
+  createEmptyCalendarRow: (project?: string, team?: string, task?: string, billableType?: BillableType) => void;
+  updateCalendar: (oldId: string, newProject?: string, newTeam?: string, newTask?: string, newBillableType?: BillableType) => void;
   deleteCalendar: (calendarRowId: string) => void;
   loadTimesheets: (startDate?: Date, endDate?: Date) => Promise<void>;
   submitTimesheets: () => Promise<any>;

@@ -45,6 +45,7 @@ export interface IProject {
   endDate: Date | string | null;
   billable: boolean;
   status: 'Active' | 'Completed' | 'On Hold';
+  isActive?: boolean; // Backend status boolean
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,10 +54,10 @@ export interface CreateProjectFormData {
   projectName: string;
   description: string;
   projectVisibility: string;
-  billable: 'yes' | 'no';
+  billable?: 'yes' | 'no';
   supervisor?: string | null;
-  costCenter: CostCenter;
-  projectType: ProjectType;
+  costCenter?: CostCenter;
+  projectType?: ProjectType;
   clientName?: string;
   startDate?: Date | null;
   endDate?: Date | null;
@@ -115,4 +116,5 @@ export interface CreateProjectFormProps {
   onRemoveEmployee: (employeeId: string) => void;
   onCancel: () => void;
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
+  projectVisibility: string;
 }

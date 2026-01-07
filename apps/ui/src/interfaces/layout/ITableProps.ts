@@ -34,7 +34,8 @@ export interface IMyTimesheetTableEntry {
 
 export interface IMyTimesheetCalendarEntry {
   id: string; 
-  project: string;
+  project?: string;
+  team?: string;
   task: string;
   billableType: BillableType;
   myTimesheetEntriesIds: string[];

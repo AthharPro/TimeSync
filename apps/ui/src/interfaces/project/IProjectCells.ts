@@ -7,6 +7,7 @@ export interface IProjectManagerCellProps {
 export interface ITeamMembersCellProps {
   teamMembers: ITeamMember[];
   onViewTeam?: () => void;
+  disabled?: boolean;
 }
 
 export interface IDateRangeCellProps {

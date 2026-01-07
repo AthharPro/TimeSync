@@ -27,7 +27,26 @@ const BulkAccountForm: React.FC<IBulkAccountFormProps> = ({
           const worksheet = workbook.Sheets[firstSheetName]; 
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          setRows(jsonData);
+        
+          const formattedData = jsonData.map((row: any) => {
+            const contactNumber = row.contactNumber || row['Contact Number'];
+            if (contactNumber !== undefined && contactNumber !== null) {
+             
+              let formatted = String(contactNumber).replace(/[^0-9]/g, '');
+             
+              if (formatted.length > 0 && formatted.length <= 10) {
+                formatted = formatted.padStart(10, '0');
+              }
+              return {
+                ...row,
+                contactNumber: formatted,
+                'Contact Number': formatted,
+              };
+            }
+            return row;
+          });
+
+          setRows(formattedData);
           if (onReset) {
             onReset(); 
           }

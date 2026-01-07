@@ -147,8 +147,8 @@ const addNewTimesheet = useCallback(
   );
 
   const createEmptyCalendarRow = useCallback(
-    (project?: string, task?: string, billableType?: BillableType) => {
-      dispatch(addEmptyCalendarRow({ project, task, billableType }));
+    (project?: string, team?: string, task?: string, billableType?: BillableType) => {
+      dispatch(addEmptyCalendarRow({ project, team, task, billableType }));
     },
     [dispatch]
   );
@@ -156,12 +156,16 @@ const addNewTimesheet = useCallback(
   const updateCalendar = useCallback(
     (
       oldId: string,
-      newProject: string,
-      newTask: string,
-      newBillableType: BillableType
+      newProject?: string,
+      newTeam?: string,
+      newTask?: string,
+      newBillableType?: BillableType
     ) => {
+      // Ensure we have billableType to update (task can be empty for new rows)
+      if (newBillableType === undefined) return;
+      
       dispatch(
-        updateCalendarRow({ oldId, newProject, newTask, newBillableType })
+        updateCalendarRow({ oldId, newProject, newTeam, newTask: newTask || '', newBillableType })
       );
     },
     [dispatch]

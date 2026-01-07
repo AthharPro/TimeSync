@@ -703,6 +703,8 @@ export const useReportPreview = ({
     filter.teamId,
     filter.workType,
     isFilterValid,
+    // Add a stringified version of the entire filter to catch any other changes
+    JSON.stringify(filter)
   ]);
 
   return {

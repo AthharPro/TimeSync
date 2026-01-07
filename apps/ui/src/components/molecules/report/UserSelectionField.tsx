@@ -42,6 +42,7 @@ const UserSelectionField: React.FC<UserSelectionFieldProps> = ({
           selectedIds={selectedEmployeeIds && selectedEmployeeIds.length > 0 ? [selectedEmployeeIds[0]] : []}
           onChange={ids => onEmployeeChange ? onEmployeeChange(Array.isArray(ids) && ids.length > 0 ? [ids[0]] : []) : undefined}
           disabled={disabled}
+          multiple={false}
         />
         {renderHelperText(
           'Select an employee',

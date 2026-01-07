@@ -36,8 +36,8 @@ export const createProject = async (params: {
 
   const payload: any = {
     projectName: params.projectName,
-    clientName: params.clientName || 'Default Client',
-    billable: params.billable || 'Billable',
+    clientName: params.clientName || '-',
+    billable: params.billable || 'Non Billable',
     costCenter: params.costCenter || '',
     projectType: params.projectType || '',
     employees: (params.employees || []).map((e: any) =>
@@ -47,12 +47,12 @@ export const createProject = async (params: {
     description: description,
   };
   
-  // Convert isPublic boolean to string for backend (backend expects string and converts it)
+  // Send isPublic as boolean (backend expects boolean)
   if (params.isPublic !== undefined) {
-    payload.isPublic = params.isPublic ? 'public' : 'private';
+    payload.isPublic = params.isPublic;
   } else {
-    // Default to public if not specified
-    payload.isPublic = 'public';
+    // Default to true (public) if not specified
+    payload.isPublic = true;
   }
   
   if (params.startDate !== undefined && params.startDate !== null) {
@@ -73,6 +73,11 @@ export const createProject = async (params: {
 
 export const deleteProject = async (projectId: string) => {
   const response = await API.delete(`/api/project/${projectId}`);
+  return response.data;
+};
+
+export const activateProject = async (projectId: string) => {
+  const response = await API.put(`/api/project/${projectId}/activate`);
   return response.data;
 };
 

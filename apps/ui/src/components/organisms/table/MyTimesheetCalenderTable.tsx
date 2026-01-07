@@ -25,6 +25,10 @@ interface ExtendedTimesheetRow extends ITimesheetRow {
   teamId?: string;    // For teams
 }
 
+interface MyTimesheetCalendarTableProps {
+  onError?: (message: string) => void;
+}
+
 // Optimized debounced update that delays both Redux and backend updates
 const createDebouncedUpdate = (
   updateFn: (id: string, updates: Partial<IMyTimesheetTableEntry>) => void,
@@ -53,7 +57,7 @@ const createDebouncedUpdate = (
   };
 };
 
-const MyTimesheetCalendarTable = () => {
+const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onError }) => {
   const {
     currentWeekDays,
     currentWeekStart,
@@ -122,8 +126,8 @@ const MyTimesheetCalendarTable = () => {
   useEffect(() => {
     const entityIds = new Set<string>();
     myCalendarViewData.forEach((entry) => {
-      const matchingProject = myProjects.find((p) => p.projectName === entry.project);
-      const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === entry.project) : null;
+      const matchingProject = entry.project ? myProjects.find((p) => p.projectName === entry.project || p._id === entry.project) : null;
+      const matchingTeam = entry.team ? myTeams.find((t) => t.teamName === entry.team || t._id === entry.team) : null;
       
       if (matchingProject) {
         entityIds.add(matchingProject._id);
@@ -159,9 +163,9 @@ const MyTimesheetCalendarTable = () => {
     // Populate tasks from calendar data
     myCalendarViewData.forEach((entry) => {
       // Find which project this entry belongs to by matching project ID or name
-      const matchingProject = myProjects.find((p) => p._id === entry.project || p.projectName === entry.project);
-      // Find which team this entry belongs to (if not a project)
-      const matchingTeam = !matchingProject ? myTeams.find((t) => t._id === entry.project || t.teamName === entry.project) : null;
+      const matchingProject = entry.project ? myProjects.find((p) => p._id === entry.project || p.projectName === entry.project) : null;
+      // Find which team this entry belongs to by checking the team field
+      const matchingTeam = entry.team ? myTeams.find((t) => t._id === entry.team || t.teamName === entry.team) : null;
 
       if (matchingProject) {
         const key = matchingProject._id;
@@ -320,12 +324,12 @@ const MyTimesheetCalendarTable = () => {
     const team = !project ? myTeams.find((t) => t._id === projectId) : null;
     
     if (project) {
-      createEmptyCalendarRow(project.projectName, '', BillableType.Billable);
+      // Use project ID instead of name to match timesheet creation
+      createEmptyCalendarRow(project._id, undefined, '', BillableType.NonBillable);
     } else if (team) {
-      createEmptyCalendarRow(team.teamName, '', BillableType.Billable);
+      // Use team ID instead of name to match timesheet creation  
+      createEmptyCalendarRow(undefined, team._id, '', BillableType.NonBillable);
     }
-    // Note: createEmptyCalendarRow likely expects projectName, not _id
-    // Adjust if your hook supports _id in the future
   };
 
   const handleDeleteTask = (rowId: string) => {
@@ -339,17 +343,18 @@ const MyTimesheetCalendarTable = () => {
     if (!calendarRow) return;
 
     // Find the project or team for this calendar row
-    const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
-    const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === calendarRow.project || t._id === calendarRow.project) : null;
+    const matchingProject = calendarRow.project ? myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project) : null;
+    const matchingTeam = calendarRow.team ? myTeams.find((t) => t.teamName === calendarRow.team || t._id === calendarRow.team) : null;
     
     if (!matchingProject && !matchingTeam) return;
 
-    // Check if there's already a calendar row with the same project and task
+    // Check if there's already a calendar row with the same project/team and task
     const duplicate = myCalendarViewData.find(row => 
       row.id !== calendarRowId && // Not the same row
-      (row.project === calendarRow.project || 
+      ((row.project && row.project === calendarRow.project) || 
+       (row.team && row.team === calendarRow.team) ||
        (matchingProject && row.project === matchingProject.projectName) ||
-       (matchingTeam && row.project === matchingTeam.teamName)) && // Same project/team
+       (matchingTeam && row.team === matchingTeam.teamName)) && // Same project/team
       row.task === newTaskName // Same task
     );
 
@@ -370,8 +375,8 @@ const MyTimesheetCalendarTable = () => {
       calendarRow.myTimesheetEntriesIds.forEach((timesheetId) => {
         const timesheet = newTimesheets.find((t) => t.id === timesheetId);
         if (timesheet) {
-          // Update UI with task name
-          updateTimesheet(timesheetId, { task: newTaskName });
+          // Update UI with task ID (not name) to match backend
+          updateTimesheet(timesheetId, { task: taskId });
           // Sync task ID to backend
           if (selectedTask) {
             debouncedUpdateRef.current(timesheetId, { task: taskId });
@@ -379,7 +384,8 @@ const MyTimesheetCalendarTable = () => {
         }
       });
     } else {
-      updateCalendar(calendarRow.id, calendarRow.project, newTaskName, calendarRow.billableType);
+      // Update calendar row with task ID (not name) to match timesheet creation
+      updateCalendar(calendarRow.id, calendarRow.project, calendarRow.team, taskId, calendarRow.billableType);
     }
   };
 
@@ -408,13 +414,17 @@ const MyTimesheetCalendarTable = () => {
       calendarRow.myTimesheetEntriesIds.forEach((timesheetId) => {
         const timesheet = newTimesheets.find((t) => t.id === timesheetId);
         if (timesheet) {
+          // Update Redux state immediately
           updateTimesheet(timesheetId, { billableType: newBillableType });
+          // Sync to backend
+          syncUpdateTimesheet(timesheetId, { billableType: newBillableType });
         }
       });
     } else {
       updateCalendar(
         calendarRow.id,
         calendarRow.project,
+        calendarRow.team,
         calendarRow.task ?? '',
         newBillableType
       );
@@ -426,8 +436,8 @@ const MyTimesheetCalendarTable = () => {
     if (!calendarRow || !calendarRow.task) return;
 
     // Find the matching project or team to get ID
-    const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
-    const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === calendarRow.project || t._id === calendarRow.project) : null;
+    const matchingProject = calendarRow.project ? myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project) : null;
+    const matchingTeam = calendarRow.team ? myTeams.find((t) => t.teamName === calendarRow.team || t._id === calendarRow.team) : null;
     
     if (!matchingProject && !matchingTeam) return;
 
@@ -441,7 +451,7 @@ const MyTimesheetCalendarTable = () => {
       const tsDate = new Date(ts.date);
       const entityMatch = matchingProject 
         ? (ts.project === calendarRow.project || ts.project === entityId)
-        : (ts.team === entityId);
+        : (ts.team === calendarRow.team || ts.team === entityId);
       
       return (
         entityMatch &&
@@ -470,8 +480,10 @@ const MyTimesheetCalendarTable = () => {
         });
       } catch (error: any) {
         console.error('Failed to create timesheet:', error.message);
-        // Note: Errors will be shown in MyTimesheetWindow's snackbar
-        // since addNewTimesheet is connected to the Redux store
+        // Show error toast message
+        if (onError) {
+          onError(error.message || 'Failed to create timesheet');
+        }
       }
     }
   };
@@ -481,8 +493,8 @@ const MyTimesheetCalendarTable = () => {
     if (!calendarRow || !calendarRow.task) return;
 
     // Find the matching project or team to get ID
-    const matchingProject = myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project);
-    const matchingTeam = !matchingProject ? myTeams.find((t) => t.teamName === calendarRow.project || t._id === calendarRow.project) : null;
+    const matchingProject = calendarRow.project ? myProjects.find((p) => p.projectName === calendarRow.project || p._id === calendarRow.project) : null;
+    const matchingTeam = calendarRow.team ? myTeams.find((t) => t.teamName === calendarRow.team || t._id === calendarRow.team) : null;
     
     if (!matchingProject && !matchingTeam) return;
 
@@ -496,7 +508,7 @@ const MyTimesheetCalendarTable = () => {
       const tsDate = new Date(ts.date);
       const entityMatch = matchingProject 
         ? (ts.project === calendarRow.project || ts.project === entityId)
-        : (ts.team === entityId);
+        : (ts.team === calendarRow.team || ts.team === entityId);
       
       return (
         entityMatch &&
@@ -525,7 +537,10 @@ const MyTimesheetCalendarTable = () => {
         });
       } catch (error: any) {
         console.error('Failed to create timesheet:', error.message);
-        // Note: Errors will be shown in MyTimesheetWindow's snackbar
+        // Show error toast message
+        if (onError) {
+          onError(error.message || 'Failed to create timesheet');
+        }
       }
     }
   };
@@ -582,7 +597,7 @@ const MyTimesheetCalendarTable = () => {
         return (
           <TaskRow
             task={row.task || ''}
-            billableType={row.billableType ?? BillableType.Billable}
+            billableType={row.billableType ?? BillableType.NonBillable}
             rowId={row.id}
             projectId={entityId || ''}
             availableTasks={availableTasksForRow}
@@ -621,33 +636,6 @@ const MyTimesheetCalendarTable = () => {
         );
       },
     })),
-    {
-      key: 'actions',
-      label: '',
-      width: '50px',
-      render: (row: ExtendedTimesheetRow) => {
-        if (row.isProjectRow || row.isCreateTaskRow) return null;
-
-        return (
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteTask(row.id);
-            }}
-            sx={{
-              color: '#666',
-              '&:hover': {
-                color: '#d32f2f',
-                backgroundColor: 'rgba(211, 47, 47, 0.04)',
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        );
-      },
-    },
   ];
 
   if (isLoading) {

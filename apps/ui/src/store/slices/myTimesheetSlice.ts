@@ -119,14 +119,16 @@ const myTimesheetSlice = createSlice({
       const calendarMap = new Map<string, IMyTimesheetCalendarEntry>();
 
       action.payload.forEach((ts) => {
-        if (!ts.project || !ts.task) return; // Skip incomplete entries
+        const projectOrTeam = ts.project || ts.team;
+        if (!projectOrTeam || !ts.task) return; // Skip incomplete entries
         
-        const key = `${ts.project}|${ts.task}|${ts.billableType}`;
+        const key = `${projectOrTeam}|${ts.task}|${ts.billableType}`;
         
         if (!calendarMap.has(key)) {
           calendarMap.set(key, {
             id: key,
             project: ts.project,
+            team: ts.team,
             task: ts.task,
             billableType: ts.billableType,
             myTimesheetEntriesIds: [],
@@ -144,64 +146,91 @@ const myTimesheetSlice = createSlice({
       
       // Add to calendar view inline
       const data = action.payload;
-      const project = data.project || data.team || '';
+      const projectOrTeam = data.project || data.team || '';
       const task = data.task;
       const billable = data.billableType;
 
-      // Only add to calendar view if project/team and task are not empty
-      if (!project || !task) {
+      console.log('=== setMyTimesheetData DEBUG ===');
+      console.log('New timesheet:', { project: data.project, team: data.team, task, billable, id: data.id });
+      console.log('Existing calendar rows:', state.myCalendarViewData.map(e => ({ 
+        id: e.id, 
+        project: e.project,
+        team: e.team, 
+        task: e.task, 
+        billable: e.billableType,
+        timesheetIds: e.myTimesheetEntriesIds 
+      })));
+
+      // Only add to calendar view if (project OR team) and task are not empty
+      if (!projectOrTeam || !task) {
+        console.log('Skipping - empty project/team or task');
         return;
       }
 
       // Create unique ID with separator to avoid collisions
-      const id = `${project}|${task}|${billable}`;
+      const id = `${projectOrTeam}|${task}|${billable}`;
+      console.log('Looking for calendar row with ID:', id);
+      console.log('Current calendar rows before search:', state.myCalendarViewData.map(e => ({ 
+        id: e.id, 
+        project: e.project,
+        team: e.team, 
+        task: e.task, 
+        billable: e.billableType,
+        timesheetIds: e.myTimesheetEntriesIds 
+      })));
       
-      
-      // Check if entry with this id already exists
-      const existingIndex = state.myCalendarViewData.findIndex((entry: IMyTimesheetCalendarEntry) => entry.id === id);
+      // Look for existing calendar row - check both exact ID match AND potential ID/name variants
+      // This handles cases where calendar row uses project/team ID but timesheet entry uses project/team ID (or vice versa)
+      let existingIndex = state.myCalendarViewData.findIndex((entry: IMyTimesheetCalendarEntry) => {
+        // Exact match
+        if (entry.id === id) return true;
+        
+        // Check if project/team matches (could be same ID, or one is ID and one is name)
+        const projectOrTeamMatches = (entry.project === data.project && data.project) || 
+                                     (entry.team === data.team && data.team);
+        
+        // Check if tasks match (could be same ID, or one is ID and one is name)
+        const taskMatches = entry.task === task;
+        
+        // Check billable type matches
+        const billableMatches = entry.billableType === billable;
+        
+        // If all three match, consider it the same calendar row
+        return projectOrTeamMatches && taskMatches && billableMatches;
+      });
+
+      console.log('Found existing row at index:', existingIndex);
 
       if (existingIndex !== -1) {
         // Entry exists - add the timesheet ID to its myTimesheetEntriesIds array
+        console.log('Adding to existing calendar row');
         if (!state.myCalendarViewData[existingIndex].myTimesheetEntriesIds.includes(data.id)) {
           state.myCalendarViewData[existingIndex].myTimesheetEntriesIds.push(data.id);
         }
       } else {
         // Entry doesn't exist - create a new calendar entry
+        console.log('Creating new calendar row');
         const newCalendarEntry: IMyTimesheetCalendarEntry = {
           id,
-          project,
+          project: data.project,
+          team: data.team,
           task,
           billableType: billable,
           myTimesheetEntriesIds: [data.id]
         };
         state.myCalendarViewData.unshift(newCalendarEntry);
-        
-        // Clean up: Remove any duplicate or empty calendar rows
-        // This prevents duplicate rows when creating a new task and adding hours to it
-        const seen = new Set<string>();
-        state.myCalendarViewData = state.myCalendarViewData.filter((entry, index) => {
-          // Create a unique key for deduplication
-          const entryKey = `${entry.project}|${entry.task}|${entry.billableType}`;
-          
-          // If we've seen this combination before, remove it (keep the first occurrence)
-          if (seen.has(entryKey)) {
-            return false;
-          }
-          seen.add(entryKey);
-          
-          // Also remove empty placeholder entries
-          if (entry.myTimesheetEntriesIds.length === 0) {
-            const isPlaceholder = 
-              entry.project === 'New Project' || 
-              entry.task === 'New Task' || 
-              entry.task === '';
-            return !isPlaceholder;
-          }
-          
-          return true;
-        });
       }
       
+      // Clean up: Remove any OTHER empty placeholder rows (rows with 0 timesheet IDs)
+      // But keep the row we just added/updated
+      state.myCalendarViewData = state.myCalendarViewData.filter((entry) => {
+        // Keep rows with timesheet IDs
+        if (entry.myTimesheetEntriesIds.length > 0) return true;
+        // Remove empty placeholders
+        return false;
+      });
+      
+      console.log('Final calendar rows:', state.myCalendarViewData.length);
     },
 
     updateMyTimesheetEntry: (state, action: PayloadAction<{ index: number; updates: Partial<IMyTimesheetTableEntry> }>) => {
@@ -219,24 +248,26 @@ const myTimesheetSlice = createSlice({
         const updatedEntry = { ...oldEntry, ...updates };
         state.myTimesheetData[index] = updatedEntry;
 
-        // Check if project, task, or billableType changed - need to update calendar view
-        const keysChanged = updates.project !== undefined || updates.task !== undefined || updates.billableType !== undefined;
+        // Check if project, team, task, or billableType changed - need to update calendar view
+        const keysChanged = updates.project !== undefined || updates.team !== undefined || updates.task !== undefined || updates.billableType !== undefined;
         
         if (keysChanged) {
           
-          // Check if old entry had empty project/task
-          const oldHasEmpty = !oldEntry.project || !oldEntry.task;
-          const newHasEmpty = !updatedEntry.project || !updatedEntry.task;
+          // Check if old entry had empty project/team/task
+          const oldProjectOrTeam = oldEntry.project || oldEntry.team;
+          const newProjectOrTeam = updatedEntry.project || updatedEntry.team;
+          const oldHasEmpty = !oldProjectOrTeam || !oldEntry.task;
+          const newHasEmpty = !newProjectOrTeam || !updatedEntry.task;
           
           // Create old and new IDs
-          const oldId = `${oldEntry.project}|${oldEntry.task}|${oldEntry.billableType}`;
-          const newId = `${updatedEntry.project}|${updatedEntry.task}|${updatedEntry.billableType}`;
+          const oldId = `${oldProjectOrTeam}|${oldEntry.task}|${oldEntry.billableType}`;
+          const newId = `${newProjectOrTeam}|${updatedEntry.task}|${updatedEntry.billableType}`;
           
           
           if (oldId !== newId) {
             // IDs are different - need to move entry to different calendar row
             
-            // 1. Remove timesheet ID from old calendar entry (only if old had valid project/task)
+            // 1. Remove timesheet ID from old calendar entry (only if old had valid project/team/task)
             if (!oldHasEmpty) {
               const oldCalendarIndex = state.myCalendarViewData.findIndex(cal => cal.id === oldId);
               if (oldCalendarIndex !== -1) {
@@ -252,7 +283,7 @@ const myTimesheetSlice = createSlice({
               }
             }
             
-            // 2. Add timesheet ID to new calendar entry (only if new has valid project/task)
+            // 2. Add timesheet ID to new calendar entry (only if new has valid project/team/task)
             if (!newHasEmpty) {
               const newCalendarIndex = state.myCalendarViewData.findIndex(cal => cal.id === newId);
               if (newCalendarIndex !== -1) {
@@ -264,7 +295,8 @@ const myTimesheetSlice = createSlice({
                 // Calendar entry doesn't exist - create new one
                 const newCalendarEntry: IMyTimesheetCalendarEntry = {
                   id: newId,
-                  project: updatedEntry.project || updatedEntry.team || '',
+                  project: updatedEntry.project,
+                  team: updatedEntry.team,
                   task: updatedEntry.task,
                   billableType: updatedEntry.billableType,
                   myTimesheetEntriesIds: [id]
@@ -299,21 +331,29 @@ const myTimesheetSlice = createSlice({
     // Calendar view 
     addCalendarViewRow: (state, action: PayloadAction<IMyTimesheetTableEntry>) => {
       const data = action.payload;
-      const project = data.project;
+      const projectOrTeam = data.project || data.team || '';
       const task = data.task;
       const billable = data.billableType;
 
-      // Only add to calendar view if project and task are not empty
-      if (!project || !task) {
+      // Only add to calendar view if (project OR team) and task are not empty
+      if (!projectOrTeam || !task) {
         return;
       }
 
       // Create unique ID with separator to avoid collisions
-      const id = `${project}|${task}|${billable}`;
+      const id = `${projectOrTeam}|${task}|${billable}`;
       
-      
-      // Check if entry with this id already exists
-      const existingIndex = state.myCalendarViewData.findIndex((entry: IMyTimesheetCalendarEntry) => entry.id === id);
+      // Look for existing calendar row - check both exact ID match AND potential ID/name variants
+      let existingIndex = state.myCalendarViewData.findIndex((entry: IMyTimesheetCalendarEntry) => {
+        if (entry.id === id) return true;
+        
+        const projectOrTeamMatches = (entry.project === data.project && data.project) || 
+                                     (entry.team === data.team && data.team);
+        const taskMatches = entry.task === task;
+        const billableMatches = entry.billableType === billable;
+        
+        return projectOrTeamMatches && taskMatches && billableMatches;
+      });
 
       if (existingIndex !== -1) {
         // Entry exists - add the timesheet ID to its myTimesheetEntriesIds array
@@ -324,7 +364,8 @@ const myTimesheetSlice = createSlice({
         // Entry doesn't exist - create a new calendar entry
         const newCalendarEntry: IMyTimesheetCalendarEntry = {
           id,
-          project,
+          project: data.project,
+          team: data.team,
           task,
           billableType: billable,
           myTimesheetEntriesIds: [data.id]
@@ -332,12 +373,18 @@ const myTimesheetSlice = createSlice({
         state.myCalendarViewData.unshift(newCalendarEntry);
       }
       
+      // Clean up: Remove any empty placeholder rows (rows with 0 timesheet IDs)
+      state.myCalendarViewData = state.myCalendarViewData.filter((entry) => {
+        return entry.myTimesheetEntriesIds.length > 0;
+      });
+      
     },
 
     // Add empty calendar row for direct creation in calendar view
-    addEmptyCalendarRow: (state, action: PayloadAction<{ project?: string; task?: string; billableType?: BillableType }>) => {
-      const { project = 'New Project', task = 'New Task', billableType = BillableType.NonBillable } = action.payload;
-      const id = `${project}|${task}|${billableType}`;
+    addEmptyCalendarRow: (state, action: PayloadAction<{ project?: string; team?: string; task?: string; billableType?: BillableType }>) => {
+      const { project, team, task = 'New Task', billableType = BillableType.NonBillable } = action.payload;
+      const projectOrTeam = project || team || 'New Project/Team';
+      const id = `${projectOrTeam}|${task}|${billableType}`;
       
       
       // Check if entry with this id already exists
@@ -348,6 +395,7 @@ const myTimesheetSlice = createSlice({
         const newCalendarEntry: IMyTimesheetCalendarEntry = {
           id,
           project,
+          team,
           task,
           billableType,
           myTimesheetEntriesIds: []
@@ -356,10 +404,11 @@ const myTimesheetSlice = createSlice({
       }
     },
 
-    // Update calendar row metadata (project, task, billableType)
-    updateCalendarRow: (state, action: PayloadAction<{ oldId: string; newProject: string; newTask: string; newBillableType: BillableType }>) => {
-      const { oldId, newProject, newTask, newBillableType } = action.payload;
-      const newId = `${newProject}|${newTask}|${newBillableType}`;
+    // Update calendar row metadata (project, team, task, billableType)
+    updateCalendarRow: (state, action: PayloadAction<{ oldId: string; newProject?: string; newTeam?: string; newTask: string; newBillableType: BillableType }>) => {
+      const { oldId, newProject, newTeam, newTask, newBillableType } = action.payload;
+      const newProjectOrTeam = newProject || newTeam || '';
+      const newId = `${newProjectOrTeam}|${newTask}|${newBillableType}`;
       
       
       const oldIndex = state.myCalendarViewData.findIndex(row => row.id === oldId);
@@ -385,6 +434,7 @@ const myTimesheetSlice = createSlice({
             ...oldRow,
             id: newId,
             project: newProject,
+            team: newTeam,
             task: newTask,
             billableType: newBillableType
           };
@@ -445,6 +495,7 @@ const myTimesheetSlice = createSlice({
           id: ts.id || ts._id,
           date: ts.date,
           project: ts.projectId || '',
+          team: ts.teamId || '',
           task: ts.taskId || '',
           billableType: ts.billable,
           description: ts.description || '',
@@ -461,19 +512,27 @@ const myTimesheetSlice = createSlice({
 
         mappedTimesheets.forEach((ts) => {
           const projectOrTeam = ts.project || ts.team || '';
-          const key = `${projectOrTeam}-${ts.task}-${ts.billableType}`;
+          const task = ts.task;
+          const billable = ts.billableType;
           
-          if (!calendarMap.has(key)) {
-            calendarMap.set(key, {
-              id: crypto.randomUUID(),
-              project: projectOrTeam,
-              task: ts.task,
-              billableType: ts.billableType,
+          // Skip entries without project/team or task
+          if (!projectOrTeam || !task) return;
+          
+          // Use consistent ID format: (project|team)|task|billable (NOT random UUID!)
+          const id = `${projectOrTeam}|${task}|${billable}`;
+          
+          if (!calendarMap.has(id)) {
+            calendarMap.set(id, {
+              id: id, // Use the consistent ID format
+              project: ts.project,
+              team: ts.team,
+              task: task,
+              billableType: billable,
               myTimesheetEntriesIds: [],
             });
           }
           
-          calendarMap.get(key)!.myTimesheetEntriesIds.push(ts.id);
+          calendarMap.get(id)!.myTimesheetEntriesIds.push(ts.id);
         });
 
         state.myCalendarViewData = Array.from(calendarMap.values());

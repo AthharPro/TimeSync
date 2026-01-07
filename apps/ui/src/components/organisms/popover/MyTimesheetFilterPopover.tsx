@@ -195,7 +195,6 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
             label="Status"
           >
             <MenuItem value="All">All Statuses</MenuItem>
-            <MenuItem value={DailyTimesheetStatus.Default}>Default</MenuItem>
             <MenuItem value={DailyTimesheetStatus.Draft}>Draft</MenuItem>
             <MenuItem value={DailyTimesheetStatus.Pending}>Pending</MenuItem>
             <MenuItem value={DailyTimesheetStatus.Approved}>Approved</MenuItem>

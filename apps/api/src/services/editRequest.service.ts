@@ -3,6 +3,7 @@ import { IEditRequestDocument, CreateEditRequestParams, ApproveEditRequestParams
 import mongoose from 'mongoose';
 import { UserModel } from '../models/user.model';
 import ProjectModel from '../models/project.model';
+import TeamModel from '../models/team.model';
 import { createBulkNotifications } from './notification.service';
 import { NotificationType } from '@tms/shared';
 
@@ -59,13 +60,23 @@ export const createEditRequest = async (
   console.log('Team IDs length:', teamIds.length);
   
   if (teamIds.length > 0) {
-    const teamSupervisors = await UserModel.find({
-      teams: { $in: teamIds },
-      role: { $in: ['Admin', 'Manager'] },
-      _id: { $ne: userId }
-    }).distinct('_id');
-    console.log('Team Supervisors found:', teamSupervisors);
-    teamSupervisors.forEach(id => supervisorIds.add(id.toString()));
+    // Find teams and get their supervisors
+    const teams = await TeamModel.find({
+      _id: { $in: teamIds },
+      supervisor: { $ne: null, $exists: true }
+    }).populate('supervisor');
+    
+    console.log('Teams found:', teams.length);
+    teams.forEach(team => {
+      if (team.supervisor && team.supervisor._id.toString() !== userId) {
+        supervisorIds.add(team.supervisor._id.toString());
+        console.log('Added team supervisor:', {
+          teamName: team.teamName,
+          supervisorId: team.supervisor._id,
+          supervisorName: `${(team.supervisor as any).firstName} ${(team.supervisor as any).lastName}`
+        });
+      }
+    });
   } else {
     console.log('WARNING: User has no teams assigned!');
   }
@@ -164,18 +175,41 @@ export const getSupervisedEditRequests = async (
     teams: supervisor.teams
   });
 
+  const supervisedUserIds = new Set<string>();
+
+  // 1. Find all users in supervisor's teams (excluding the supervisor)
   const teamIds = supervisor.teams.map((team: any) => team._id);
   console.log('Team IDs:', teamIds);
 
-  // Find all users in these teams (excluding the supervisor)
-  const supervisedUsers = await UserModel.find({
-    teams: { $in: teamIds },
-    _id: { $ne: supervisorId }
-  }).distinct('_id');
-  console.log('Supervised Users:', supervisedUsers);
+  if (teamIds.length > 0) {
+    const teamUsers = await UserModel.find({
+      teams: { $in: teamIds },
+      _id: { $ne: supervisorId }
+    }).distinct('_id');
+    console.log('Team Users:', teamUsers);
+    teamUsers.forEach(id => supervisedUserIds.add(id.toString()));
+  }
+
+  // 2. Find all users in projects supervised by this supervisor
+  const supervisedProjects = await ProjectModel.find({
+    supervisor: new mongoose.Types.ObjectId(supervisorId)
+  });
+  console.log('Supervised Projects:', supervisedProjects.length);
+  
+  supervisedProjects.forEach(project => {
+    project.employees.forEach(emp => {
+      if (emp.user.toString() !== supervisorId) {
+        supervisedUserIds.add(emp.user.toString());
+        console.log('Added project employee:', emp.user.toString(), 'from project:', project.projectName);
+      }
+    });
+  });
+
+  const supervisedUsers = Array.from(supervisedUserIds);
+  console.log('Total Supervised Users (from teams and projects):', supervisedUsers.length);
 
   const query: any = {
-    userId: { $in: supervisedUsers }
+    userId: { $in: supervisedUsers.map(id => new mongoose.Types.ObjectId(id)) }
   };
 
   if (filters?.status && filters.status !== 'All') {

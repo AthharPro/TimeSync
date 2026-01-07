@@ -8,11 +8,11 @@ export const createProjectFromUiSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   startDate: z.coerce.date().nullable().optional(),
   endDate: z.coerce.date().nullable().optional(),
-  clientName: z.string().min(1, 'Client name is required'),
-  costCenter: z.string().min(1, 'Cost center is required'),
-  projectType: z.string().min(1, 'Project type is required'),
- isPublic: z.string().min(1, 'Project visibility is required'),
-  billable: z.enum(BillableType),
+  clientName: z.string().optional(),
+  costCenter: z.string().optional(),
+  projectType: z.string().optional(),
+  isPublic: z.boolean(),
+  billable: z.enum(BillableType).optional(),
   employees: z
     .array(
       z.object({
@@ -22,7 +22,27 @@ export const createProjectFromUiSchema = z.object({
     )
     .default([]),
   supervisor: z.string().nullable().optional(),
-});
+}).refine(
+  (data) => {
+    // For private projects, require costCenter, projectType, clientName, and billable
+    if (!data.isPublic) {
+      return (
+        data.costCenter &&
+        data.costCenter.trim().length > 0 &&
+        data.projectType &&
+        data.projectType.trim().length > 0 &&
+        data.clientName &&
+        data.clientName.trim().length > 0 &&
+        data.billable !== undefined
+      );
+    }
+    return true;
+  },
+  {
+    message: 'Cost center, project type, client name, and billable are required for private projects',
+    path: ['isPublic'],
+  }
+);
 
 // Internal normalized schema used by service
 export const createProjectNormalizedSchema = z.object({
@@ -30,11 +50,11 @@ export const createProjectNormalizedSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   startDate: z.date().nullable().optional(),
   endDate: z.date().nullable().optional(),
-  clientName: z.string().min(1, 'Client name is required'),
-  costCenter: z.string().min(1, 'Cost center is required'),
-  projectType: z.string().min(1, 'Project type is required'),
+  clientName: z.string().optional(),
+  costCenter: z.string().optional(),
+  projectType: z.string().optional(),
   isPublic: z.boolean(),
-  billable: z.enum(BillableType),
+  billable: z.enum(BillableType).optional(),
   employees: z
     .array(
       z.object({
@@ -44,6 +64,26 @@ export const createProjectNormalizedSchema = z.object({
     )
     .default([]),
   supervisor: z.string().nullable().optional(),
-});
+}).refine(
+  (data) => {
+    // For private projects, require costCenter, projectType, clientName, and billable
+    if (!data.isPublic) {
+      return (
+        data.costCenter &&
+        data.costCenter.trim().length > 0 &&
+        data.projectType &&
+        data.projectType.trim().length > 0 &&
+        data.clientName &&
+        data.clientName.trim().length > 0 &&
+        data.billable !== undefined
+      );
+    }
+    return true;
+  },
+  {
+    message: 'Cost center, project type, client name, and billable are required for private projects',
+    path: ['isPublic'],
+  }
+);
 
 export type CreateProjectNormalized = z.infer<typeof createProjectNormalizedSchema>;

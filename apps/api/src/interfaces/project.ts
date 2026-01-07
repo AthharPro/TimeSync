@@ -26,9 +26,9 @@ export interface ICreateProjectParams {
   startDate?: Date | null;
   endDate?: Date | null;
   description: string;
-  clientName: string;
-  costCenter: string;
-  projectType: string;
+  clientName?: string;
+  costCenter?: string;
+  projectType?: string;
   isPublic: boolean;
   billable: BillableType;
   employees?: { user: mongoose.Types.ObjectId; allocation?: number }[];
@@ -48,10 +48,10 @@ export interface CreateProjectParams {
   // Required description (validated by zod before reaching service)
   description: string;
   isPublic: boolean;
-  clientName: string;
-  costCenter: string;
-  projectType: string;
-  billable: BillableType;
+  clientName?: string;
+  costCenter?: string;
+  projectType?: string;
+  billable?: BillableType;
   employees?: { user: string; allocation?: number }[];
   supervisor?: string | null;
   status?: boolean;

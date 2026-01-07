@@ -6,6 +6,7 @@ import {
   fetchProjects,
   createProjectAction,
   deleteProjectAction,
+  activateProjectAction,
   updateProjectStaffAction,
 } from '../../store/slices/projectSlice';
 
@@ -28,6 +29,7 @@ export interface UseProjectsReturn {
     endDate?: Date | null;
   }) => Promise<IProject>;
   deleteProject: (projectId: string) => Promise<void>;
+  activateProject: (projectId: string) => Promise<void>;
   updateProjectStaff: (
     projectId: string,
     params: {
@@ -122,6 +124,23 @@ export const useProjects = (): UseProjectsReturn => {
     [dispatch]
   );
 
+  // Activate a project
+  const activateProject = useCallback(
+    async (projectId: string) => {
+      try {
+        const result = await dispatch(activateProjectAction(projectId));
+        if (activateProjectAction.rejected.match(result)) {
+          console.error('Failed to activate project:', result.payload);
+          throw new Error(result.payload as string);
+        }
+      } catch (error) {
+        console.error('Activate project error:', error);
+        throw error;
+      }
+    },
+    [dispatch]
+  );
+
   // Update project staff (employees and supervisor)
   const updateProjectStaff = useCallback(
     async (
@@ -162,6 +181,7 @@ export const useProjects = (): UseProjectsReturn => {
     loadProjects,
     createProject,
     deleteProject,
+    activateProject,
     updateProjectStaff,
   };
 };

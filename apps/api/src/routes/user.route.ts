@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerHandler, getAllUsersHandler, updateUserHandler,getAllActiveUsersHandler,bulkCreateUsers } from '../controllers/user.controller';
+import { registerHandler, getAllUsersHandler, updateUserHandler, getAllActiveUsersHandler, bulkCreateUsers, getUserSupervisorsHandler } from '../controllers/user.controller';
 import { UserRole } from '@tms/shared';
 import authenticate from '../middleware/authenticate';
 
@@ -11,5 +11,6 @@ router.post("/employee", authenticate([UserRole.Admin, UserRole.SupervisorAdmin]
 router.put("/:id", authenticate([UserRole.Admin, UserRole.SupervisorAdmin, UserRole.SuperAdmin]), updateUserHandler);
 router.post("/bulk", authenticate([UserRole.Admin, UserRole.SupervisorAdmin, UserRole.SuperAdmin]), bulkCreateUsers);
 router.get("/active", authenticate([UserRole.Admin, UserRole.SupervisorAdmin, UserRole.SuperAdmin]), getAllActiveUsersHandler());
+router.get("/:id/supervisors", authenticate(), getUserSupervisorsHandler);
 
 export  {router as userRoutes};
