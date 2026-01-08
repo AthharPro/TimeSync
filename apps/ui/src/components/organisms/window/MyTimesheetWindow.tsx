@@ -167,7 +167,6 @@ function MyTimesheetWindow() {
         showSuccess(`Successfully submitted ${result.updated} draft timesheet${result.updated > 1 ? 's' : ''} for the current week. Status changed from Draft to Pending.`);
       }
     } catch (error: any) {
-      console.error('Submit error:', error);
       showError(`Failed to submit timesheets: ${error.message || 'Unknown error'}`);
     }
   };
@@ -193,7 +192,6 @@ function MyTimesheetWindow() {
       const result = await deleteSelectedTimesheets();
       showSuccess(`Successfully deleted ${result.deleted} timesheet${result.deleted > 1 ? 's' : ''}`);
     } catch (error: any) {
-      console.error('Delete error:', error);
       showError(`Failed to delete timesheets: ${error.message || 'Unknown error'}`);
     }
   };

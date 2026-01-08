@@ -20,10 +20,12 @@ import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
 import StatusChip from '../../atoms/other/Icon/StatusChip';
 import ProjectFilterPopover from '../popover/ProjectFilterPopover';
+import { useSearch } from '../../../contexts/SearchContext';
 
 function ProjectWindow() {
   const { projects, loading: isLoading, error, loadProjects, deleteProject, activateProject } = useProjects();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { searchQuery } = useSearch();
 
   
   const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
@@ -40,8 +42,8 @@ function ProjectWindow() {
 
   // Load projects on component mount
   useEffect(() => {
-    loadProjects().catch((err) => {
-      console.error('ProjectWindow: Error loading projects:', err);
+    loadProjects().catch(() => {
+      // Error is handled by the hook
     });
   }, [loadProjects]);
 
@@ -61,7 +63,6 @@ function ProjectWindow() {
       showSuccess('Project activated successfully');
       // Projects are automatically updated in Redux store
     } catch (error) {
-      console.error('Failed to activate project:', error);
       showError('Failed to activate project. Please try again.');
     }
   };
@@ -117,7 +118,6 @@ function ProjectWindow() {
         showSuccess('Project put on hold successfully');
         // Projects are automatically updated in Redux store
       } catch (error) {
-        console.error('Failed to put project on hold:', error);
         showError('Failed to put project on hold. Please try again.');
       }
     }
@@ -128,12 +128,9 @@ function ProjectWindow() {
     setProjectToDelete(null);
   };
 
-  // Filter projects based on active filters
+  // Filter projects based on active filters and search query
   const filteredProjects = useMemo(
     () => {
-      console.log('Active filters:', activeFilters);
-      console.log('Sample project data:', projects[0]);
-      
       return projects.filter(project => {
         // Project Type filter
         const projectTypeMatch = 
@@ -162,10 +159,14 @@ function ProjectWindow() {
           activeFilters.costCenter === 'all' ? true :
           project.costCenter === activeFilters.costCenter;
 
-        return projectTypeMatch && statusMatch && billableMatch && visibilityMatch && costCenterMatch;
+        // Search filter: check project name
+        const searchMatch = !searchQuery || 
+          project.projectName.toLowerCase().includes(searchQuery.toLowerCase());
+
+        return projectTypeMatch && statusMatch && billableMatch && visibilityMatch && costCenterMatch && searchMatch;
       });
     },
-    [projects, activeFilters]
+    [projects, activeFilters, searchQuery]
   );
 
   const columns: DataTableColumn<IProject>[] = useMemo(

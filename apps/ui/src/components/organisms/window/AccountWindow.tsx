@@ -4,6 +4,7 @@ import AccountTable from '../table/AccountTable';
 import { BaseBtn } from '../../atoms';
 import AddIcon from '@mui/icons-material/Add';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
+import { Box, Typography } from '@mui/material';
 import CreateAccountPopUp from '../../organisms/popup/CreateAccountPopup';
 import EditAccountPopup from '../../organisms/popup/EditAccountPopup';
 import ProfilePopup from '../../organisms/popup/ProfilePopup';
@@ -18,6 +19,7 @@ import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ToggleOffOutlinedIcon from '@mui/icons-material/ToggleOffOutlined';
 import ToggleOnOutlinedIcon from '@mui/icons-material/ToggleOnOutlined';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useSearch } from '../../../contexts/SearchContext';
 
 function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
@@ -32,17 +34,26 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [accountToToggle, setAccountToToggle] = useState<IAccountTableRow | null>(null);
   const { user: currentUser } = useAuth();
+  const { searchQuery } = useSearch();
 
   const isFilterOpen = Boolean(filterAnchorEl);
 
-  // Filter accounts based on active filters
+  // Filter accounts based on active filters and search query
   const filteredAccounts = useMemo(() => {
     return newAccountDetails.filter((account) => {
       const roleMatch = activeFilters.role === 'all' || account.role === activeFilters.role;
       const statusMatch = activeFilters.status === 'all' || account.status === activeFilters.status;
-      return roleMatch && statusMatch;
+      
+      // Search filter: check name, designation, and email
+      const searchMatch = !searchQuery || 
+        account.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        account.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (account.designation && account.designation.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        account.email.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return roleMatch && statusMatch && searchMatch;
     });
-  }, [newAccountDetails, activeFilters]);
+  }, [newAccountDetails, activeFilters, searchQuery]);
 
   useEffect(() => {
     loadAccounts();
@@ -138,7 +149,6 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
       loadAccounts();
       showSuccess(`Account status changed to ${newStatus} successfully`);
     } catch (error) {
-      console.error('Failed to update account status:', error);
       showError('Failed to update account status. Please try again.');
     } finally {
       setAccountToToggle(null);
@@ -168,13 +178,28 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   return (
     <>
       <WindowLayout title="Accounts" buttons={button}>
-        <AccountTable 
-          rows={filteredAccounts} 
-          onEditRow={handleEditRow} 
-          onDelete={handleDelete}
-          onRowClick={handleRowClick}
-          currentUserRole={currentUser?.role}
-        />
+        {filteredAccounts.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '400px',
+            }}
+          >
+            <Typography color="text.secondary" variant="body1">
+              No users found.
+            </Typography>
+          </Box>
+        ) : (
+          <AccountTable 
+            rows={filteredAccounts} 
+            onEditRow={handleEditRow} 
+            onDelete={handleDelete}
+            onRowClick={handleRowClick}
+            currentUserRole={currentUser?.role}
+          />
+        )}
       </WindowLayout>
       <CreateAccountPopUp
         open={isCreatePopupOpen}

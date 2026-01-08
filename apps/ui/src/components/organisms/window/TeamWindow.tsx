@@ -3,6 +3,7 @@ import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { BaseBtn } from '../../atoms';
 import DataTable from '../../templates/other/DataTable';
+import { Box, Typography } from '@mui/material';
 import { ITeam } from '../../../interfaces/team/ITeam';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
 import { useMemo, useState, useEffect } from 'react';
@@ -16,10 +17,12 @@ import { useTeam } from '../../../hooks/team';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
 import TeamFilterPopover from '../popover/TeamFilterPopover';
+import { useSearch } from '../../../contexts/SearchContext';
 
 function TeamWindow() {
   const { teams, loading, loadAllTeams, deleteTeam } = useTeam();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { searchQuery } = useSearch();
   const [viewTeam, setViewTeam] = useState<ITeam | null>(null);
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<ITeam | null>(null);
@@ -86,7 +89,6 @@ function TeamWindow() {
         await loadAllTeams(); // Refresh the list
         showSuccess('Team deleted successfully');
       } catch (error) {
-        console.error('Failed to delete team:', error);
         showError('Failed to delete team. Please try again.');
       }
     }
@@ -127,7 +129,7 @@ function TeamWindow() {
     </>
   );
 
-  // Filter teams based on active filters
+  // Filter teams based on active filters and search query
   const filteredTeams = useMemo(
     () => teams.filter(team => {
       // Status filter
@@ -142,9 +144,13 @@ function TeamWindow() {
         activeFilters.supervisor === 'with' ? team.supervisor !== null :
         team.supervisor === null;
 
-      return statusMatch && supervisorMatch;
+      // Search filter: check team name
+      const searchMatch = !searchQuery || 
+        team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return statusMatch && supervisorMatch && searchMatch;
     }),
-    [teams, activeFilters]
+    [teams, activeFilters, searchQuery]
   );
 
   const columns: DataTableColumn<ITeam>[] = useMemo(
@@ -223,7 +229,22 @@ function TeamWindow() {
   return (
     <>
       <WindowLayout title="Team" buttons={button}>
-        <DataTable columns={columns} rows={filteredTeams} getRowKey={(row) => row.id} />
+        {filteredTeams.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '400px',
+            }}
+          >
+            <Typography color="text.secondary" variant="body1">
+              No teams found.
+            </Typography>
+          </Box>
+        ) : (
+          <DataTable columns={columns} rows={filteredTeams} getRowKey={(row) => row.id} />
+        )}
       </WindowLayout>
       <CreateTeamPopUp
         open={isCreatePopupOpen}

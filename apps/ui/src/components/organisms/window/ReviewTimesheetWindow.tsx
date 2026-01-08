@@ -49,16 +49,11 @@ function ReviewTimesheetWindow() {
   // Get supervised project and team IDs
   const supervisedProjectIds = useMemo(() => {
     const ids = myProjects.map(p => p._id);
-    console.log('Supervised Project IDs:', ids);
     return ids;
   }, [myProjects]);
   
   const supervisedTeamIds = useMemo(() => {
     const ids = allSupervisedTeams.map(t => t.id);
-    console.log('===== SUPERVISED TEAMS DEBUG =====');
-    console.log('All Supervised Teams:', allSupervisedTeams);
-    console.log('Supervised Team IDs:', ids);
-    console.log('Count:', ids.length);
     return ids;
   }, [allSupervisedTeams]);
 
