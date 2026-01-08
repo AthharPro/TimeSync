@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Tab, Tabs } from '@mui/material';
 import PopupLayout from '../../templates/popup/PopUpLayout';
-import EditProjectForm, { EditProjectFormData } from '../../molecules/project/EditProjectForm';
+import EditProjectForm from '../../molecules/project/EditProjectForm';
 import ProjectStaffManager from '../project/ProjectStaffManager';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -9,6 +9,7 @@ import { useProjects } from '../../../hooks/project/useProjects';
 import { TabPanelProps } from '../../../interfaces/project/IProject';
 import {EditProjectPopupProps} from '../../../interfaces/project/IProject';
 import { editProjectSchema } from '../../../validations/project/EditProjectSchema';
+import {EditProjectFormData} from '../../../interfaces/project/IProject';
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
 
@@ -43,7 +44,8 @@ export default function EditProjectPopup({
     reset,
   } = useForm<EditProjectFormData>({
     resolver: yupResolver(editProjectSchema) as any,
-    mode: 'onChange',
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       projectName: project.projectName,
       description: project.description,

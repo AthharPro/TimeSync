@@ -40,6 +40,8 @@ export interface DatePickerAtomProps {
   minDate?: Dayjs;
   views?: Array<'year' | 'month' | 'day'>;
   openTo?: 'year' | 'month' | 'day';
+  error?: boolean;
+  helperText?: string;
 }
 
 export interface DateRangePickerProps {
