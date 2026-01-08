@@ -1,0 +1,74 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Nx API to Azure Web App - timeSync-api
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build API (Nx)
+        run: npx nx build api
+
+      - name: Copy package.json to build output
+        run: |
+          cp package.json dist/apps/api/package.json
+
+      - name: Install production dependencies
+        run: |
+          cd dist/apps/api
+          npm install --omit=dev
+
+      - name: Upload API build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-build
+          path: dist/apps/api
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-build
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_069748D8DCE24626A3CF95E6BA146C0A }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5AC5FF18764C4DE09549BEDDE7DEED45 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B437F7E271134FECA79E47FC163C7A68 }}
+
+      - name: Deploy API to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: timeSync-api
+          slot-name: Production
+          package: .
