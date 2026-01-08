@@ -12,6 +12,11 @@ export interface UpdateTeamStaffParams {
   supervisor?: string | null;
 }
 
+export interface UpdateTeamDetailsParams {
+  teamName?: string;
+  isDepartment?: boolean;
+}
+
 export interface TeamResponse {
   team: {
     _id: string;
@@ -72,6 +77,15 @@ export const updateTeamStaff = async (
   params: UpdateTeamStaffParams
 ): Promise<TeamResponse> => {
   const response = await api.put(`/api/team/${teamId}/staff`, params);
+  return response.data;
+};
+
+// Update team details (name and isDepartment)
+export const updateTeamDetails = async (
+  teamId: string,
+  params: UpdateTeamDetailsParams
+): Promise<TeamResponse> => {
+  const response = await api.put(`/api/team/${teamId}`, params);
   return response.data;
 };
 

@@ -53,7 +53,6 @@ function DashboardWindow() {
       setActivities(activitiesRes.activities);
       setTimesheetData(timesheetRes.stats);
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -77,7 +76,6 @@ function DashboardWindow() {
     setSelectedWeekData(submissionsRes.data);
     setTotalUsers(submissionsRes.totalUsers);
   } catch (err) {
-    console.error(err);
     setError('Failed to load selected week data');
   } finally {
     setLoading(false);

@@ -2,28 +2,32 @@ import WindowLayout from '../../templates/other/WindowLayout';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { BaseBtn } from '../../atoms';
+import StatusChip from '../../atoms/other/Icon/StatusChip';
 import DataTable from '../../templates/other/DataTable';
+import { Box, Typography } from '@mui/material';
 import { ITeam } from '../../../interfaces/team/ITeam';
 import { DataTableColumn } from '../../../interfaces/layout/ITableProps';
 import { useMemo, useState, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
 import ActionButton from '../../molecules/other/ActionButton';
 import CreateTeamPopUp from '../../organisms/popup/CreateTeamPopUp';
-import TeamStaffManager from '../team/TeamStaffManager';
+import EditTeamPopup from '../../organisms/popup/EditTeamPopup';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ViewTeamMembers from '../team/ViewTeamMembers';
 import { useTeam } from '../../../hooks/team';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
 import TeamFilterPopover from '../popover/TeamFilterPopover';
+import { useSearch } from '../../../contexts/SearchContext';
 
 function TeamWindow() {
   const { teams, loading, loadAllTeams, deleteTeam } = useTeam();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { searchQuery } = useSearch();
   const [viewTeam, setViewTeam] = useState<ITeam | null>(null);
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<ITeam | null>(null);
-  const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
+  const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<ITeam | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
@@ -59,19 +63,19 @@ function TeamWindow() {
 
   const handleEditTeam = (team: ITeam) => {
     setEditingTeam(team);
-    setIsStaffManagerOpen(true);
+    setIsEditPopupOpen(true);
   };
 
-  const handleCloseStaffManager = () => {
-    setIsStaffManagerOpen(false);
+  const handleCloseEditPopup = () => {
+    setIsEditPopupOpen(false);
     setEditingTeam(null);
   };
 
-  const handleTeamStaffSaved = () => {
+  const handleTeamSaved = () => {
     // Refresh teams after save
-    showSuccess('Team staff updated successfully');
+    showSuccess('Team updated successfully');
     loadAllTeams();
-    handleCloseStaffManager();
+    handleCloseEditPopup();
   };
   
   const handleDeleteTeam = (team: ITeam) => {
@@ -86,7 +90,6 @@ function TeamWindow() {
         await loadAllTeams(); // Refresh the list
         showSuccess('Team deleted successfully');
       } catch (error) {
-        console.error('Failed to delete team:', error);
         showError('Failed to delete team. Please try again.');
       }
     }
@@ -127,7 +130,7 @@ function TeamWindow() {
     </>
   );
 
-  // Filter teams based on active filters
+  // Filter teams based on active filters and search query
   const filteredTeams = useMemo(
     () => teams.filter(team => {
       // Status filter
@@ -142,9 +145,13 @@ function TeamWindow() {
         activeFilters.supervisor === 'with' ? team.supervisor !== null :
         team.supervisor === null;
 
-      return statusMatch && supervisorMatch;
+      // Search filter: check team name
+      const searchMatch = !searchQuery || 
+        team.teamName.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return statusMatch && supervisorMatch && searchMatch;
     }),
-    [teams, activeFilters]
+    [teams, activeFilters, searchQuery]
   );
 
   const columns: DataTableColumn<ITeam>[] = useMemo(
@@ -207,6 +214,13 @@ function TeamWindow() {
         ),
       },
       {
+        label: 'Status',
+        key: 'status',
+        render: (row: ITeam) => (
+          <StatusChip status={row.status !== false ? 'Active' : 'Inactive'} />
+        ),
+      },
+      {
         label: '',
         key: 'actions',
         render: (row: ITeam) => (
@@ -223,23 +237,34 @@ function TeamWindow() {
   return (
     <>
       <WindowLayout title="Team" buttons={button}>
-        <DataTable columns={columns} rows={filteredTeams} getRowKey={(row) => row.id} />
+        {filteredTeams.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              minHeight: '400px',
+            }}
+          >
+            <Typography color="text.secondary" variant="body1">
+              No teams found.
+            </Typography>
+          </Box>
+        ) : (
+          <DataTable columns={columns} rows={filteredTeams} getRowKey={(row) => row.id} />
+        )}
       </WindowLayout>
       <CreateTeamPopUp
         open={isCreatePopupOpen}
         onClose={handleClosePopup}
         onTeamCreated={handleTeamCreated}
       />
-      {editingTeam && (
-        <TeamStaffManager
-          open={isStaffManagerOpen}
-          onClose={handleCloseStaffManager}
-          teamId={editingTeam.id}
-          initialMembers={editingTeam.members}
-          initialSupervisor={editingTeam.supervisor}
-          onSaved={handleTeamStaffSaved}
-        />
-      )}
+      <EditTeamPopup
+        open={isEditPopupOpen}
+        onClose={handleCloseEditPopup}
+        team={editingTeam}
+        onSaved={handleTeamSaved}
+      />
       <ConformationDailog
         open={isDeleteDialogOpen}
         title="Delete Team"

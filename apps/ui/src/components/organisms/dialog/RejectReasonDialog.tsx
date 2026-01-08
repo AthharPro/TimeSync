@@ -34,6 +34,7 @@ const RejectReasonDialog: React.FC<RejectReasonDialogProps> = ({
     onConfirm(reason);
     setReason('');
     setError('');
+    onClose();
   };
 
   const handleClose = () => {

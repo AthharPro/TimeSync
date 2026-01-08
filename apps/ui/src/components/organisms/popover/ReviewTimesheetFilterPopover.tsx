@@ -30,6 +30,8 @@ export interface ReviewTimesheetFilters {
   filterBy: 'all' | 'project' | 'team';
   projectId: string;
   teamId: string;
+  filterEmployees: 'all' | 'withPending' | 'noPending';
+  dateFilterType: 'monthYear' | 'dateRange';
 }
 
 interface ReviewTimesheetFilterPopoverProps {
@@ -98,13 +100,23 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
   };
 
   const handleStartDateChange = (date: Dayjs | null) => {
-    // Clear year and month filters when using custom date range
-    setFilters({ ...filters, startDate: date ? date.format('YYYY-MM-DD') : null, month: null, year: null });
+    setFilters({ ...filters, startDate: date ? date.format('YYYY-MM-DD') : null });
   };
 
   const handleEndDateChange = (date: Dayjs | null) => {
-    // Clear year and month filters when using custom date range
-    setFilters({ ...filters, endDate: date ? date.format('YYYY-MM-DD') : null, month: null, year: null });
+    setFilters({ ...filters, endDate: date ? date.format('YYYY-MM-DD') : null });
+  };
+
+  const handleDateFilterTypeChange = (dateFilterType: 'monthYear' | 'dateRange') => {
+    // Clear all date filters when switching type
+    setFilters({ 
+      ...filters, 
+      dateFilterType,
+      startDate: null,
+      endDate: null,
+      month: null,
+      year: null
+    });
   };
 
   const handleStatusChange = (status: DailyTimesheetStatus | 'All') => {
@@ -124,6 +136,10 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
     setFilters({ ...filters, teamId });
   };
 
+  const handleFilterEmployeesChange = (filterEmployees: 'all' | 'withPending' | 'noPending') => {
+    setFilters({ ...filters, filterEmployees });
+  };
+
   const handleApply = () => {
     onApplyFilters(filters);
     onClose();
@@ -139,6 +155,8 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
       filterBy: 'all',
       projectId: 'All',
       teamId: 'All',
+      filterEmployees: 'all',
+      dateFilterType: 'monthYear',
     };
     setFilters(resetFilters);
     onApplyFilters(resetFilters);
@@ -171,44 +189,55 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
       <Divider sx={{ mb: 2 }} />
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-        {/* Year and Month Filter - Side by Side */}
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            <DatePickerAtom
-              label="Filter By Year"
-              value={filters.year ? dayjs(filters.year, 'YYYY') : null}
-              onChange={handleYearChange}
-              disabled={false}
-              views={['year']}
-              openTo="year"
-            />
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <DatePickerAtom
-              label="Filter By Month"
-              value={filters.month ? dayjs(filters.month, 'YYYY-MM') : null}
-              onChange={handleMonthChange}
-              disabled={false}
-              views={['year', 'month']}
-              openTo="month"
-            />
-          </Box>
-        </Box>
+        {/* Date Filter Type Selection */}
+        <FormControl component="fieldset">
+          <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
+            Date Filter
+          </FormLabel>
+          <RadioGroup
+            value={filters.dateFilterType}
+            onChange={(e) => handleDateFilterTypeChange(e.target.value as 'monthYear' | 'dateRange')}
+            row
+          >
+            <FormControlLabel value="monthYear" control={<Radio size="small" />} label="Month/Year" />
+            <FormControlLabel value="dateRange" control={<Radio size="small" />} label="Date Range" />
+          </RadioGroup>
+        </FormControl>
 
-        {/* Divider between preset filters and custom date range */}
-        {!filters.month && !filters.year && (
-          <>
-            <Divider sx={{ my: 1 }} />
-            <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>
-              Or use custom date range:
-            </Typography>
-            <DateRangePicker
-              startDate={filters.startDate}
-              endDate={filters.endDate}
-              onStartDateChange={handleStartDateChange}
-              onEndDateChange={handleEndDateChange}
-            />
-          </>
+        {/* Year and Month Filter - Only shown when dateFilterType is 'monthYear' */}
+        {filters.dateFilterType === 'monthYear' && (
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <DatePickerAtom
+                label="Filter By Year"
+                value={filters.year ? dayjs(filters.year, 'YYYY') : null}
+                onChange={handleYearChange}
+                disabled={false}
+                views={['year']}
+                openTo="year"
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <DatePickerAtom
+                label="Filter By Month"
+                value={filters.month ? dayjs(filters.month, 'YYYY-MM') : null}
+                onChange={handleMonthChange}
+                disabled={false}
+                views={['year', 'month']}
+                openTo="month"
+              />
+            </Box>
+          </Box>
+        )}
+
+        {/* Custom Date Range - Only shown when dateFilterType is 'dateRange' */}
+        {filters.dateFilterType === 'dateRange' && (
+          <DateRangePicker
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+            onStartDateChange={handleStartDateChange}
+            onEndDateChange={handleEndDateChange}
+          />
         )}
 
         {/* Status Filter */}
@@ -280,6 +309,23 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
             </Select>
           </FormControl>
         )}
+
+        <Divider sx={{ my: 1 }} />
+
+        {/* Filter Employees */}
+        <FormControl component="fieldset">
+          <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
+            Filter Employees
+          </FormLabel>
+          <RadioGroup
+            value={filters.filterEmployees}
+            onChange={(e) => handleFilterEmployeesChange(e.target.value as 'all' | 'withPending' | 'noPending')}
+          >
+            <FormControlLabel value="all" control={<Radio size="small" />} label="All Employees" />
+            <FormControlLabel value="withPending" control={<Radio size="small" />} label="With Pending Timesheets" />
+            <FormControlLabel value="noPending" control={<Radio size="small" />} label="No Pending Timesheets" />
+          </RadioGroup>
+        </FormControl>
       </Box>
 
       <Divider sx={{ my: 2 }} />

@@ -21,6 +21,7 @@ export interface EmployeeTimesheet {
   projectId?: {
     _id: string;
     projectName: string;
+    isPublic?: boolean;
   } | null;
   taskId?: {
     _id: string;
@@ -29,6 +30,7 @@ export interface EmployeeTimesheet {
   teamId?: {
     _id: string;
     teamName: string;
+    isDepartment?: boolean;
   } | null;
   billable?: string;
   description?: string;
@@ -96,5 +98,14 @@ export const rejectTimesheets = async (
   rejectionReason: string
 ): Promise<{ message: string; rejected: number }> => {
   const response = await api.post('/api/review/timesheets/reject', { timesheetIds, rejectionReason });
+  return response.data;
+};
+
+/**
+ * Get employee IDs from non-department teams supervised by the current supervisor
+ * These employees' ALL timesheets can be approved/rejected/edited regardless of project/team
+ */
+export const getNonDepartmentTeamEmployeeIds = async (): Promise<{ employeeIds: string[] }> => {
+  const response = await api.get('/api/review/non-department-team-employees');
   return response.data;
 };

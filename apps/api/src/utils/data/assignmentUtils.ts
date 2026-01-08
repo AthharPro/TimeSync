@@ -85,6 +85,34 @@ export const getSupervisedUserIds = async (supervisorId: string): Promise<string
 };
 
 /**
+ * Get employee IDs from non-department teams (isDepartment: false) supervised by a supervisor
+ * These employees' ALL timesheets can be approved/rejected/edited by the supervisor
+ * regardless of which project/team the timesheet belongs to
+ */
+export const getNonDepartmentTeamEmployeeIds = async (supervisorId: string): Promise<string[]> => {
+  const nonDepartmentTeams = await TeamModel.find({ 
+    supervisor: supervisorId,
+    isDepartment: false 
+  }).lean();
+  
+  const employeeIds = Array.from(
+    new Set(
+      nonDepartmentTeams.flatMap(t => {
+        if (!t.members) return [];
+        return t.members.map(m => {
+          // Handle both ObjectId and populated User objects
+          if (typeof m === 'string') return m;
+          if (m && typeof m === 'object' && '_id' in m) return m._id.toString();
+          return m.toString();
+        });
+      })
+    )
+  );
+  
+  return employeeIds;
+};
+
+/**
  * Get the project IDs and team IDs that a supervisor supervises
  * Used to verify if a supervisor has permission to approve/reject/edit specific timesheets
  */
@@ -180,7 +208,10 @@ export const getSupervisorsForUser = async (userId: string): Promise<string[]> =
 
 /**
  * Get supervisors from specific timesheets
- * Returns supervisors from the projects and teams associated with the submitted timesheets
+ * Returns supervisors from:
+ * 1. Projects referenced in the timesheets
+ * 2. Teams referenced in the timesheets
+ * 3. ALL teams that the employee is a member of (especially important for isDepartment:false teams)
  */
 export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?: any; teamId?: any; userId?: any }>): Promise<string[]> => {
   const supervisorIds = new Set<string>();
@@ -188,6 +219,7 @@ export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?
   // Extract unique project and team IDs from timesheets
   const projectIds = new Set<string>();
   const teamIds = new Set<string>();
+  const userIds = new Set<string>();
 
   timesheets.forEach(timesheet => {
     if (timesheet.projectId) {
@@ -195,6 +227,9 @@ export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?
     }
     if (timesheet.teamId) {
       teamIds.add(timesheet.teamId.toString());
+    }
+    if (timesheet.userId) {
+      userIds.add(timesheet.userId.toString());
     }
   });
 
@@ -220,6 +255,22 @@ export const getSupervisorsForTimesheets = async (timesheets: Array<{ projectId?
     }).select('supervisor').lean();
 
     teams.forEach(team => {
+      if (team.supervisor) {
+        supervisorIds.add(team.supervisor.toString());
+      }
+    });
+  }
+
+  // IMPORTANT: Also get supervisors from ALL teams the employee(s) are members of
+  // This ensures that supervisors of isDepartment:false teams get notified
+  // even when the timesheet doesn't directly reference their team
+  if (userIds.size > 0) {
+    const employeeTeams = await TeamModel.find({
+      members: { $in: Array.from(userIds) },
+      status: true
+    }).select('supervisor').lean();
+
+    employeeTeams.forEach(team => {
       if (team.supervisor) {
         supervisorIds.add(team.supervisor.toString());
       }

@@ -10,12 +10,16 @@ import {
   Button,
   Divider,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 
 interface HistoryFilterPopoverProps {
   anchorEl: HTMLElement | null;
   open: boolean;
   onClose: () => void;
-  onApplyFilter: (filters: { entityType: string; actionCategory: string }) => void;
+  onApplyFilter: (filters: { entityType: string; startDate: string; endDate: string }) => void;
 }
 
 const HistoryFilterPopover: React.FC<HistoryFilterPopoverProps> = ({
@@ -25,17 +29,23 @@ const HistoryFilterPopover: React.FC<HistoryFilterPopoverProps> = ({
   onApplyFilter,
 }) => {
   const [entityType, setEntityType] = useState<string>('all');
-  const [actionCategory, setActionCategory] = useState<string>('all');
+  const [startDate, setStartDate] = useState<Dayjs | null>(null);
+  const [endDate, setEndDate] = useState<Dayjs | null>(null);
 
   const handleApply = () => {
-    onApplyFilter({ entityType, actionCategory });
+    onApplyFilter({ 
+      entityType, 
+      startDate: startDate ? startDate.format('YYYY-MM-DD') : '', 
+      endDate: endDate ? endDate.format('YYYY-MM-DD') : '' 
+    });
     onClose();
   };
 
   const handleReset = () => {
     setEntityType('all');
-    setActionCategory('all');
-    onApplyFilter({ entityType: 'all', actionCategory: 'all' });
+    setStartDate(null);
+    setEndDate(null);
+    onApplyFilter({ entityType: 'all', startDate: '', endDate: '' });
     onClose();
   };
 
@@ -62,11 +72,11 @@ const HistoryFilterPopover: React.FC<HistoryFilterPopoverProps> = ({
 
         {/* Entity Type Filter */}
         <FormControl fullWidth sx={{ mb: 1.5 }} size="small">
-          <InputLabel id="entity-type-filter-label">Entity Type</InputLabel>
+          <InputLabel id="entity-type-filter-label">Type</InputLabel>
           <Select
             labelId="entity-type-filter-label"
             value={entityType}
-            label="Entity Type"
+            label="Type"
             onChange={(e) => setEntityType(e.target.value)}
           >
             <MenuItem value="all">All Types</MenuItem>
@@ -76,25 +86,38 @@ const HistoryFilterPopover: React.FC<HistoryFilterPopoverProps> = ({
           </Select>
         </FormControl>
 
-        {/* Action Category Filter */}
-        <FormControl fullWidth sx={{ mb: 2 }} size="small">
-          <InputLabel id="action-category-filter-label">Action</InputLabel>
-          <Select
-            labelId="action-category-filter-label"
-            value={actionCategory}
-            label="Action"
-            onChange={(e) => setActionCategory(e.target.value)}
-          >
-            <MenuItem value="all">All Actions</MenuItem>
-            <MenuItem value="CREATED">Created</MenuItem>
-            <MenuItem value="UPDATED">Updated</MenuItem>
-            <MenuItem value="STATUS_CHANGED">Status Changed</MenuItem>
-            <MenuItem value="SUPERVISOR_CHANGED">Supervisor Changed</MenuItem>
-            <MenuItem value="MEMBER_ADDED">Member/Employee Added</MenuItem>
-            <MenuItem value="MEMBER_REMOVED">Member/Employee Removed</MenuItem>
-            <MenuItem value="PASSWORD_CHANGED">Password Changed</MenuItem>
-          </Select>
-        </FormControl>
+        {/* Start Date Filter */}
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="Start Date"
+            value={startDate}
+            onChange={(newValue) => setStartDate(newValue as Dayjs | null)}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                size: 'small',
+                sx: { mb: 1.5 }
+              }
+            }}
+          />
+        </LocalizationProvider>
+
+        {/* End Date Filter */}
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <DatePicker
+            label="End Date"
+            value={endDate}
+            onChange={(newValue) => setEndDate(newValue as Dayjs | null)}
+            minDate={startDate || undefined}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                size: 'small',
+                sx: { mb: 2 }
+              }
+            }}
+          />
+        </LocalizationProvider>
 
         {/* Action Buttons */}
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>

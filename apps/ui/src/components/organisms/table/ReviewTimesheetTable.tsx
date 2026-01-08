@@ -30,6 +30,7 @@ interface ReviewTimesheetTableProps {
   filters?: ReviewTimesheetFilters;
   supervisedProjectIds?: string[];
   supervisedTeamIds?: string[];
+  nonDeptTeamEmployeeIds?: string[];
   initialEmployeeId?: string | null;
 }
 
@@ -38,6 +39,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
   filters,
   supervisedProjectIds = [],
   supervisedTeamIds = [],
+  nonDeptTeamEmployeeIds = [],
   initialEmployeeId = null
 }) => {
   const {
@@ -121,6 +123,12 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
   // Define columns
   const columns: DataTableColumn<IEmployee>[] = [
     {
+      label: 'Employee ID',
+      key: 'employeeId',
+      render: (row) => <Box sx={{ py: 0.5 }}>{row.employeeId}</Box>,
+      width: '15%',
+    },
+    {
       label: 'Employee',
       key: 'employee',
       render: (row) => (
@@ -139,7 +147,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
       label: 'Designation',
       key: 'designation',
       render: (row) => <Box sx={{ py: 0.5 }}>{row.designation || 'N/A'}</Box>,
-      width: '25%',
+      width: '20%',
     },
     {
       label: 'Pending Timesheets',
@@ -149,7 +157,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
           {row.pendingTimesheetCount !== undefined ? row.pendingTimesheetCount : 0}
         </Box>
       ),
-      width: '20%',
+      width: '15%',
     },
   ];
 
@@ -182,11 +190,41 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
     );
   }
 
+  // Filter employees based on filterEmployees option
+  const filteredEmployees = employees.filter((employee) => {
+    if (!filters?.filterEmployees || filters.filterEmployees === 'all') {
+      return true; // Show all employees
+    }
+    
+    const pendingCount = employee.pendingTimesheetCount || 0;
+    
+    if (filters.filterEmployees === 'withPending') {
+      return pendingCount > 0; // Only employees with pending timesheets
+    }
+    
+    if (filters.filterEmployees === 'noPending') {
+      return pendingCount === 0; // Only employees without pending timesheets
+    }
+    
+    return true;
+  });
+
+  // Show empty state if no employees match the filter
+  if (filteredEmployees.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+        <Typography color="text.secondary">
+          No employees found matching the selected filters.
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: '100%' }}>
       <DataTable<IEmployee>
         columns={columns}
-        rows={employees}
+        rows={filteredEmployees}
         getRowKey={(row) => row.id}
         onRowClick={handleRowClick}
         enableHover={true}
@@ -236,6 +274,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
                         filters={filters}
                         supervisedProjectIds={supervisedProjectIds}
                         supervisedTeamIds={supervisedTeamIds}
+                        nonDeptTeamEmployeeIds={nonDeptTeamEmployeeIds}
                       />
                     </Box>
                   </Box>

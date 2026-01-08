@@ -17,7 +17,8 @@ export default function ProjectStaffManager({
   initialEmployees,
   initialSupervisor,
   onSaved,
-}: ProjectStaffManagerProps) {
+  isEmbedded = false,
+}: ProjectStaffManagerProps & { isEmbedded?: boolean }) {
   const { updateProjectStaff } = useProjects();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployees, setSelectedEmployees] = useState<IEmployee[]>([]);
@@ -128,7 +129,11 @@ export default function ProjectStaffManager({
         if (supervisor === employee.id) setSupervisor('');
         return updated;
       }
-      return [...prev, { ...employee, allocation: (employee as any).allocation ?? 0 }];
+      // When adding, preserve the allocation that was set in the dialog
+      return [...prev, { 
+        ...employee, 
+        allocation: (employee as any).allocation ?? 0 
+      }];
     });
   };
 
@@ -166,6 +171,69 @@ export default function ProjectStaffManager({
   };
 
  
+
+  // If embedded, render without PopupLayout wrapper
+  if (isEmbedded) {
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
+          {error && (
+            <Box sx={{ color: 'error.main', mb: 1, fontSize: 14 }}>{error}</Box>
+          )}
+          <Box sx={{ flex: '0 0 50%'}}>
+            <SelectedEmployeeChips
+            employees={selectedEmployees}
+            onRemove={handleRemoveEmployee}
+            onAllocationChange={handleAllocationChange}
+            title="Selected Employees"
+            sx={{ mb: 2 }}
+          />
+          <SupervisorSelector
+            selectedEmployees={selectedEmployees}
+            supervisor={supervisor}
+            onSupervisorChange={setSupervisor}
+            caption="Choose a supervisor from selected employees"
+          />
+          </Box>
+          <Box sx={{ flex: '0 0 50%'}}>
+            <StaffSelector
+            selectedEmployees={selectedEmployees}
+            availableEmployees={filteredEmployees}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onEmployeeToggle={handleEmployeeToggle}
+            onRemoveEmployee={handleRemoveEmployee}
+            title="Add more employees"
+          />
+          </Box>
+        </Box>
+        <Box>
+          <Divider sx={{ mt: 2 }} />
+        </Box>
+        <Box
+          sx={{
+            mt: 3,
+            display: 'flex',
+            flexDirection: 'row',
+            gap: 2,
+            justifyContent: 'flex-end',
+          }}
+        >
+          <BaseBtn
+            type="button"
+            onClick={onClose}
+            variant="outlined"
+            disabled={isLoading}
+          >
+            Cancel
+          </BaseBtn>
+          <BaseBtn onClick={handleSave} variant="contained" disabled={isLoading}>
+            {isLoading ? 'Saving...' : 'Save'}
+          </BaseBtn>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <PopupLayout

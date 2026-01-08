@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Popover,
   Box,
@@ -9,6 +9,10 @@ import {
   FormControl,
   InputLabel,
   Divider,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormLabel,
 } from '@mui/material';
 import { DailyTimesheetStatus } from '@tms/shared';
 import DateRangePicker from '../../molecules/report/DateRangePicker';
@@ -22,7 +26,10 @@ export interface TimesheetFilters {
   month: string | null;
   year: string | null;
   status: DailyTimesheetStatus | 'All';
-  project: string;
+  filterBy: 'all' | 'project' | 'team';
+  projectId: string;
+  teamId: string;
+  dateFilterType: 'monthYear' | 'dateRange';
 }
 
 interface MyTimesheetFilterPopoverProps {
@@ -40,8 +47,13 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
   onApplyFilters,
   currentFilters,
 }) => {
-  const { myProjects } = useMyProjects();
+  const { myProjects, myTeams, loadMyProjects } = useMyProjects();
   const [filters, setFilters] = useState<TimesheetFilters>(currentFilters);
+
+  // Load projects (which also loads teams)
+  useEffect(() => {
+    loadMyProjects();
+  }, [loadMyProjects]);
 
   const handleYearChange = (date: Dayjs | null) => {
     if (!date) {
@@ -84,21 +96,40 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
   };
 
   const handleStartDateChange = (date: Dayjs | null) => {
-    // Clear year and month filters when using custom date range
-    setFilters({ ...filters, startDate: date ? date.format('YYYY-MM-DD') : null, month: null, year: null });
+    setFilters({ ...filters, startDate: date ? date.format('YYYY-MM-DD') : null });
   };
 
   const handleEndDateChange = (date: Dayjs | null) => {
-    // Clear year and month filters when using custom date range
-    setFilters({ ...filters, endDate: date ? date.format('YYYY-MM-DD') : null, month: null, year: null });
+    setFilters({ ...filters, endDate: date ? date.format('YYYY-MM-DD') : null });
+  };
+
+  const handleDateFilterTypeChange = (dateFilterType: 'monthYear' | 'dateRange') => {
+    // Clear all date filters when switching type
+    setFilters({ 
+      ...filters, 
+      dateFilterType,
+      startDate: null,
+      endDate: null,
+      month: null,
+      year: null
+    });
   };
 
   const handleStatusChange = (status: DailyTimesheetStatus | 'All') => {
     setFilters({ ...filters, status });
   };
 
-  const handleProjectChange = (project: string) => {
-    setFilters({ ...filters, project });
+  const handleFilterByChange = (filterBy: 'all' | 'project' | 'team') => {
+    // Reset project and team when changing filter type
+    setFilters({ ...filters, filterBy, projectId: 'All', teamId: 'All' });
+  };
+
+  const handleProjectChange = (projectId: string) => {
+    setFilters({ ...filters, projectId });
+  };
+
+  const handleTeamChange = (teamId: string) => {
+    setFilters({ ...filters, teamId });
   };
 
   const handleApply = () => {
@@ -113,7 +144,10 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
       month: null,
       year: null,
       status: 'All',
-      project: 'All',
+      filterBy: 'all',
+      projectId: 'All',
+      teamId: 'All',
+      dateFilterType: 'monthYear',
     };
     setFilters(resetFilters);
     onApplyFilters(resetFilters);
@@ -146,44 +180,55 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
       <Divider sx={{ mb: 2 }} />
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-        {/* Year and Month Filter - Side by Side */}
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Box sx={{ flex: 1 }}>
-            <DatePickerAtom
-              label="Filter By Year"
-              value={filters.year ? dayjs(filters.year) : null}
-              onChange={handleYearChange}
-              disabled={false}
-              views={['year']}
-              openTo="year"
-            />
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <DatePickerAtom
-              label="Filter By Month"
-              value={filters.month ? dayjs(filters.month) : null}
-              onChange={handleMonthChange}
-              disabled={false}
-              views={['year', 'month']}
-              openTo="month"
-            />
-          </Box>
-        </Box>
+        {/* Date Filter Type Selection */}
+        <FormControl component="fieldset">
+          <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
+            Date Filter
+          </FormLabel>
+          <RadioGroup
+            value={filters.dateFilterType}
+            onChange={(e) => handleDateFilterTypeChange(e.target.value as 'monthYear' | 'dateRange')}
+            row
+          >
+            <FormControlLabel value="monthYear" control={<Radio size="small" />} label="Month/Year" />
+            <FormControlLabel value="dateRange" control={<Radio size="small" />} label="Date Range" />
+          </RadioGroup>
+        </FormControl>
 
-        {/* Divider between preset filters and custom date range */}
-        {!filters.month && !filters.year && (
-          <>
-            <Divider sx={{ my: 1 }} />
-            <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>
-              Or use custom date range:
-            </Typography>
-            <DateRangePicker
-              startDate={filters.startDate}
-              endDate={filters.endDate}
-              onStartDateChange={handleStartDateChange}
-              onEndDateChange={handleEndDateChange}
-            />
-          </>
+        {/* Year and Month Filter - Only shown when dateFilterType is 'monthYear' */}
+        {filters.dateFilterType === 'monthYear' && (
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <DatePickerAtom
+                label="Filter By Year"
+                value={filters.year ? dayjs(filters.year) : null}
+                onChange={handleYearChange}
+                disabled={false}
+                views={['year']}
+                openTo="year"
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <DatePickerAtom
+                label="Filter By Month"
+                value={filters.month ? dayjs(filters.month) : null}
+                onChange={handleMonthChange}
+                disabled={false}
+                views={['year', 'month']}
+                openTo="month"
+              />
+            </Box>
+          </Box>
+        )}
+
+        {/* Custom Date Range - Only shown when dateFilterType is 'dateRange' */}
+        {filters.dateFilterType === 'dateRange' && (
+          <DateRangePicker
+            startDate={filters.startDate}
+            endDate={filters.endDate}
+            onStartDateChange={handleStartDateChange}
+            onEndDateChange={handleEndDateChange}
+          />
         )}
 
         {/* Status Filter */}
@@ -202,22 +247,60 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
           </Select>
         </FormControl>
 
-        {/* Project Filter */}
-        <FormControl fullWidth size="small">
-          <InputLabel>Project</InputLabel>
-          <Select
-            value={filters.project}
-            onChange={(e) => handleProjectChange(e.target.value)}
-            label="Project"
+        <Divider sx={{ my: 1 }} />
+
+        {/* Filter By: Project or Team */}
+        <FormControl component="fieldset">
+          <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
+            Filter By
+          </FormLabel>
+          <RadioGroup
+            value={filters.filterBy}
+            onChange={(e) => handleFilterByChange(e.target.value as 'all' | 'project' | 'team')}
           >
-            <MenuItem value="All">All Projects</MenuItem>
-            {myProjects.map((project) => (
-              <MenuItem key={project._id} value={project._id}>
-                {project.projectName}
-              </MenuItem>
-            ))}
-          </Select>
+            <FormControlLabel value="all" control={<Radio size="small" />} label="All" />
+            <FormControlLabel value="project" control={<Radio size="small" />} label="Project" />
+            <FormControlLabel value="team" control={<Radio size="small" />} label="Team" />
+          </RadioGroup>
         </FormControl>
+
+        {/* Project Filter - Only shown when filterBy is 'project' */}
+        {filters.filterBy === 'project' && (
+          <FormControl fullWidth size="small">
+            <InputLabel>Project</InputLabel>
+            <Select
+              value={filters.projectId}
+              onChange={(e) => handleProjectChange(e.target.value)}
+              label="Project"
+            >
+              <MenuItem value="All">All Projects</MenuItem>
+              {myProjects.map((project) => (
+                <MenuItem key={project._id} value={project._id}>
+                  {project.projectName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
+
+        {/* Team Filter - Only shown when filterBy is 'team' */}
+        {filters.filterBy === 'team' && (
+          <FormControl fullWidth size="small">
+            <InputLabel>Team</InputLabel>
+            <Select
+              value={filters.teamId}
+              onChange={(e) => handleTeamChange(e.target.value)}
+              label="Team"
+            >
+              <MenuItem value="All">All Teams</MenuItem>
+              {myTeams.map((team) => (
+                <MenuItem key={team._id} value={team._id}>
+                  {team.teamName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       <Divider sx={{ my: 2 }} />

@@ -1,5 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { listProjects, deleteProject, activateProject as activateProjectAPI, updateProjectStaff, createProject as createProjectAPI } from '../../api/project';
+import { 
+  listProjects, 
+  deleteProject, 
+  activateProject as activateProjectAPI, 
+  updateProjectStaff, 
+  createProject as createProjectAPI,
+  updateProjectDetails as updateProjectDetailsAPI 
+} from '../../api/project';
 import { IProject } from '../../interfaces/project/IProject';
 import { CostCenter, ProjectType } from '../../interfaces/project/IProject';
 
@@ -272,6 +279,40 @@ export const updateProjectStaffAction = createAsyncThunk<
   }
 });
 
+// Update project details
+export const updateProjectDetailsAction = createAsyncThunk<
+  SerializedProject,
+  { 
+    projectId: string; 
+    projectName?: string;
+    description?: string;
+    projectVisibility?: string;
+    billable?: boolean;
+    clientName?: string;
+    projectType?: string;
+    costCenter?: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+  },
+  { rejectValue: string }
+>('project/updateProjectDetails', async (params, thunkAPI) => {
+  try {
+    const { projectId, ...updateData } = params;
+    const response = await updateProjectDetailsAPI(projectId, updateData);
+    // response already is response.data (contains { project: ... })
+    if (!response || !response.project) {
+      console.error('Invalid response structure:', response);
+      return thunkAPI.rejectWithValue('Invalid response structure from server');
+    }
+    return transformProject(response.project);
+  } catch (error: any) {
+    console.error('Error updating project details:', error);
+    return thunkAPI.rejectWithValue(
+      error.response?.data?.message || error.message || 'Failed to update project details'
+    );
+  }
+});
+
 const projectSlice = createSlice({
   name: 'project',
   initialState,
@@ -336,6 +377,19 @@ const projectSlice = createSlice({
       })
       .addCase(updateProjectStaffAction.rejected, (state, action) => {
         state.error = action.payload || 'Failed to update project staff';
+      })
+      // Update project details - don't set loading to avoid blocking the UI
+      .addCase(updateProjectDetailsAction.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(updateProjectDetailsAction.fulfilled, (state, action: PayloadAction<SerializedProject>) => {
+        const index = state.projects.findIndex((p) => p.id === action.payload.id);
+        if (index !== -1) {
+          state.projects[index] = action.payload;
+        }
+      })
+      .addCase(updateProjectDetailsAction.rejected, (state, action) => {
+        state.error = action.payload || 'Failed to update project details';
       })
       // Create project - don't set loading to avoid blocking the UI
       .addCase(createProjectAction.pending, (state) => {

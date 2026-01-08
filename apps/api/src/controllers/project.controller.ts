@@ -2,6 +2,7 @@ import { CREATED, OK } from '../constants/http';
 import {
   createProjectFromUiSchema,
   createProjectNormalizedSchema,
+  updateProjectDetailsSchema,
 } from '../schemas/project.schema';
 import { catchErrors } from '../utils/error';
 import {
@@ -9,6 +10,7 @@ import {
   listProjects,
   listMyProjects,
   updateProjectStaff,
+  updateProjectDetails,
   softDeleteProject,
   activateProject,
   listSupervisedProjects,
@@ -59,6 +61,14 @@ export const updateStaffHandler = catchErrors(async (req, res) => {
   };
   const performedBy = req.userId as string; // Get the authenticated user ID
   const result = await updateProjectStaff(id, { employees, supervisor }, performedBy);
+  return res.status(OK).json(result);
+});
+
+export const updateDetailsHandler = catchErrors(async (req, res) => {
+  const { id } = req.params as { id: string };
+  const parsed = updateProjectDetailsSchema.parse(req.body);
+  const performedBy = req.userId as string;
+  const result = await updateProjectDetails(id, parsed, performedBy);
   return res.status(OK).json(result);
 });
 

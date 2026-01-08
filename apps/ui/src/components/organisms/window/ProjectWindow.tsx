@@ -14,16 +14,19 @@ import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import ActionButton from '../../molecules/other/ActionButton';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ProjectStaffManager from '../project/ProjectStaffManager';
+import EditProjectPopup from '../popup/EditProjectPopup';
 import { useProjects } from '../../../hooks/project/useProjects';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
 import { useSnackbar } from '../../../hooks/useSnackbar';
 import StatusChip from '../../atoms/other/Icon/StatusChip';
 import ProjectFilterPopover from '../popover/ProjectFilterPopover';
+import { useSearch } from '../../../contexts/SearchContext';
 
 function ProjectWindow() {
   const { projects, loading: isLoading, error, loadProjects, deleteProject, activateProject } = useProjects();
   const { snackbar, showSuccess, showError, hideSnackbar } = useSnackbar();
+  const { searchQuery } = useSearch();
 
   
   const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
@@ -31,7 +34,7 @@ function ProjectWindow() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [activeFilters, setActiveFilters] = useState({ projectType: 'all', status: 'all', billable: 'all', visibility: 'all', costCenter: 'all' });
@@ -40,14 +43,14 @@ function ProjectWindow() {
 
   // Load projects on component mount
   useEffect(() => {
-    loadProjects().catch((err) => {
-      console.error('ProjectWindow: Error loading projects:', err);
+    loadProjects().catch(() => {
+      // Error is handled by the hook
     });
   }, [loadProjects]);
 
   const handleEdit = (project: IProject) => {
     setProjectToEdit(project);
-    setIsStaffManagerOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleDelete = (project: IProject) => {
@@ -61,7 +64,6 @@ function ProjectWindow() {
       showSuccess('Project activated successfully');
       // Projects are automatically updated in Redux store
     } catch (error) {
-      console.error('Failed to activate project:', error);
       showError('Failed to activate project. Please try again.');
     }
   };
@@ -84,14 +86,14 @@ function ProjectWindow() {
     setIsCreateModalOpen(false);
   };
 
-  const handleCloseStaffManager = () => {
-    setIsStaffManagerOpen(false);
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
     setProjectToEdit(null);
   };
 
-  const handleStaffSaved = () => {
-    showSuccess('Project staff updated successfully');
-    // Refresh project data after staff update
+  const handleEditSaved = () => {
+    showSuccess('Project updated successfully');
+    // Refresh project data after update
     loadProjects();
   };
 
@@ -117,7 +119,6 @@ function ProjectWindow() {
         showSuccess('Project put on hold successfully');
         // Projects are automatically updated in Redux store
       } catch (error) {
-        console.error('Failed to put project on hold:', error);
         showError('Failed to put project on hold. Please try again.');
       }
     }
@@ -128,12 +129,9 @@ function ProjectWindow() {
     setProjectToDelete(null);
   };
 
-  // Filter projects based on active filters
+  // Filter projects based on active filters and search query
   const filteredProjects = useMemo(
     () => {
-      console.log('Active filters:', activeFilters);
-      console.log('Sample project data:', projects[0]);
-      
       return projects.filter(project => {
         // Project Type filter
         const projectTypeMatch = 
@@ -162,10 +160,14 @@ function ProjectWindow() {
           activeFilters.costCenter === 'all' ? true :
           project.costCenter === activeFilters.costCenter;
 
-        return projectTypeMatch && statusMatch && billableMatch && visibilityMatch && costCenterMatch;
+        // Search filter: check project name
+        const searchMatch = !searchQuery || 
+          project.projectName.toLowerCase().includes(searchQuery.toLowerCase());
+
+        return projectTypeMatch && statusMatch && billableMatch && visibilityMatch && costCenterMatch && searchMatch;
       });
     },
-    [projects, activeFilters]
+    [projects, activeFilters, searchQuery]
   );
 
   const columns: DataTableColumn<IProject>[] = useMemo(
@@ -279,22 +281,6 @@ function ProjectWindow() {
     []
   );
 
-  // Compute initial supervisor details for ProjectStaffManager
-  const projectToEditInitialSupervisor = projectToEdit
-    ? (() => {
-        const managerMember = projectToEdit.teamMembers.find(
-          (member) => member.id === projectToEdit.supervisor
-        );
-        return managerMember
-          ? {
-              id: managerMember.id,
-              name: managerMember.name,
-              designation: managerMember.role,
-            }
-          : null;
-      })()
-    : null;
-
   return (
     <>
       <WindowLayout
@@ -392,20 +378,13 @@ function ProjectWindow() {
         onCancel={handleCancelDelete}
       />
 
-      {/* Project Staff Manager Modal */}
+      {/* Edit Project Modal */}
       {projectToEdit && (
-        <ProjectStaffManager
-          open={isStaffManagerOpen}
-          onClose={handleCloseStaffManager}
-          projectId={projectToEdit.id}
-          initialEmployees={projectToEdit.teamMembers.map(member => ({
-            id: member.id,
-            name: member.name,
-            designation: member.role,
-            allocation: member.allocation ?? 0,
-          }))}
-          initialSupervisor={projectToEditInitialSupervisor}
-          onSaved={handleStaffSaved}
+        <EditProjectPopup
+          open={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          project={projectToEdit}
+          onSaved={handleEditSaved}
         />
       )}
 

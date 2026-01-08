@@ -30,7 +30,9 @@ interface IEmpTimesheetEntry {
   date: string;
   project: string;
   projectId?: string;
+  isPublicProject?: boolean;
   teamId?: string;
+  isDepartmentTeam?: boolean;
   task: string;
   taskId?: string;
   description: string;
@@ -47,6 +49,7 @@ interface EmpTimesheetTableProps {
   filters?: ReviewTimesheetFilters;
   supervisedProjectIds?: string[];
   supervisedTeamIds?: string[];
+  nonDeptTeamEmployeeIds?: string[];
 }
 
 // Billable type options as Record
@@ -60,7 +63,8 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
   onSelectedTimesheetsChange, 
   filters,
   supervisedProjectIds = [],
-  supervisedTeamIds = []
+  supervisedTeamIds = [],
+  nonDeptTeamEmployeeIds = []
 }) => {
   const {
     loadEmployeeTimesheets,
@@ -101,68 +105,77 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     }
   }, [employeeId, filters?.startDate, filters?.endDate, loadEmployeeTimesheets]);
 
-  // Load tasks for projects in the timesheets
+  // Load tasks for projects and teams in the timesheets
   useEffect(() => {
     if (timesheets) {
-      const projectIds = new Set<string>();
+      const projectAndTeamIds = new Set<string>();
       timesheets.forEach((ts: any) => {
+        // Load tasks for projects
         if (ts.projectId && !loadedProjectsRef.current.has(ts.projectId)) {
-          projectIds.add(ts.projectId);
+          projectAndTeamIds.add(ts.projectId);
+        }
+        // Load tasks for teams (teams can also have tasks)
+        if (ts.teamId && !loadedProjectsRef.current.has(ts.teamId)) {
+          projectAndTeamIds.add(ts.teamId);
         }
       });
       
-      // Load tasks for each project
-      projectIds.forEach(projectId => {
-        loadTasks(projectId);
-        loadedProjectsRef.current.add(projectId);
+      // Load tasks for each project and team
+      projectAndTeamIds.forEach(id => {
+        loadTasks(id);
+        loadedProjectsRef.current.add(id);
       });
     }
   }, [timesheets, loadTasks]);
 
   // Update local state when Redux data changes
   useEffect(() => {
-    console.log('=== EmpTimesheetTable useEffect triggered ===');
-    console.log('Supervised Project IDs received:', supervisedProjectIds);
-    console.log('Supervised Team IDs received:', supervisedTeamIds);
     
     if (timesheets) {
+      // Check if this employee is in a non-department team
+      const isEmployeeInNonDeptTeam = nonDeptTeamEmployeeIds.includes(employeeId);
+      console.log('Is employee in non-department team?', isEmployeeInNonDeptTeam);
+      
       const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => {
-        // Check if this timesheet is supervised (either by project or team)
+        // Check if this timesheet is from a public project
+        const isFromPublicProject = ts.isPublicProject === true;
+        
+        // Check if this timesheet is supervised based on project or team
         const isProjectSupervised = ts.projectId && supervisedProjectIds.length > 0 && supervisedProjectIds.includes(ts.projectId);
         const isTeamSupervised = ts.teamId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.teamId);
         
-        // IMPORTANT: For employees in isDepartment:false teams, supervisors should be able to
-        // approve/reject ALL timesheets, not just those from supervised projects/teams.
-        // Since the backend already filters to only show timesheets the supervisor can review,
-        // we mark all timesheets as supervised.
-        // However, we give priority to project/team supervision for better granularity.
-        const isSupervised = true; // All timesheets shown are supervised since backend filters them
+        // IMPORTANT: Permission logic for supervision:
+        // 1. If timesheet is from a public project (isPublic: true), ANY supervisor can edit
+        // 2. If employee is in a non-department team (isDepartment: false), supervisor can edit ALL timesheets
+        // 3. Otherwise, supervisor can only edit timesheets from projects/teams they supervise
+        const isSupervised = isFromPublicProject || isEmployeeInNonDeptTeam || isProjectSupervised || isTeamSupervised;
         
         // Debug logging
         console.log('===== TIMESHEET SUPERVISION CHECK =====');
         console.log('Processing Timesheet:', {
           project: ts.project,
           projectId: ts.projectId,
+          isPublicProject: ts.isPublicProject,
           teamId: ts.teamId,
+          isDepartmentTeam: ts.isDepartmentTeam,
+          isFromPublicProject,
           isProjectSupervised,
           isTeamSupervised,
+          isEmployeeInNonDeptTeam,
           isSupervised,
           supervisedProjectIdsCount: supervisedProjectIds.length,
           supervisedTeamIdsCount: supervisedTeamIds.length,
-          projectIdInProjectList: ts.projectId ? supervisedProjectIds.includes(ts.projectId) : 'N/A',
-          teamIdInList: ts.teamId ? supervisedTeamIds.includes(ts.teamId) : 'N/A',
+          nonDeptTeamEmployeeIdsCount: nonDeptTeamEmployeeIds.length,
         });
-        console.log('Supervised Team IDs Array:', supervisedTeamIds);
-        console.log('Timesheet teamId value:', ts.teamId);
-        console.log('teamId type:', typeof ts.teamId);
-        console.log('Is teamId in array?', ts.teamId ? supervisedTeamIds.includes(ts.teamId) : false);
         
         return {
           id: ts.id,
           date: ts.date,
           project: ts.project,
           projectId: ts.projectId,
+          isPublicProject: ts.isPublicProject,
           teamId: ts.teamId,
+          isDepartmentTeam: ts.isDepartmentTeam,
           task: ts.task,
           taskId: ts.taskId,
           description: ts.description,
@@ -176,7 +189,7 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
       setTimesheetData(transformedData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timesheets, supervisedProjectIds.join(','), supervisedTeamIds.join(',')]);
+  }, [timesheets, supervisedProjectIds.join(','), supervisedTeamIds.join(','), nonDeptTeamEmployeeIds.join(','), employeeId]);
   // Use join(',') to create a stable string representation of arrays for comparison
 
   // Apply client-side filters to timesheet data
@@ -255,21 +268,26 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     pendingAndSupervisedTimesheets.every((entry) => entry.isChecked);
   const isIndeterminate = pendingAndSupervisedTimesheets.some((entry) => entry.isChecked) && !isAllSelected;
 
-  // Get available tasks for a specific entry based on its project
+  // Get available tasks for a specific entry based on its project or team
   const getAvailableTasksForEntry = (entry: IEmpTimesheetEntry): string[] => {
-    if (!entry.projectId) return [];
-    const projectTasks = tasksByProject[entry.projectId] || [];
-    return projectTasks.map(task => task.taskName);
+    // For team-based timesheets, use teamId; for project-based, use projectId
+    const lookupId = entry.teamId || entry.projectId;
+    if (!lookupId) return [];
+    const tasks = tasksByProject[lookupId] || [];
+    return tasks.map(task => task.taskName);
   };
 
   // Handle task change
   const handleTaskChange = async (entry: IEmpTimesheetEntry, event: any, value: string | null) => {
     if (value) {
-      // Get the project's tasks
-      const projectTasks = entry.projectId ? tasksByProject[entry.projectId] || [] : [];
+      // Get the project or team ID
+      const lookupId = entry.teamId || entry.projectId;
       
-      // Find the task ID from task name in the current project's tasks
-      const selectedTask = projectTasks.find(task => task.taskName === value);
+      // Get the project/team tasks
+      const tasks = lookupId ? tasksByProject[lookupId] || [] : [];
+      
+      // Find the task ID from task name in the current project/team tasks
+      const selectedTask = tasks.find(task => task.taskName === value);
       
       if (selectedTask) {
         // Update UI with both task name (for display) and task ID
@@ -295,15 +313,16 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
 
   // Handle create new task
   const handleCreateNewTask = async (entry: IEmpTimesheetEntry, taskName: string) => {
-    const projectId = entry.projectId;
-    if (!projectId) {
-      console.error('No project ID for this entry');
+    // Use teamId if it exists, otherwise use projectId
+    const lookupId = entry.teamId || entry.projectId;
+    if (!lookupId) {
+      console.error('No project ID or team ID for this entry');
       return;
     }
 
     try {
-      console.log('Creating new task:', taskName, 'for project:', projectId);
-      const newTask: any = await createTask({ projectId, taskName });
+      console.log('Creating new task:', taskName, 'for project/team:', lookupId);
+      const newTask: any = await createTask({ projectId: lookupId, taskName });
       
       // Update UI with the new task
       if (newTask && newTask._id) {

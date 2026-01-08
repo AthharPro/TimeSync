@@ -9,12 +9,11 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { SnackbarProvider } from 'notistack';
 import { useAuth } from './contexts/AuthContext';
 
-// Wrapper component to access auth context
+
 const AppWithNotifications = () => {
   const { user } = useAuth();
   
-  // ⚠️ Only render NotificationProvider when user is authenticated
-  // This prevents socket initialization on login/landing pages
+  
   if (!user) {
     return (
       <BrowserRouter>
