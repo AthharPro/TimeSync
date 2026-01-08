@@ -39,6 +39,9 @@ function EditAccountPopup({
     if (open && accountData) {
       // Populate form with account data
       reset({
+        firstName: accountData.firstName || '',
+        lastName: accountData.lastName || '',
+        email: accountData.email || '',
         designation: accountData.designation || '',
         contactNumber: accountData.contactNumber || '',
         status: accountData.status || 'Active',
@@ -61,6 +64,9 @@ function EditAccountPopup({
 
     try {
       await updateAccount(accountData.id, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
         designation: data.designation,
         contactNumber: data.contactNumber,
         status: data.status,

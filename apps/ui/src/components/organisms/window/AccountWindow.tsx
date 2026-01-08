@@ -35,13 +35,20 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
 
   const isFilterOpen = Boolean(filterAnchorEl);
 
-  // Filter accounts based on active filters
+  // Filter accounts based on active filters and sort by status 
   const filteredAccounts = useMemo(() => {
-    return newAccountDetails.filter((account) => {
-      const roleMatch = activeFilters.role === 'all' || account.role === activeFilters.role;
-      const statusMatch = activeFilters.status === 'all' || account.status === activeFilters.status;
-      return roleMatch && statusMatch;
-    });
+    return newAccountDetails
+      .filter((account) => {
+        const roleMatch = activeFilters.role === 'all' || account.role === activeFilters.role;
+        const statusMatch = activeFilters.status === 'all' || account.status === activeFilters.status;
+        return roleMatch && statusMatch;
+      })
+      .sort((a, b) => {
+        // Active status comes first, Inactive comes after
+        if (a.status === 'Active' && b.status === 'Inactive') return -1;
+        if (a.status === 'Inactive' && b.status === 'Active') return 1;
+        return 0;
+      });
   }, [newAccountDetails, activeFilters]);
 
   useEffect(() => {

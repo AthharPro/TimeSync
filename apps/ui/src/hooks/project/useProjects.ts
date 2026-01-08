@@ -8,6 +8,7 @@ import {
   deleteProjectAction,
   activateProjectAction,
   updateProjectStaffAction,
+  updateProjectDetailsAction,
 } from '../../store/slices/projectSlice';
 
 export interface UseProjectsReturn {
@@ -35,6 +36,20 @@ export interface UseProjectsReturn {
     params: {
       employees?: { user: string; allocation?: number }[];
       supervisor?: string | null;
+    }
+  ) => Promise<IProject>;
+  updateProjectDetails: (
+    projectId: string,
+    params: {
+      projectName?: string;
+      description?: string;
+      projectVisibility?: string;
+      billable?: boolean;
+      clientName?: string;
+      projectType?: string;
+      costCenter?: string;
+      startDate?: Date | null;
+      endDate?: Date | null;
     }
   ) => Promise<IProject>;
 }
@@ -174,6 +189,46 @@ export const useProjects = (): UseProjectsReturn => {
     [dispatch]
   );
 
+  // Update project details
+  const updateProjectDetails = useCallback(
+    async (
+      projectId: string,
+      params: {
+        projectName?: string;
+        description?: string;
+        projectVisibility?: string;
+        billable?: boolean;
+        clientName?: string;
+        projectType?: string;
+        costCenter?: string;
+        startDate?: Date | null;
+        endDate?: Date | null;
+      }
+    ) => {
+      try {
+        const result = await dispatch(
+          updateProjectDetailsAction({ projectId, ...params })
+        );
+        if (updateProjectDetailsAction.rejected.match(result)) {
+          console.error('Failed to update project details:', result.payload);
+          throw new Error(result.payload as string);
+        }
+        const project: any = result.payload;
+        return {
+          ...project,
+          startDate: project.startDate instanceof Date ? project.startDate : (typeof project.startDate === 'string' ? new Date(project.startDate) : new Date()),
+          endDate: project.endDate ? (project.endDate instanceof Date ? project.endDate : (typeof project.endDate === 'string' ? new Date(project.endDate) : null)) : null,
+          createdAt: project.createdAt instanceof Date ? project.createdAt : (typeof project.createdAt === 'string' ? new Date(project.createdAt) : new Date()),
+          updatedAt: project.updatedAt instanceof Date ? project.updatedAt : (typeof project.updatedAt === 'string' ? new Date(project.updatedAt) : new Date()),
+        } as IProject;
+      } catch (error) {
+        console.error('Update project details error:', error);
+        throw error;
+      }
+    },
+    [dispatch]
+  );
+
   return {
     projects,
     loading,
@@ -183,5 +238,6 @@ export const useProjects = (): UseProjectsReturn => {
     deleteProject,
     activateProject,
     updateProjectStaff,
+    updateProjectDetails,
   };
 };

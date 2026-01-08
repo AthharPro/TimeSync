@@ -396,6 +396,84 @@ export const updateProjectStaff = async (
   return { project };
 };
 
+// Update project details (excluding staff/employees)
+export const updateProjectDetails = async (
+  projectId: string,
+  data: {
+    projectName?: string;
+    description?: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    clientName?: string;
+    costCenter?: string;
+    projectType?: string;
+    isPublic?: boolean;
+    billable?: string;
+  },
+  performedBy?: string
+) => {
+  const existing = await ProjectModel.findById(projectId);
+  appAssert(existing, INTERNAL_SERVER_ERROR, 'Project not found');
+
+  // Prevent editing the "Internal" project
+  appAssert(
+    existing.projectName !== 'Internal',
+    CONFLICT,
+    'The Internal project cannot be edited'
+  );
+
+  const update: any = {};
+  
+  if (data.projectName !== undefined) update.projectName = data.projectName;
+  if (data.description !== undefined) update.description = data.description;
+  if (data.startDate !== undefined) update.startDate = data.startDate;
+  if (data.endDate !== undefined) update.endDate = data.endDate;
+  if (data.clientName !== undefined) update.clientName = data.clientName;
+  if (data.costCenter !== undefined) update.costCenter = data.costCenter;
+  if (data.projectType !== undefined) update.projectType = data.projectType;
+  if (data.isPublic !== undefined) update.isPublic = data.isPublic;
+  if (data.billable !== undefined) update.billable = data.billable;
+
+  const project = await ProjectModel.findByIdAndUpdate(
+    projectId,
+    { $set: update },
+    { new: true }
+  )
+    .populate({ path: 'employees.user', select: 'firstName lastName email designation' })
+    .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
+
+  appAssert(project, INTERNAL_SERVER_ERROR, 'Project update failed');
+
+  // Create history log for project details update
+  try {
+    const actor = performedBy ? await UserModel.findById(performedBy) : null;
+    const actorId = performedBy || project._id;
+    const actorName = actor ? `${actor.firstName} ${actor.lastName}` : 'System';
+    const actorEmail = actor ? actor.email : 'system@timesync.com';
+
+    await createHistoryLog({
+      actionType: HistoryActionType.PROJECT_UPDATED,
+      entityType: HistoryEntityType.PROJECT,
+      entityId: project._id,
+      entityName: project.projectName,
+      performedBy: actorId,
+      performedByName: actorName,
+      performedByEmail: actorEmail,
+      description: generateHistoryDescription(
+        HistoryActionType.PROJECT_UPDATED,
+        project.projectName
+      ),
+      metadata: {
+        updatedFields: Object.keys(update),
+      },
+    });
+  } catch (error) {
+    console.error('Failed to create history log for project details update:', error);
+  }
+
+  return { project };
+};
+
 export const softDeleteProject = async (projectId: string) => {
   // Capture the current project data before deletion
   const existing = await ProjectModel.findById(projectId).select('supervisor employees projectName');

@@ -75,6 +75,9 @@ export const getAllUsers = async (roles?: string[]) => {
 export const updateUserById = async (
   userId: string,
   data: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
     designation?: string;
     contactNumber?: string;
     status?: boolean;
@@ -99,10 +102,31 @@ export const updateUserById = async (
     }
   }
 
+  // Check if email is being changed and if it already exists
+  if (data.email !== undefined && data.email !== user.email) {
+    const existingUser = await UserModel.exists({
+      email: data.email,
+      _id: { $ne: userId },
+    });
+    appAssert(!existingUser, CONFLICT, 'Email already exists');
+  }
+
   const oldStatus = user.status;
   const changes: string[] = [];
 
   // Update only the allowed fields
+  if (data.firstName !== undefined) {
+    user.firstName = data.firstName;
+    changes.push('first name');
+  }
+  if (data.lastName !== undefined) {
+    user.lastName = data.lastName;
+    changes.push('last name');
+  }
+  if (data.email !== undefined) {
+    user.email = data.email;
+    changes.push('email');
+  }
   if (data.designation !== undefined) {
     user.designation = data.designation;
     changes.push('designation');

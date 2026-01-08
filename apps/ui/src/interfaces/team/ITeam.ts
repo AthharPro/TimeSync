@@ -4,6 +4,7 @@ export interface ITeam {
   members: { id: string; name: string; designation?: string; email?: string }[];
   supervisor: { id: string; name: string; designation?: string; email?: string } | null;
   status?: boolean;
+  isDepartment?: boolean;
 }
 
 export interface CreateTeamFormData {
@@ -58,3 +59,7 @@ export interface ViewTeamMembersProps {
   } | null;
 }
 
+export interface EditTeamDetailsFormData {
+  teamName: string;
+  isDepartment: boolean;
+}

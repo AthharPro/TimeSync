@@ -20,6 +20,9 @@ createAccount: (data: {
   contactNumber: string;
 }, role: UserRole) => Promise<void>;
 updateAccount: (userId: string, data: {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   designation?: string;
   contactNumber?: string;
   status?: 'Active' | 'Inactive' | string;
