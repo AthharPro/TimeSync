@@ -71,7 +71,6 @@ export const createProject = async (data: CreateProjectParams, createdBy?: strin
       },
     });
   } catch (error) {
-    console.error('Failed to create history log for project creation:', error);
   }
 
   // Update supervisor role if a supervisor was assigned during project creation
@@ -94,7 +93,6 @@ export const createProject = async (data: CreateProjectParams, createdBy?: strin
       }
     }
   } catch (error) {
-    console.error('Failed to update supervisor role during project creation:', error);
   }
 
   return {
@@ -200,25 +198,12 @@ export const updateProjectStaff = async (
   data: { employees?: { user: string; allocation?: number }[]; supervisor?: string | null },
   performedBy?: string
 ) => {
-  console.log('🚀 updateProjectStaff called with:', {
-    projectId,
-    supervisor: data.supervisor,
-    supervisorType: typeof data.supervisor,
-    hasSupervisorKey: 'supervisor' in data,
-    employeeCount: data.employees?.length
-  });
-
   //get the previous supervisor and employees
   const existing = await ProjectModel.findById(projectId)
     .select('supervisor employees projectName')
     .populate('supervisor', 'firstName lastName')
     .populate('employees', 'firstName lastName');
   
-  console.log('📋 Existing project data:', {
-    projectName: existing?.projectName,
-    currentSupervisor: existing?.supervisor?.toString(),
-  });
-
   // Prevent editing the "Internal" project
   appAssert(
     existing?.projectName !== 'Internal',
@@ -252,7 +237,6 @@ export const updateProjectStaff = async (
     update.supervisor = supervisorValue
       ? new mongoose.Types.ObjectId(supervisorValue)
       : null;
-    console.log('📝 Supervisor update value:', update.supervisor);
   }
   const project = await ProjectModel.findByIdAndUpdate(
     projectId,
@@ -351,7 +335,6 @@ export const updateProjectStaff = async (
       }
     }
   } catch (error) {
-    console.error('Failed to create history log for project update:', error);
   }
 
   // Update roles based on supervisor change
@@ -362,41 +345,28 @@ export const updateProjectStaff = async (
         ? (project.supervisor as any)._id?.toString?.() || project.supervisor.toString()
         : null;
 
-      console.log('🔍 Role Update Debug:', {
-        previousSupervisorId,
-        newSupervisorId,
-        projectId,
-        supervisorChanged: previousSupervisorId !== newSupervisorId
-      });
-
       // Promote new supervisor if assigned
       if (newSupervisorId && previousSupervisorId !== newSupervisorId) {
         const sup = await UserModel.findById(newSupervisorId).select('role firstName lastName');
         if (sup) {
-          console.log('👤 New supervisor role before promotion:', sup.role);
           if (sup.role === UserRole.Admin) {
             await UserModel.findByIdAndUpdate(newSupervisorId, {
               $set: { role: UserRole.SupervisorAdmin },
             });
-            console.log('✅ Promoted Admin → SupervisorAdmin');
           } else if (sup.role === UserRole.Emp) {
             await UserModel.findByIdAndUpdate(newSupervisorId, {
               $set: { role: UserRole.Supervisor },
             });
-            console.log('✅ Promoted Emp → Supervisor');
           } else {
-            console.log('ℹ️ New supervisor already has appropriate role:', sup.role);
           }
         }
       }
 
       // Demote previous supervisor if changed or removed
       if (previousSupervisorId && previousSupervisorId !== newSupervisorId) {
-        console.log('🔄 Checking if previous supervisor should be demoted...');
         const prev = await UserModel.findById(previousSupervisorId).select('role');
         
         if (prev) {
-          console.log('👤 Previous supervisor current role:', prev.role);
           
           if (prev.role === UserRole.SupervisorAdmin || prev.role === UserRole.Supervisor) {
             // Check if still supervising any other active projects (excluding current project)
@@ -412,44 +382,29 @@ export const updateProjectStaff = async (
               status: true,
             }).select('_id teamName');
             
-            console.log('📊 Supervision check:', {
-              otherProjectsCount: otherProjects.length,
-              teamsCount: teams.length,
-              otherProjects: otherProjects.map(p => ({ id: p._id, name: p.projectName })),
-              teams: teams.map(t => ({ id: t._id, name: (t as any).teamName }))
-            });
-            
+
             // Only demote if not supervising any other projects or teams
             if (otherProjects.length === 0 && teams.length === 0) {
               if (prev.role === UserRole.SupervisorAdmin) {
                 await UserModel.findByIdAndUpdate(previousSupervisorId, {
                   $set: { role: UserRole.Admin },
                 });
-                console.log('✅ Demoted SupervisorAdmin → Admin (no other supervisory duties)');
               } else if (prev.role === UserRole.Supervisor) {
                 await UserModel.findByIdAndUpdate(previousSupervisorId, {
                   $set: { role: UserRole.Emp },
                 });
-                console.log('✅ Demoted Supervisor → Emp (no other supervisory duties)');
               }
             } else {
-              console.log('ℹ️ Previous supervisor still has other supervisory duties - keeping role');
             }
           } else {
-            console.log('ℹ️ Previous supervisor role does not require demotion:', prev.role);
           }
         } else {
-          console.log('⚠️ Previous supervisor not found in database');
         }
       } else if (!previousSupervisorId) {
-        console.log('ℹ️ No previous supervisor to demote');
       } else {
-        console.log('ℹ️ Supervisor unchanged');
       }
     }
   } catch (error) {
-    console.error('❌ Failed to update user roles after project staff change:', error);
-    console.error(error);
   }
 
   return { project };
@@ -527,7 +482,6 @@ export const updateProjectDetails = async (
       },
     });
   } catch (error) {
-    console.error('Failed to create history log for project details update:', error);
   }
 
   return { project };
@@ -558,7 +512,6 @@ export const softDeleteProject = async (projectId: string) => {
   const supervisorId = existing?.supervisor?._id?.toString() || existing?.supervisor?.toString();
   if (supervisorId) {
     try {
-      console.log('🗑️ Project deleted - checking supervisor demotion for:', supervisorId);
       const prev = await UserModel.findById(supervisorId).select('role');
       
       if (prev && (prev.role === UserRole.SupervisorAdmin || prev.role === UserRole.Supervisor)) {
@@ -575,30 +528,22 @@ export const softDeleteProject = async (projectId: string) => {
           status: true,
         }).select('_id teamName');
         
-        console.log('📊 Supervision check after delete:', {
-          otherProjectsCount: otherProjects.length,
-          teamsCount: teams.length
-        });
-        
+
         // Only demote if not supervising any other projects or teams
         if (otherProjects.length === 0 && teams.length === 0) {
           if (prev.role === UserRole.SupervisorAdmin) {
             await UserModel.findByIdAndUpdate(supervisorId, {
               $set: { role: UserRole.Admin },
             });
-            console.log('✅ Demoted SupervisorAdmin → Admin (project deleted, no other duties)');
           } else if (prev.role === UserRole.Supervisor) {
             await UserModel.findByIdAndUpdate(supervisorId, {
               $set: { role: UserRole.Emp },
             });
-            console.log('✅ Demoted Supervisor → Emp (project deleted, no other duties)');
           }
         } else {
-          console.log('ℹ️ Supervisor still has other duties - keeping role');
         }
       }
     } catch (error) {
-      console.error('❌ Failed to update supervisor role during project deletion:', error);
     }
   }
 
@@ -655,7 +600,6 @@ export const activateProject = async (projectId: string) => {
       }
     }
   } catch (error) {
-    console.error('Failed to restore supervisor role during project activation:', error);
   }
 
   return { project };

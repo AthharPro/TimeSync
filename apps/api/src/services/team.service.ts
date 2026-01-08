@@ -73,7 +73,6 @@ export const createTeam = async (data: CreateTeamParams, createdBy?: string) => 
       },
     });
   } catch (error) {
-    console.error('Failed to create history log for team creation:', error);
   }
 
   try {
@@ -90,7 +89,6 @@ export const createTeam = async (data: CreateTeamParams, createdBy?: string) => 
     }
   } catch (error) {
     // Ignore errors in team membership updates
-    console.error('Error updating team memberships:', error);
   }
 
   return { team };
@@ -220,26 +218,17 @@ export const updateTeamStaff = async (
   // Update user team memberships if members were changed
   if (Array.isArray(data.members)) {
     // Use the oldMemberIds and newMemberIds already defined above (lines 187-188)
-    console.log('Team update - Updating user team memberships');
-    console.log('Team ID:', teamId);
-    console.log('Old members:', oldMemberIds);
-    console.log('New members:', newMemberIds);
     
     try {
       await updateUserTeamMemberships(teamId, newMemberIds, oldMemberIds);
-      console.log('User team memberships updated successfully');
     } catch (error) {
-      console.error('ERROR: Failed to update user team memberships:', error);
       // Log the full error details
       if (error instanceof Error) {
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
       }
       // Don't throw error - team update was successful, just log the membership sync issue
       console.warn('Team was updated successfully, but user team membership sync failed. This may need manual correction.');
     }
   } else {
-    console.log('Team update - Members array not provided, skipping user team membership updates');
   }
 
   // Create history logs for supervisor change
@@ -282,7 +271,6 @@ export const updateTeamStaff = async (
           },
         });
       } catch (error) {
-        console.error('Failed to create history log for team supervisor change:', error);
       }
     }
 
@@ -399,7 +387,6 @@ export const updateTeamDetails = async (
       });
     }
   } catch (error) {
-    console.error('Failed to create history log for team update:', error);
   }
 
   const populated = await TeamModel.findById(team._id)

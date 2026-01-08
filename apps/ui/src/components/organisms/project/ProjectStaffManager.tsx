@@ -158,7 +158,6 @@ export default function ProjectStaffManager({
       onSaved?.();
       onClose();
     } catch (e: unknown) {
-      console.error('Failed to update project staff:', e);
       const error = e as { response?: { data?: { message?: string } }; message?: string };
       setError(
         error?.response?.data?.message ||

@@ -51,7 +51,6 @@ const BulkAccountForm: React.FC<IBulkAccountFormProps> = ({
             onReset(); 
           }
           } catch (error) {
-            console.error('Error reading file:', error);
             setRows([]);
           }
         };

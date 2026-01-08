@@ -59,7 +59,6 @@ export const getSupervisedEmployeesForReviewHandler: RequestHandler = async (req
         .sort({ firstName: 1, lastName: 1 })
         .lean();
       
-      console.log('Found employees:', employees.length);
     }
     
     // Get pending timesheet counts for each employee
@@ -92,7 +91,6 @@ export const getSupervisedEmployeesForReviewHandler: RequestHandler = async (req
     
     res.json({ employees: employeesWithPendingCount });
   } catch (error) {
-    console.error('Error fetching supervised employees for review:', error);
     res.status(500).json({ 
       message: 'Failed to fetch supervised employees',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -253,7 +251,6 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
       timesheets: timesheetsWithRejections
     });
   } catch (error) {
-    console.error('Error fetching employee timesheets for review:', error);
     res.status(500).json({ 
       message: 'Failed to fetch employee timesheets',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -387,7 +384,6 @@ export const approveTimesheetsHandler: RequestHandler = async (req, res) => {
         });
       }
     } catch (error) {
-      console.error('Error sending approval notifications:', error);
       // Don't fail the approval if notification fails
     }
 
@@ -396,7 +392,6 @@ export const approveTimesheetsHandler: RequestHandler = async (req, res) => {
       approved: result.modifiedCount
     });
   } catch (error) {
-    console.error('Error approving timesheets:', error);
     res.status(500).json({
       message: 'Failed to approve timesheets',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -545,7 +540,6 @@ export const rejectTimesheetsHandler: RequestHandler = async (req, res) => {
         });
       }
     } catch (error) {
-      console.error('Error sending rejection notifications:', error);
       // Don't fail the rejection if notification fails
     }
 
@@ -554,7 +548,6 @@ export const rejectTimesheetsHandler: RequestHandler = async (req, res) => {
       rejected: result.modifiedCount
     });
   } catch (error) {
-    console.error('Error rejecting timesheets:', error);
     res.status(500).json({
       message: 'Failed to reject timesheets',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -672,7 +665,6 @@ export const updateEmployeeTimesheetHandler: RequestHandler = async (req, res) =
 
     res.json(updatedTimesheet);
   } catch (error) {
-    console.error('Error updating employee timesheet:', error);
     res.status(500).json({
       message: 'Failed to update timesheet',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -707,7 +699,6 @@ export const getNonDepartmentTeamEmployeeIdsHandler: RequestHandler = async (req
 
     res.json({ employeeIds });
   } catch (error) {
-    console.error('Error fetching non-department team employee IDs:', error);
     res.status(500).json({
       message: 'Failed to fetch non-department team employee IDs',
       error: error instanceof Error ? error.message : 'Unknown error'

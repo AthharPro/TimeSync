@@ -76,11 +76,9 @@ export const useProjects = (): UseProjectsReturn => {
     try {
       const result = await dispatch(fetchProjects());
       if (fetchProjects.rejected.match(result)) {
-        console.error('Failed to load projects:', result.payload);
         throw new Error(result.payload as string);
       }
     } catch (error) {
-      console.error('Load projects error:', error);
       throw error;
     }
   }, [dispatch]);
@@ -103,7 +101,6 @@ export const useProjects = (): UseProjectsReturn => {
       try {
         const result = await dispatch(createProjectAction(params));
         if (createProjectAction.rejected.match(result)) {
-          console.error('Failed to create project:', result.payload);
           throw new Error(result.payload as string);
         }
         const project: any = result.payload;
@@ -115,7 +112,6 @@ export const useProjects = (): UseProjectsReturn => {
           updatedAt: project.updatedAt instanceof Date ? project.updatedAt : (typeof project.updatedAt === 'string' ? new Date(project.updatedAt) : new Date()),
         } as IProject;
       } catch (error) {
-        console.error('Create project error:', error);
         throw error;
       }
     },
@@ -128,11 +124,9 @@ export const useProjects = (): UseProjectsReturn => {
       try {
         const result = await dispatch(deleteProjectAction(projectId));
         if (deleteProjectAction.rejected.match(result)) {
-          console.error('Failed to delete project:', result.payload);
           throw new Error(result.payload as string);
         }
       } catch (error) {
-        console.error('Delete project error:', error);
         throw error;
       }
     },
@@ -145,11 +139,9 @@ export const useProjects = (): UseProjectsReturn => {
       try {
         const result = await dispatch(activateProjectAction(projectId));
         if (activateProjectAction.rejected.match(result)) {
-          console.error('Failed to activate project:', result.payload);
           throw new Error(result.payload as string);
         }
       } catch (error) {
-        console.error('Activate project error:', error);
         throw error;
       }
     },
@@ -170,7 +162,6 @@ export const useProjects = (): UseProjectsReturn => {
           updateProjectStaffAction({ projectId, ...params })
         );
         if (updateProjectStaffAction.rejected.match(result)) {
-          console.error('Failed to update project staff:', result.payload);
           throw new Error(result.payload as string);
         }
         const project: any = result.payload;
@@ -182,7 +173,6 @@ export const useProjects = (): UseProjectsReturn => {
           updatedAt: project.updatedAt instanceof Date ? project.updatedAt : (typeof project.updatedAt === 'string' ? new Date(project.updatedAt) : new Date()),
         } as IProject;
       } catch (error) {
-        console.error('Update project staff error:', error);
         throw error;
       }
     },
@@ -210,7 +200,6 @@ export const useProjects = (): UseProjectsReturn => {
           updateProjectDetailsAction({ projectId, ...params })
         );
         if (updateProjectDetailsAction.rejected.match(result)) {
-          console.error('Failed to update project details:', result.payload);
           throw new Error(result.payload as string);
         }
         const project: any = result.payload;
@@ -222,7 +211,6 @@ export const useProjects = (): UseProjectsReturn => {
           updatedAt: project.updatedAt instanceof Date ? project.updatedAt : (typeof project.updatedAt === 'string' ? new Date(project.updatedAt) : new Date()),
         } as IProject;
       } catch (error) {
-        console.error('Update project details error:', error);
         throw error;
       }
     },

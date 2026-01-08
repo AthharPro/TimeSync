@@ -13,12 +13,7 @@ import BaseBtn from '../../atoms/other/button/BaseBtn';
 import { ITeam } from '../../../interfaces/team/ITeam';
 import { updateTeamDetails } from '../../../api/team';
 import { EditTeamDetailsFormData } from '../../../interfaces/team/ITeam';
-
-interface EditTeamDetailsFormProps {
-  team: ITeam;
-  onClose: () => void;
-  onSaved: () => void;
-}
+import { EditTeamDetailsFormProps } from '../../../interfaces/team/ITeam';
 
 function EditTeamDetailsForm({ team, onClose, onSaved }: EditTeamDetailsFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +42,6 @@ function EditTeamDetailsForm({ team, onClose, onSaved }: EditTeamDetailsFormProp
       onSaved();
       onClose();
     } catch (e: any) {
-      console.error('Failed to update team details:', e);
       const errorMessage =
         e?.response?.data?.message ||
         e?.message ||

@@ -27,16 +27,12 @@ export const useMyProjects = (): UseMyProjectsReturn => {
       setLoading(true);
       setError(null);
       const response = await listMyProjects();
-      console.log('useMyProjects - API Response:', response);
       // Backend returns { projects: [...], teams: [...] }
       const projects = response.projects || [];
       const teams = response.teams || [];
-      console.log('useMyProjects - Extracted projects:', projects);
-      console.log('useMyProjects - Extracted teams:', teams);
       setMyProjects(projects);
       setMyTeams(teams);
     } catch (err: any) {
-      console.error('Failed to load my projects:', err);
       setError(err.response?.data?.message || err.message || 'Failed to load my projects');
       setMyProjects([]);
       setMyTeams([]);

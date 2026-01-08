@@ -11,7 +11,6 @@ export const fetchAccounts = createAsyncThunk(
       const users = await getUsers();
       return users;
     } catch (error: any) {
-      console.error('fetchAccounts - Error:', error);
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch accounts');
     }
   }
@@ -50,7 +49,6 @@ const AccountSlice  = createSlice({
         builder
             // Fetch accounts
             .addCase(fetchAccounts.pending, (state) => {
-                console.log('fetchAccounts.pending');
             })
             .addCase(fetchAccounts.fulfilled, (state, action) => {
                 // Map backend response to frontend format
@@ -71,7 +69,6 @@ const AccountSlice  = createSlice({
                 state.accountData = mappedAccounts;
             })
             .addCase(fetchAccounts.rejected, (state, action) => {
-                console.error('fetchAccounts.rejected - Error:', action.payload);
             });
     },
 });

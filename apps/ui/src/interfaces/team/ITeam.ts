@@ -1,3 +1,5 @@
+import { Control } from 'react-hook-form';
+import { IEmployee } from '../user/IUser';
 export interface ITeam {
   id: string;
   teamName: string;
@@ -62,4 +64,20 @@ export interface ViewTeamMembersProps {
 export interface EditTeamDetailsFormData {
   teamName: string;
   isDepartment: boolean;
+}
+export interface CreateTeamFormProps {
+  control: Control<CreateTeamFormData>;
+  isValid: boolean;
+  isSubmitting: boolean;
+  selectedEmployees: IEmployee[];
+  onAddEmployeesClick: () => void;
+  onRemoveEmployee: (employeeId: string) => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+}
+
+export interface EditTeamDetailsFormProps {
+  team: ITeam;
+  onClose: () => void;
+  onSaved: () => void;
 }

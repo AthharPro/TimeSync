@@ -23,7 +23,6 @@ const handleAppError = (res: Response, error: AppError) => {
 };
 
 const errorHandler: ErrorRequestHandler = (err, req, res, next: NextFunction) => {
-  console.error(`PATH: ${req.path}`, err);
 
   if (req.path === "/auth/refresh") {
     res.clearCookie("refreshToken", { path: "/auth/refresh" });

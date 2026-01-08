@@ -61,7 +61,7 @@ const StatCard: React.FC<IStatCard> = ({
               justifyContent: 'center',
               color: `${color}.main`,
               '& svg': {
-                fontSize: '2.5rem', // Increased icon size
+                fontSize: '2.5rem', 
               },
             }}
           >

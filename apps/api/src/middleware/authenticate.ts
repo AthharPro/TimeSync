@@ -15,7 +15,6 @@ const authenticate = (requiredRoles?: UserRole[]): RequestHandler => {
       accessToken = authHeader.split(" ")[1];
     }
 
-    console.log("Access Token:", accessToken);
 
     appAssert(accessToken, UNAUTHORIZED, "Not authorized");
 

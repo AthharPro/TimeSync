@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { IDateRangeCellProps } from '../../../interfaces/project/IProjectCells';
 
 const DateRangeCell: React.FC<IDateRangeCellProps> = ({ startDate, endDate }) => {
-  // Helper function to check if a date is valid
+ 
   const isValidDate = (date: Date | string | null | undefined): boolean => {
     if (!date) return false;
     if (typeof date === 'string' && date === '') return false;

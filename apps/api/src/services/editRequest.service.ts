@@ -43,21 +43,11 @@ export const createEditRequest = async (
     throw new Error('User not found');
   }
 
-  console.log('=== DEBUG: createEditRequest ===');
-  console.log('User:', {
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role,
-    teams: user.teams
-  });
-
   // Collect all supervisor IDs from teams and projects
   const supervisorIds = new Set<string>();
 
   // 1. Find supervisors from user's teams
   const teamIds = user.teams.map((team: any) => team._id);
-  console.log('Team IDs:', teamIds);
-  console.log('Team IDs length:', teamIds.length);
   
   if (teamIds.length > 0) {
     // Find teams and get their supervisors
@@ -66,19 +56,12 @@ export const createEditRequest = async (
       supervisor: { $ne: null, $exists: true }
     }).populate('supervisor');
     
-    console.log('Teams found:', teams.length);
     teams.forEach(team => {
       if (team.supervisor && team.supervisor._id.toString() !== userId) {
         supervisorIds.add(team.supervisor._id.toString());
-        console.log('Added team supervisor:', {
-          teamName: team.teamName,
-          supervisorId: team.supervisor._id,
-          supervisorName: `${(team.supervisor as any).firstName} ${(team.supervisor as any).lastName}`
-        });
       }
     });
   } else {
-    console.log('WARNING: User has no teams assigned!');
   }
 
   // 2. Find supervisors from user's projects
@@ -87,24 +70,16 @@ export const createEditRequest = async (
     supervisor: { $ne: null, $exists: true }
   }).populate('supervisor');
   
-  console.log('Projects where user is employee:', userProjects.length);
   userProjects.forEach(project => {
     if (project.supervisor && project.supervisor._id.toString() !== userId) {
       supervisorIds.add(project.supervisor._id.toString());
-      console.log('Added project supervisor:', {
-        projectName: project.projectName,
-        supervisorId: project.supervisor._id,
-        supervisorName: `${(project.supervisor as any).firstName} ${(project.supervisor as any).lastName}`
-      });
     }
   });
 
   const supervisors = Array.from(supervisorIds);
-  console.log('Total unique supervisors found:', supervisors.length, supervisors);
 
   // Send notifications to all supervisors
   if (supervisors.length > 0) {
-    console.log('Creating notifications for supervisors:', supervisors);
     const notifications = await createBulkNotifications(
       supervisors,
       {
@@ -115,9 +90,7 @@ export const createEditRequest = async (
         relatedModel: 'EditRequest'
       }
     );
-    console.log('Notifications created successfully:', notifications.length);
   } else {
-    console.log('WARNING: No supervisors found to notify!');
   }
 
   return editRequest;
@@ -166,27 +139,16 @@ export const getSupervisedEditRequests = async (
     throw new Error('Supervisor not found');
   }
 
-  console.log('=== DEBUG: getSupervisedEditRequests ===');
-  console.log('Supervisor ID:', supervisorId);
-  console.log('Supervisor:', {
-    firstName: supervisor.firstName,
-    lastName: supervisor.lastName,
-    role: supervisor.role,
-    teams: supervisor.teams
-  });
-
   const supervisedUserIds = new Set<string>();
 
   // 1. Find all users in supervisor's teams (excluding the supervisor)
   const teamIds = supervisor.teams.map((team: any) => team._id);
-  console.log('Team IDs:', teamIds);
 
   if (teamIds.length > 0) {
     const teamUsers = await UserModel.find({
       teams: { $in: teamIds },
       _id: { $ne: supervisorId }
     }).distinct('_id');
-    console.log('Team Users:', teamUsers);
     teamUsers.forEach(id => supervisedUserIds.add(id.toString()));
   }
 
@@ -194,19 +156,16 @@ export const getSupervisedEditRequests = async (
   const supervisedProjects = await ProjectModel.find({
     supervisor: new mongoose.Types.ObjectId(supervisorId)
   });
-  console.log('Supervised Projects:', supervisedProjects.length);
   
   supervisedProjects.forEach(project => {
     project.employees.forEach(emp => {
       if (emp.user.toString() !== supervisorId) {
         supervisedUserIds.add(emp.user.toString());
-        console.log('Added project employee:', emp.user.toString(), 'from project:', project.projectName);
       }
     });
   });
 
   const supervisedUsers = Array.from(supervisedUserIds);
-  console.log('Total Supervised Users (from teams and projects):', supervisedUsers.length);
 
   const query: any = {
     userId: { $in: supervisedUsers.map(id => new mongoose.Types.ObjectId(id)) }
@@ -224,7 +183,6 @@ export const getSupervisedEditRequests = async (
     query.year = filters.year;
   }
 
-  console.log('Query:', query);
 
   const editRequests = await EditRequest.find(query)
     .populate('userId', 'firstName lastName employee_id email')
@@ -232,8 +190,6 @@ export const getSupervisedEditRequests = async (
     .populate('rejectedBy', 'firstName lastName employee_id')
     .sort({ requestDate: -1 });
 
-  console.log('Edit Requests Found:', editRequests.length);
-  console.log('Edit Requests:', editRequests);
 
   return editRequests;
 };

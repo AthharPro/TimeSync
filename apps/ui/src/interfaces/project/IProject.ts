@@ -1,5 +1,6 @@
 import { Control, FieldErrors } from 'react-hook-form';
 import { IEmployee } from '../user/IUser';
+import { IProjectProgress } from '../../interfaces/dashboard/IDashboard';
 export type CostCenter = 'Canada' | 'Australia' | 'Sweden' | 'Sri Lanka';
 export type ProjectType = 'Fixed Bid' | 'T&M' | 'Retainer';
 
@@ -152,4 +153,8 @@ export interface EditProjectFormProps {
   onCancel: () => void;
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   projectVisibility: string;
+}
+
+export interface IProjectProgressSectionProps {
+  projects: IProjectProgress[];
 }

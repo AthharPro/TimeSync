@@ -16,7 +16,6 @@ export const fetchTimesheets = createAsyncThunk(
       const timesheets = await getTimesheets(params);
       return timesheets;
     } catch (error: any) {
-      console.error('fetchTimesheets - Error:', error);
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch timesheets');
     }
   }
@@ -76,12 +75,6 @@ export const syncTimesheetUpdate = createAsyncThunk(
         updates: params.updates,
       };
     } catch (error: any) {
-      console.error('syncTimesheetUpdate - API error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      });
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to update timesheet');
     }
   }
@@ -153,34 +146,13 @@ const myTimesheetSlice = createSlice({
       const task = data.task;
       const billable = data.billableType;
 
-      console.log('=== setMyTimesheetData DEBUG ===');
-      console.log('New timesheet:', { project: data.project, team: data.team, task, billable, id: data.id });
-      console.log('Existing calendar rows:', state.myCalendarViewData.map(e => ({ 
-        id: e.id, 
-        project: e.project,
-        team: e.team, 
-        task: e.task, 
-        billable: e.billableType,
-        timesheetIds: e.myTimesheetEntriesIds 
-      })));
-
       // Only add to calendar view if (project OR team) and task are not empty
       if (!projectOrTeam || !task) {
-        console.log('Skipping - empty project/team or task');
         return;
       }
 
       // Create unique ID with separator to avoid collisions
       const id = `${projectOrTeam}|${task}|${billable}`;
-      console.log('Looking for calendar row with ID:', id);
-      console.log('Current calendar rows before search:', state.myCalendarViewData.map(e => ({ 
-        id: e.id, 
-        project: e.project,
-        team: e.team, 
-        task: e.task, 
-        billable: e.billableType,
-        timesheetIds: e.myTimesheetEntriesIds 
-      })));
       
       // Look for existing calendar row - check both exact ID match AND potential ID/name variants
       // This handles cases where calendar row uses project/team ID but timesheet entry uses project/team ID (or vice versa)
@@ -202,17 +174,14 @@ const myTimesheetSlice = createSlice({
         return projectOrTeamMatches && taskMatches && billableMatches;
       });
 
-      console.log('Found existing row at index:', existingIndex);
 
       if (existingIndex !== -1) {
         // Entry exists - add the timesheet ID to its myTimesheetEntriesIds array
-        console.log('Adding to existing calendar row');
         if (!state.myCalendarViewData[existingIndex].myTimesheetEntriesIds.includes(data.id)) {
           state.myCalendarViewData[existingIndex].myTimesheetEntriesIds.push(data.id);
         }
       } else {
         // Entry doesn't exist - create a new calendar entry
-        console.log('Creating new calendar row');
         const newCalendarEntry: IMyTimesheetCalendarEntry = {
           id,
           project: data.project,
@@ -233,7 +202,6 @@ const myTimesheetSlice = createSlice({
         return false;
       });
       
-      console.log('Final calendar rows:', state.myCalendarViewData.length);
     },
 
     updateMyTimesheetEntry: (state, action: PayloadAction<{ index: number; updates: Partial<IMyTimesheetTableEntry> }>) => {
@@ -541,7 +509,6 @@ const myTimesheetSlice = createSlice({
         state.myCalendarViewData = Array.from(calendarMap.values());
       })
       .addCase(fetchTimesheets.rejected, (state, action) => {
-        console.error('fetchTimesheets.rejected - Error:', action.payload);
       })
       // Sync timesheet update
       .addCase(syncTimesheetUpdate.pending, () => {
@@ -557,12 +524,9 @@ const myTimesheetSlice = createSlice({
             ...state.myTimesheetData[index],
             ...updates,
           };
-        } else {
-          console.warn('syncTimesheetUpdate.fulfilled - Timesheet not found in state:', timesheetId);
         }
       })
       .addCase(syncTimesheetUpdate.rejected, (state, action) => {
-        console.error('syncTimesheetUpdate.rejected - Error:', action.payload);
       });
   },
 });

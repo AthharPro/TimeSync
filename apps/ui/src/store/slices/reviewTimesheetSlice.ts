@@ -55,7 +55,6 @@ export const fetchSupervisedEmployees = createAsyncThunk(
       const response = await getSupervisedEmployeesForReview();
       return response.employees;
     } catch (error: any) {
-      console.error('fetchSupervisedEmployees - Error:', error);
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch employees');
     }
   }
@@ -78,7 +77,6 @@ export const fetchEmployeeTimesheets = createAsyncThunk(
         timesheets: response.timesheets,
       };
     } catch (error: any) {
-      console.error('fetchEmployeeTimesheets - Error:', error);
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch timesheets');
     }
   }
@@ -100,7 +98,6 @@ export const approveTimesheetsThunk = createAsyncThunk(
         approved: response.approved,
       };
     } catch (error: any) {
-      console.error('approveTimesheets - Error:', error);
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to approve timesheets');
     }
   }
@@ -123,7 +120,6 @@ export const rejectTimesheetsThunk = createAsyncThunk(
         rejected: response.rejected,
       };
     } catch (error: any) {
-      console.error('rejectTimesheets - Error:', error);
       return rejectWithValue(error.response?.data?.message || error.message || 'Failed to reject timesheets');
     }
   }
@@ -196,16 +192,11 @@ const reviewTimesheetSlice = createSlice({
       })
       .addCase(fetchEmployeeTimesheets.fulfilled, (state, action) => {
         const { employeeId, timesheets } = action.payload;
-        console.log('ReviewTimesheetSlice - Raw timesheets from API:', timesheets);
         const employee = state.employees.find(emp => emp.id === employeeId);
         if (employee) {
           employee.timesheetsLoading = false;
           employee.timesheets = timesheets.map((ts: EmployeeTimesheet) => {
-            console.log('Processing timesheet:', ts);
-            console.log('  projectId:', ts.projectId);
-            console.log('  teamId:', ts.teamId);
             const project = ts.projectId?.projectName || ts.teamId?.teamName || 'No Project';
-            console.log('  Resolved project/team name:', project);
             return {
               id: ts._id,
               date: ts.date,
@@ -252,7 +243,6 @@ const reviewTimesheetSlice = createSlice({
         }
       })
       .addCase(approveTimesheetsThunk.rejected, (state, action) => {
-        console.error('Approve timesheets failed:', action.payload);
       });
 
     // Reject timesheets
@@ -274,7 +264,6 @@ const reviewTimesheetSlice = createSlice({
         }
       })
       .addCase(rejectTimesheetsThunk.rejected, (state, action) => {
-        console.error('Reject timesheets failed:', action.payload);
       });
   },
 });

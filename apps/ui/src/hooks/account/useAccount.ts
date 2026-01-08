@@ -32,7 +32,6 @@ export const useAccount = (): IUseAccountReturn => {
                 // Dispatch action to fetch accounts from API
                 await dispatch(fetchAccounts());
             } catch (error) {
-                console.error('Load accounts error:', error);
             }
         },
         [dispatch]
@@ -55,7 +54,6 @@ export const useAccount = (): IUseAccountReturn => {
                 // Reload accounts after successful creation
                 await dispatch(fetchAccounts());
             } catch (error) {
-                console.error('Create account error:', error);
                 throw error;
             }
         },
@@ -90,7 +88,6 @@ export const useAccount = (): IUseAccountReturn => {
                 // Reload accounts after successful update
                 await dispatch(fetchAccounts());
             } catch (error) {
-                console.error('Update account error:', error);
                 throw error;
             }
         },

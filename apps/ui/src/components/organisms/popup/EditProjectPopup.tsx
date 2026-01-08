@@ -99,7 +99,7 @@ export default function EditProjectPopup({
       onSaved?.();
       onClose();
     } catch (error) {
-      console.error('Failed to update project:', error);
+      // Error handled silently
     }
   };
 

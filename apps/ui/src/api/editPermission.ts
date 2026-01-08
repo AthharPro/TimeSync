@@ -10,7 +10,6 @@ export const checkEditPermissionAPI = async (month: string, year: string): Promi
     });
     return response.data.hasPermission || false;
   } catch (error) {
-    console.error('Error checking edit permission:', error);
     return false;
   }
 };

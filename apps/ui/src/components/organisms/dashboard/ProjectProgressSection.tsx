@@ -1,11 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, Box, Divider } from '@mui/material';
-import { IProjectProgress } from '../../../interfaces/dashboard/IDashboard';
+import { IProjectProgressSectionProps } from '../../../interfaces/project/IProject';
 import ProjectProgressCard from '../../molecules/dashboard/ProjectProgressCard';
-
-interface IProjectProgressSectionProps {
-  projects: IProjectProgress[];
-}
 
 const ProjectProgressSection: React.FC<IProjectProgressSectionProps> = ({ projects }) => {
   return (

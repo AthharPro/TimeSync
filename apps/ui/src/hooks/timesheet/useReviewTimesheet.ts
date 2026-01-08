@@ -48,7 +48,6 @@ export const useReviewTimesheet = (): IUseReviewTimesheetReturn => {
     try {
       await dispatch(fetchSupervisedEmployees()).unwrap();
     } catch (error) {
-      console.error('Failed to load supervised employees:', error);
       throw error;
     }
   }, [dispatch]);
@@ -59,7 +58,6 @@ export const useReviewTimesheet = (): IUseReviewTimesheetReturn => {
       try {
         await dispatch(fetchEmployeeTimesheets({ employeeId, ...params })).unwrap();
       } catch (error) {
-        console.error('Failed to load employee timesheets:', error);
         throw error;
       }
     },
@@ -129,7 +127,6 @@ export const useReviewTimesheet = (): IUseReviewTimesheetReturn => {
         const result = await dispatch(approveTimesheetsThunk({ employeeId, timesheetIds })).unwrap();
         return result;
       } catch (error) {
-        console.error('Failed to approve timesheets:', error);
         throw error;
       }
     },
@@ -143,7 +140,6 @@ export const useReviewTimesheet = (): IUseReviewTimesheetReturn => {
         const result = await dispatch(rejectTimesheetsThunk({ employeeId, timesheetIds, rejectionReason })).unwrap();
         return result;
       } catch (error) {
-        console.error('Failed to reject timesheets:', error);
         throw error;
       }
     },

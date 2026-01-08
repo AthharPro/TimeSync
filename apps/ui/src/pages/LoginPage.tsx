@@ -9,7 +9,6 @@ import { disconnectSocket } from '../services/socketService';
 const LoginPage: React.FC = () => {
   // Ensure socket is disconnected when landing on login page
   useEffect(() => {
-    console.log('🔌 LoginPage: Ensuring socket is disconnected');
     disconnectSocket();
   }, []);
 

@@ -120,13 +120,6 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
       const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
       const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
       
-      console.log('MyTimesheetTable - Loading timesheets for filtered date range:', {
-        filterStartDate: filters.startDate,
-        filterEndDate: filters.endDate,
-        actualStartDate: startDate.toISOString(),
-        actualEndDate: endDate.toISOString(),
-      });
-      
       loadTimesheets(startDate, endDate);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -170,14 +163,12 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
       
       return prev; // No changes, return previous state
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [newTimesheets]); // Only depend on newTimesheets
 
   const timesheetData: ITimesheetTableEntry[] = useMemo(() => {
     let filteredTimesheets = newTimesheets.map((timesheet) => {
-      // Priority 1: Use stored names from backend (populated data)
-      // Priority 2: Look up in current projects/teams
-      // Priority 3: Show empty string (never show "[Deleted ...]" to avoid flash)
+     
       
       let projectName: string;
       if (timesheet.projectName) {
@@ -339,11 +330,10 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
         try {
           await syncUpdateTimesheet(id, { project: selectedProject._id, task: '' });
         } catch (error) {
-          console.error('Failed to sync project and clear task:', error);
+          // Sync failed
         }
       } else if (selectedTeam) {
-        // Immediately update UI with team name and clear task
-        // Use teamName for display, and team for the ID
+        
         updateTimesheet(id, { 
           team: selectedTeam._id,      // Store ID in team field
           teamName: newProjectName,    // Store name in teamName field for display
@@ -351,8 +341,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
           taskName: ''                 // Clear task name
         });
         
-        // Load tasks for this team BEFORE updating selectedProjects
-        // This ensures tasks are available when the component re-renders
+        
         await loadTasks(selectedTeam._id);
         loadedProjectsRef.current.add(selectedTeam._id);
         
@@ -363,10 +352,8 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
         try {
           await syncUpdateTimesheet(id, { team: selectedTeam._id, task: '' });
         } catch (error) {
-          console.error('Failed to sync team and clear task:', error);
+          // Sync failed
         }
-      } else {
-        console.warn('Project or team not found for name:', newProjectName);
       }
     }
   };
@@ -386,7 +373,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
         try {
           await syncUpdateTimesheet(id, { task: selectedTask._id });
         } catch (error) {
-          console.error('Failed to sync task to backend:', error);
+          // Sync failed
         }
       } else {
         // If task not found, just update UI (will be created separately)
@@ -398,7 +385,6 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
   const handleCreateNewTask = async (rowId: string, taskName: string) => {
     const projectId = selectedProjects[rowId];
     if (!projectId) {
-      console.error('No project selected for this row');
       return;
     }
 
@@ -410,7 +396,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
         await syncUpdateTimesheet(rowId, { task: newTask._id });
       }
     } catch (error) {
-      console.error('Failed to create task:', error);
+      // Task creation failed
     }
   };
 
@@ -419,7 +405,6 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
   };
 
   const handleHoursChange = (id: string, newHours: number) => {
-    console.log('MyTimesheetTable - handleHoursChange called with ID:', id, 'hours:', newHours);
     debouncedUpdateRef.current(id, { hours: newHours });
   };
 
@@ -575,7 +560,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
   ];
 
   const handleRowClick = (row: ITimesheetTableEntry) => {
-    console.log('Clicked row:', row);
+    // Handle row click
   };
 
   // Loading / Error states

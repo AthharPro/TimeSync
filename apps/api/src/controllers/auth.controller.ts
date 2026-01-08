@@ -48,12 +48,10 @@ export const logoutHandler = catchErrors(async (req, res) => {
 export const getCurrentUser = catchErrors(async (req, res) => {
 
     const refreshToken = req.cookies.refreshToken as string | undefined;
-    console.log("Refresh Token from cookies:", refreshToken);
   appAssert(refreshToken, UNAUTHORIZED, 'Missing refresh token');
  
   const { newAccessToken, user } = await getUserFromRefreshToken(refreshToken);
 
-console.log("User fetched from refresh token:", user, "New Access Token:", newAccessToken);
 
   return res.status(OK).json({
     message: 'Current user fetched successfully',
@@ -65,7 +63,6 @@ console.log("User fetched from refresh token:", user, "New Access Token:", newAc
 export const refreshHandler = catchErrors(async (req, res) => {
 
     const refreshToken = req.cookies.refreshToken as string | undefined;
-    console.log("Refresh Token from cookies:", refreshToken);
   appAssert(refreshToken, UNAUTHORIZED, 'Missing refresh token');
  
   const { newAccessToken } = await getAccessToken(refreshToken);
