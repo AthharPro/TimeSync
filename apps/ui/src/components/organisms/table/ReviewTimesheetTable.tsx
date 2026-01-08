@@ -123,6 +123,12 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
   // Define columns
   const columns: DataTableColumn<IEmployee>[] = [
     {
+      label: 'Employee ID',
+      key: 'employeeId',
+      render: (row) => <Box sx={{ py: 0.5 }}>{row.employeeId}</Box>,
+      width: '15%',
+    },
+    {
       label: 'Employee',
       key: 'employee',
       render: (row) => (
@@ -141,7 +147,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
       label: 'Designation',
       key: 'designation',
       render: (row) => <Box sx={{ py: 0.5 }}>{row.designation || 'N/A'}</Box>,
-      width: '25%',
+      width: '20%',
     },
     {
       label: 'Pending Timesheets',
@@ -151,7 +157,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
           {row.pendingTimesheetCount !== undefined ? row.pendingTimesheetCount : 0}
         </Box>
       ),
-      width: '20%',
+      width: '15%',
     },
   ];
 
