@@ -22,9 +22,12 @@ export interface DataTableProps<T> {
 export interface IMyTimesheetTableEntry {
   id: string; 
   date: string; 
-  project?: string;
-  team?: string;
-  task: string;
+  project?: string; // Project ID
+  projectName?: string; // Project Name (populated from backend)
+  team?: string; // Team ID
+  teamName?: string; // Team Name (populated from backend)
+  task: string; // Task ID
+  taskName?: string; // Task Name (populated from backend)
   description: string;
   hours: number;
   billableType: BillableType;
@@ -34,9 +37,12 @@ export interface IMyTimesheetTableEntry {
 
 export interface IMyTimesheetCalendarEntry {
   id: string; 
-  project?: string;
-  team?: string;
-  task: string;
+  project?: string; // Project ID
+  projectName?: string; // Project Name (for display)
+  team?: string; // Team ID
+  teamName?: string; // Team Name (for display)
+  task: string; // Task ID
+  taskName?: string; // Task Name (for display)
   billableType: BillableType;
   myTimesheetEntriesIds: string[];
 }

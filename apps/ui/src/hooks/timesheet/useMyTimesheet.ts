@@ -87,12 +87,31 @@ const addNewTimesheet = useCallback(
 
     // Map backend response → IMyTimesheetTableEntry
     // Backend returns _id, we need to map it to id
+    // Backend now returns populated objects for projectId, teamId, and taskId
     const savedTimesheet: IMyTimesheetTableEntry = {
       id: ts._id || ts.id,           // MongoDB returns _id
       date: ts.date,
-      project: ts.projectId || undefined,   // mapped
-      team: ts.teamId || undefined,         // mapped
-      task: ts.taskId || '',         // mapped
+      // Extract ID and name from populated project object
+      project: ts.projectId 
+        ? (typeof ts.projectId === 'object' ? ts.projectId._id : ts.projectId)
+        : undefined,
+      projectName: ts.projectId 
+        ? (typeof ts.projectId === 'object' ? ts.projectId.projectName : undefined)
+        : undefined,
+      // Extract ID and name from populated team object
+      team: ts.teamId 
+        ? (typeof ts.teamId === 'object' ? ts.teamId._id : ts.teamId)
+        : undefined,
+      teamName: ts.teamId 
+        ? (typeof ts.teamId === 'object' ? ts.teamId.teamName : undefined)
+        : undefined,
+      // Extract ID and name from populated task object
+      task: ts.taskId 
+        ? (typeof ts.taskId === 'object' ? ts.taskId._id : ts.taskId)
+        : '',
+      taskName: ts.taskId 
+        ? (typeof ts.taskId === 'object' ? ts.taskId.taskName : undefined)
+        : undefined,
       billableType: ts.billable,     // mapped
       description: ts.description || '',
       hours: ts.hours || 0,
@@ -195,12 +214,31 @@ const addNewTimesheet = useCallback(
         const timesheets = await getTimesheets({ startDate, endDate });
         
         // Map backend response to frontend format
+        // Backend now returns populated objects for projectId, teamId, and taskId
         const mappedTimesheets: IMyTimesheetTableEntry[] = timesheets.map((ts: any) => ({
           id: ts.id || ts._id,
           date: ts.date,
-          project: ts.projectId || undefined,
-          team: ts.teamId || undefined,
-          task: ts.taskId || '',
+          // Extract ID and name from populated project object
+          project: ts.projectId 
+            ? (typeof ts.projectId === 'object' ? ts.projectId._id : ts.projectId)
+            : undefined,
+          projectName: ts.projectId 
+            ? (typeof ts.projectId === 'object' ? ts.projectId.projectName : undefined)
+            : undefined,
+          // Extract ID and name from populated team object
+          team: ts.teamId 
+            ? (typeof ts.teamId === 'object' ? ts.teamId._id : ts.teamId)
+            : undefined,
+          teamName: ts.teamId 
+            ? (typeof ts.teamId === 'object' ? ts.teamId.teamName : undefined)
+            : undefined,
+          // Extract ID and name from populated task object
+          task: ts.taskId 
+            ? (typeof ts.taskId === 'object' ? ts.taskId._id : ts.taskId)
+            : '',
+          taskName: ts.taskId 
+            ? (typeof ts.taskId === 'object' ? ts.taskId.taskName : undefined)
+            : undefined,
           billableType: ts.billable,
           description: ts.description || '',
           hours: ts.hours || 0,

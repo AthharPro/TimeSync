@@ -2,6 +2,7 @@ import WindowLayout from '../../templates/other/WindowLayout';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import AddIcon from '@mui/icons-material/Add';
 import { BaseBtn } from '../../atoms';
+import StatusChip from '../../atoms/other/Icon/StatusChip';
 import DataTable from '../../templates/other/DataTable';
 import { Box, Typography } from '@mui/material';
 import { ITeam } from '../../../interfaces/team/ITeam';
@@ -10,7 +11,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
 import ActionButton from '../../molecules/other/ActionButton';
 import CreateTeamPopUp from '../../organisms/popup/CreateTeamPopUp';
-import TeamStaffManager from '../team/TeamStaffManager';
+import EditTeamPopup from '../../organisms/popup/EditTeamPopup';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ViewTeamMembers from '../team/ViewTeamMembers';
 import { useTeam } from '../../../hooks/team';
@@ -26,7 +27,7 @@ function TeamWindow() {
   const [viewTeam, setViewTeam] = useState<ITeam | null>(null);
   const [isCreatePopupOpen, setIsCreatePopupOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<ITeam | null>(null);
-  const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
+  const [isEditPopupOpen, setIsEditPopupOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<ITeam | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
@@ -62,19 +63,19 @@ function TeamWindow() {
 
   const handleEditTeam = (team: ITeam) => {
     setEditingTeam(team);
-    setIsStaffManagerOpen(true);
+    setIsEditPopupOpen(true);
   };
 
-  const handleCloseStaffManager = () => {
-    setIsStaffManagerOpen(false);
+  const handleCloseEditPopup = () => {
+    setIsEditPopupOpen(false);
     setEditingTeam(null);
   };
 
-  const handleTeamStaffSaved = () => {
+  const handleTeamSaved = () => {
     // Refresh teams after save
-    showSuccess('Team staff updated successfully');
+    showSuccess('Team updated successfully');
     loadAllTeams();
-    handleCloseStaffManager();
+    handleCloseEditPopup();
   };
   
   const handleDeleteTeam = (team: ITeam) => {
@@ -213,6 +214,13 @@ function TeamWindow() {
         ),
       },
       {
+        label: 'Status',
+        key: 'status',
+        render: (row: ITeam) => (
+          <StatusChip status={row.status !== false ? 'Active' : 'Inactive'} />
+        ),
+      },
+      {
         label: '',
         key: 'actions',
         render: (row: ITeam) => (
@@ -251,16 +259,12 @@ function TeamWindow() {
         onClose={handleClosePopup}
         onTeamCreated={handleTeamCreated}
       />
-      {editingTeam && (
-        <TeamStaffManager
-          open={isStaffManagerOpen}
-          onClose={handleCloseStaffManager}
-          teamId={editingTeam.id}
-          initialMembers={editingTeam.members}
-          initialSupervisor={editingTeam.supervisor}
-          onSaved={handleTeamStaffSaved}
-        />
-      )}
+      <EditTeamPopup
+        open={isEditPopupOpen}
+        onClose={handleCloseEditPopup}
+        team={editingTeam}
+        onSaved={handleTeamSaved}
+      />
       <ConformationDailog
         open={isDeleteDialogOpen}
         title="Delete Team"

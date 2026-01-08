@@ -67,6 +67,9 @@ export const useAccount = (): IUseAccountReturn => {
         async (
             userId: string,
             data: {
+                firstName?: string;
+                lastName?: string;
+                email?: string;
                 designation?: string;
                 contactNumber?: string;
                 status?: 'Active' | 'Inactive' | string;
@@ -75,6 +78,9 @@ export const useAccount = (): IUseAccountReturn => {
             try {
                 // Convert status to boolean for backend
                 const updateData = {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    email: data.email,
                     designation: data.designation,
                     contactNumber: data.contactNumber,
                     status: data.status === 'Active',

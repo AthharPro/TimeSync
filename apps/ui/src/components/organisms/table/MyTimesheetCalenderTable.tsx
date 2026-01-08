@@ -23,6 +23,7 @@ import CustomRow from './other/CustomRow';
 interface ExtendedTimesheetRow extends ITimesheetRow {
   projectId?: string; // For projects
   teamId?: string;    // For teams
+  isRemovedEntry?: boolean; // Flag to indicate this entry is from a removed project/team
 }
 
 interface MyTimesheetCalendarTableProps {
@@ -160,43 +161,75 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
       projectMap.set(team._id, { name: team.teamName, tasks: [], isPublic: false, isTeam: true });
     });
 
+    // Track removed projects/teams - entries where user no longer has access but project/team still exists in DB
+    const removedEntries: IMyTimesheetCalendarEntry[] = [];
+
     // Populate tasks from calendar data
     myCalendarViewData.forEach((entry) => {
-      // Find which project this entry belongs to by matching project ID or name
-      const matchingProject = entry.project ? myProjects.find((p) => p._id === entry.project || p.projectName === entry.project) : null;
-      // Find which team this entry belongs to by checking the team field
-      const matchingTeam = entry.team ? myTeams.find((t) => t._id === entry.team || t.teamName === entry.team) : null;
+      // Priority 1: Use the stored names from backend (works even if user removed from project/team)
+      // Priority 2: Match by ID in current projects/teams
+      
+      const matchingProject = entry.project ? myProjects.find((p) => p._id === entry.project) : null;
+      const matchingTeam = entry.team ? myTeams.find((t) => t._id === entry.team) : null;
 
       if (matchingProject) {
+        // User still has access to this project
         const key = matchingProject._id;
         if (!projectMap.has(key)) {
           projectMap.set(key, { name: matchingProject.projectName, tasks: [], isPublic: matchingProject.isPublic || false, isTeam: false });
         }
         
-        // Map task ID to task name for display
-        const task = allTasks.find(t => t._id === entry.task);
-        const taskName = task ? task.taskName : entry.task;
+        // Use stored task name if available, otherwise look it up
+        const taskName = entry.taskName || (allTasks.find(t => t._id === entry.task)?.taskName) || entry.task;
         
         projectMap.get(key)!.tasks.push({
           ...entry,
-          project: matchingProject.projectName, // Use project name for display
-          task: taskName, // Use task name for display
+          project: matchingProject.projectName, // Use project name
+          task: taskName, // Use task name
         });
       } else if (matchingTeam) {
+        // User still has access to this team
         const key = matchingTeam._id;
         if (!projectMap.has(key)) {
           projectMap.set(key, { name: matchingTeam.teamName, tasks: [], isPublic: false, isTeam: true });
         }
         
-        // Map task ID to task name for display
-        const task = allTasks.find(t => t._id === entry.task);
-        const taskName = task ? task.taskName : entry.task;
+        // Use stored task name if available, otherwise look it up
+        const taskName = entry.taskName || (allTasks.find(t => t._id === entry.task)?.taskName) || entry.task;
         
         projectMap.get(key)!.tasks.push({
           ...entry,
-          project: matchingTeam.teamName, // Use team name for display
-          task: taskName, // Use task name for display
+          project: matchingTeam.teamName, // Use team name
+          task: taskName, // Use task name
         });
+      } else if (entry.project || entry.team) {
+        // User no longer has access, but we have the names from backend
+        // Create entry for this removed project/team using stored names
+        const key = entry.project || entry.team || 'unknown';
+        const storedName = entry.projectName || entry.teamName;
+        
+        if (storedName) {
+          // We have the actual name from backend - use it!
+          if (!projectMap.has(key)) {
+            projectMap.set(key, { 
+              name: storedName, 
+              tasks: [], 
+              isPublic: false, 
+              isTeam: !!entry.team 
+            });
+          }
+          
+          const taskName = entry.taskName || entry.task;
+          
+          projectMap.get(key)!.tasks.push({
+            ...entry,
+            project: storedName,
+            task: taskName,
+          });
+        } else {
+          // Fallback: No name available (shouldn't happen with new backend)
+          removedEntries.push(entry);
+        }
       }
     });
 
@@ -315,6 +348,55 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
         isCreateTaskRow: true,
       });
     });
+
+    // 4. Process removed projects/teams entries last (fallback for entries without stored names)
+    // Group removed entries by project/team ID
+    if (removedEntries.length > 0) {
+      const removedMap = new Map<string, IMyTimesheetCalendarEntry[]>();
+      
+      removedEntries.forEach((entry) => {
+        const key = entry.project || entry.team || 'unknown';
+        if (!removedMap.has(key)) {
+          removedMap.set(key, []);
+        }
+        removedMap.get(key)!.push(entry);
+      });
+
+      // Add a section for each removed project/team
+      removedMap.forEach((entries, projectOrTeamId) => {
+        // Determine if this is a project or team based on the first entry
+        const firstEntry = entries[0];
+        const isTeam = !!firstEntry.team;
+        // Use stored name if available, otherwise show as [Deleted]
+        const displayName = firstEntry.projectName || firstEntry.teamName || `[Deleted ${isTeam ? 'Team' : 'Project'}]`;
+
+        // Header row for removed project/team
+        rows.push({
+          id: `removed-${projectOrTeamId}`,
+          project: displayName,
+          projectId: isTeam ? undefined : projectOrTeamId,
+          teamId: isTeam ? projectOrTeamId : undefined,
+          isProjectRow: true,
+        });
+
+        // Add task rows for this removed project/team
+        entries.forEach((entry) => {
+          const taskName = entry.taskName || entry.task;
+
+          rows.push({
+            id: entry.id,
+            project: displayName,
+            projectId: isTeam ? undefined : projectOrTeamId,
+            teamId: isTeam ? projectOrTeamId : undefined,
+            task: taskName,
+            billableType: entry.billableType,
+            myTimesheetEntriesIds: entry.myTimesheetEntriesIds,
+            isProjectRow: false,
+            isRemovedEntry: true, // Flag to indicate this is a removed entry
+          });
+        });
+      });
+    }
 
     return rows;
   }, [myCalendarViewData, myProjects, myTeams, allTasks]);
@@ -616,8 +698,9 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
         if (row.isProjectRow || row.isCreateTaskRow) return null;
 
         const timesheet = getTimesheetForDate(row, day.date);
-        // Only allow editing for Draft timesheets
+        // Only allow editing for Draft timesheets AND not removed entries
         const isDraft = !timesheet?.status || timesheet.status === DailyTimesheetStatus.Draft;
+        const isEditable = isDraft && !row.isRemovedEntry;
 
         return (
           <TimesheetCell
@@ -630,7 +713,7 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
             }
             date={day.date}
             row={row}
-            disabled={!isDraft}
+            disabled={!isEditable}
             status={timesheet?.status}
           />
         );

@@ -30,6 +30,7 @@ export interface ReviewTimesheetFilters {
   filterBy: 'all' | 'project' | 'team';
   projectId: string;
   teamId: string;
+  filterEmployees: 'all' | 'withPending' | 'noPending';
 }
 
 interface ReviewTimesheetFilterPopoverProps {
@@ -124,6 +125,10 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
     setFilters({ ...filters, teamId });
   };
 
+  const handleFilterEmployeesChange = (filterEmployees: 'all' | 'withPending' | 'noPending') => {
+    setFilters({ ...filters, filterEmployees });
+  };
+
   const handleApply = () => {
     onApplyFilters(filters);
     onClose();
@@ -139,6 +144,7 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
       filterBy: 'all',
       projectId: 'All',
       teamId: 'All',
+      filterEmployees: 'all',
     };
     setFilters(resetFilters);
     onApplyFilters(resetFilters);
@@ -280,6 +286,23 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
             </Select>
           </FormControl>
         )}
+
+        <Divider sx={{ my: 1 }} />
+
+        {/* Filter Employees */}
+        <FormControl component="fieldset">
+          <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
+            Filter Employees
+          </FormLabel>
+          <RadioGroup
+            value={filters.filterEmployees}
+            onChange={(e) => handleFilterEmployeesChange(e.target.value as 'all' | 'withPending' | 'noPending')}
+          >
+            <FormControlLabel value="all" control={<Radio size="small" />} label="All Employees" />
+            <FormControlLabel value="withPending" control={<Radio size="small" />} label="With Pending Timesheets" />
+            <FormControlLabel value="noPending" control={<Radio size="small" />} label="No Pending Timesheets" />
+          </RadioGroup>
+        </FormControl>
       </Box>
 
       <Divider sx={{ my: 2 }} />

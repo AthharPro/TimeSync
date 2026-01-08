@@ -118,3 +118,17 @@ export interface CreateProjectFormProps {
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
   projectVisibility: string;
 }
+
+
+export interface EditProjectPopupProps {
+  open: boolean;
+  onClose: () => void;
+  project: IProject;
+  onSaved?: () => void;
+}
+
+export interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}

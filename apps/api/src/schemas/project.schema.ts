@@ -87,3 +87,18 @@ export const createProjectNormalizedSchema = z.object({
 );
 
 export type CreateProjectNormalized = z.infer<typeof createProjectNormalizedSchema>;
+
+// Schema for updating project details (all fields optional)
+export const updateProjectDetailsSchema = z.object({
+  projectName: projectNameSchema.optional(),
+  description: z.string().min(1, 'Description is required').optional(),
+  startDate: z.coerce.date().nullable().optional(),
+  endDate: z.coerce.date().nullable().optional(),
+  clientName: z.string().optional(),
+  costCenter: z.string().optional(),
+  projectType: z.string().optional(),
+  isPublic: z.boolean().optional(),
+  billable: z.enum(BillableType).optional(),
+});
+
+export type UpdateProjectDetails = z.infer<typeof updateProjectDetailsSchema>;

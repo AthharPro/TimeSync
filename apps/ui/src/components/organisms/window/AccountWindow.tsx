@@ -55,6 +55,7 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
     });
   }, [newAccountDetails, activeFilters, searchQuery]);
 
+
   useEffect(() => {
     loadAccounts();
   }, []);

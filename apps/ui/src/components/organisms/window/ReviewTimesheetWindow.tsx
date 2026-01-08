@@ -24,6 +24,7 @@ import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import EditRequestTable from '../table/EditRequestTable';
+import { getNonDepartmentTeamEmployeeIds } from '../../../api/review';
 
 function ReviewTimesheetWindow() {
   const { approveSelectedTimesheets, rejectSelectedTimesheets } = useReviewTimesheet();
@@ -39,12 +40,27 @@ function ReviewTimesheetWindow() {
   const [initialEmployeeId, setInitialEmployeeId] = useState<string | null>(null);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [tabValue, setTabValue] = useState('1');
+  const [nonDeptTeamEmployeeIds, setNonDeptTeamEmployeeIds] = useState<string[]>([]);
 
   // Load projects and teams on mount
   useEffect(() => {
     loadMyProjects();
     loadAllSupervisedTeams();
   }, [loadMyProjects, loadAllSupervisedTeams]);
+
+  // Fetch non-department team employee IDs
+  useEffect(() => {
+    const fetchNonDeptEmployees = async () => {
+      try {
+        const response = await getNonDepartmentTeamEmployeeIds();
+        setNonDeptTeamEmployeeIds(response.employeeIds);
+        console.log('Non-department team employee IDs:', response.employeeIds);
+      } catch (error) {
+        console.error('Failed to fetch non-department team employee IDs:', error);
+      }
+    };
+    fetchNonDeptEmployees();
+  }, []);
 
   // Get supervised project and team IDs
   const supervisedProjectIds = useMemo(() => {
@@ -74,6 +90,7 @@ function ReviewTimesheetWindow() {
       filterBy: 'all' as const,
       projectId: 'All',
       teamId: 'All',
+      filterEmployees: 'all' as const,
     };
   }, []);
 
@@ -267,6 +284,7 @@ function ReviewTimesheetWindow() {
                   filters={filters}
                   supervisedProjectIds={supervisedProjectIds}
                   supervisedTeamIds={supervisedTeamIds}
+                  nonDeptTeamEmployeeIds={nonDeptTeamEmployeeIds}
                   initialEmployeeId={initialEmployeeId}
                 />
               </TabPanel>

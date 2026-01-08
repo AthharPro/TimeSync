@@ -5,6 +5,9 @@ import { createBulkNotifications } from './notification.service';
 import { NotificationType } from '@tms/shared';
 import { getSupervisorsForTimesheets } from '../utils/data/assignmentUtils';
 import { UserModel } from '../models/user.model';
+import ProjectModel from '../models/project.model';
+import TeamModel from '../models/team.model';
+import { Task } from '../models/task.model';
 import { hasEditPermission } from './editRequest.service';
 import dayjs from 'dayjs';
 
@@ -122,7 +125,65 @@ export const createMyTimesheet = async (
   */
 
   const timesheet = new Timesheet(timesheetData);
-  return await timesheet.save();
+  const savedTimesheet = await timesheet.save();
+  
+  // Populate the saved timesheet before returning (consistent with getMyTimesheets)
+  const populatedTimesheet = await Timesheet.findById(savedTimesheet._id).lean();
+  
+  if (!populatedTimesheet) {
+    return savedTimesheet;
+  }
+  
+  // Manually populate and check if entities still exist
+  // Populate project
+  if (populatedTimesheet.projectId) {
+    const projectData = await ProjectModel.findById(populatedTimesheet.projectId).select('projectName').lean();
+    if (projectData) {
+      (populatedTimesheet as any).projectId = {
+        _id: populatedTimesheet.projectId,
+        projectName: projectData.projectName
+      };
+    } else {
+      (populatedTimesheet as any).projectId = {
+        _id: populatedTimesheet.projectId,
+        projectName: 'Deleted Project'
+      };
+    }
+  }
+  
+  // Populate task
+  if (populatedTimesheet.taskId) {
+    const taskData = await Task.findById(populatedTimesheet.taskId).select('taskName').lean();
+    if (taskData) {
+      (populatedTimesheet as any).taskId = {
+        _id: populatedTimesheet.taskId,
+        taskName: taskData.taskName
+      };
+    } else {
+      (populatedTimesheet as any).taskId = {
+        _id: populatedTimesheet.taskId,
+        taskName: 'Deleted Task'
+      };
+    }
+  }
+  
+  // Populate team
+  if (populatedTimesheet.teamId) {
+    const teamData = await TeamModel.findById(populatedTimesheet.teamId).select('teamName').lean();
+    if (teamData) {
+      (populatedTimesheet as any).teamId = {
+        _id: populatedTimesheet.teamId,
+        teamName: teamData.teamName
+      };
+    } else {
+      (populatedTimesheet as any).teamId = {
+        _id: populatedTimesheet.teamId,
+        teamName: 'Deleted Team'
+      };
+    }
+  }
+  
+  return populatedTimesheet as any;
 };
 
 export const updateMyTimesheet = async (
@@ -226,9 +287,62 @@ export const updateMyTimesheet = async (
     new mongoose.Types.ObjectId(timesheetId),
     updateData,
     { new: true }
-  );
+  ).lean();
 
-  return updatedTimesheet;
+  if (!updatedTimesheet) {
+    return null;
+  }
+  
+  // Manually populate and check if entities still exist (consistent with getMyTimesheets)
+  // Populate project
+  if (updatedTimesheet.projectId) {
+    const projectData = await ProjectModel.findById(updatedTimesheet.projectId).select('projectName').lean();
+    if (projectData) {
+      (updatedTimesheet as any).projectId = {
+        _id: updatedTimesheet.projectId,
+        projectName: projectData.projectName
+      };
+    } else {
+      (updatedTimesheet as any).projectId = {
+        _id: updatedTimesheet.projectId,
+        projectName: 'Deleted Project'
+      };
+    }
+  }
+  
+  // Populate task
+  if (updatedTimesheet.taskId) {
+    const taskData = await Task.findById(updatedTimesheet.taskId).select('taskName').lean();
+    if (taskData) {
+      (updatedTimesheet as any).taskId = {
+        _id: updatedTimesheet.taskId,
+        taskName: taskData.taskName
+      };
+    } else {
+      (updatedTimesheet as any).taskId = {
+        _id: updatedTimesheet.taskId,
+        taskName: 'Deleted Task'
+      };
+    }
+  }
+  
+  // Populate team
+  if (updatedTimesheet.teamId) {
+    const teamData = await TeamModel.findById(updatedTimesheet.teamId).select('teamName').lean();
+    if (teamData) {
+      (updatedTimesheet as any).teamId = {
+        _id: updatedTimesheet.teamId,
+        teamName: teamData.teamName
+      };
+    } else {
+      (updatedTimesheet as any).teamId = {
+        _id: updatedTimesheet.teamId,
+        teamName: 'Deleted Team'
+      };
+    }
+  }
+  
+  return updatedTimesheet as any;
 };
 
 export const getMyTimesheets = async (
@@ -254,8 +368,68 @@ export const getMyTimesheets = async (
     }
   }
 
-  const timesheets = await Timesheet.find(query).sort({ date: 1 });
-  return timesheets;
+  // Fetch timesheets WITHOUT population first
+  const rawTimesheets = await Timesheet.find(query).sort({ date: 1 }).lean();
+
+  // Manually populate and check if entities still exist
+  const enrichedTimesheets = await Promise.all(
+    rawTimesheets.map(async (ts: any) => {
+      // Populate project (fetch from database even if user no longer has access)
+      if (ts.projectId) {
+        const projectData = await ProjectModel.findById(ts.projectId).select('projectName').lean();
+        if (projectData) {
+          ts.projectId = {
+            _id: ts.projectId,
+            projectName: projectData.projectName
+          };
+        } else {
+          // Project was completely deleted from database
+          ts.projectId = {
+            _id: ts.projectId,
+            projectName: 'Deleted Project'
+          };
+        }
+      }
+      
+      // Populate task (fetch from database even if user no longer has access)
+      if (ts.taskId) {
+        const taskData = await Task.findById(ts.taskId).select('taskName').lean();
+        if (taskData) {
+          ts.taskId = {
+            _id: ts.taskId,
+            taskName: taskData.taskName
+          };
+        } else {
+          // Task was completely deleted from database
+          ts.taskId = {
+            _id: ts.taskId,
+            taskName: 'Deleted Task'
+          };
+        }
+      }
+      
+      // Populate team (fetch from database even if user no longer has access)
+      if (ts.teamId) {
+        const teamData = await TeamModel.findById(ts.teamId).select('teamName').lean();
+        if (teamData) {
+          ts.teamId = {
+            _id: ts.teamId,
+            teamName: teamData.teamName
+          };
+        } else {
+          // Team was completely deleted from database
+          ts.teamId = {
+            _id: ts.teamId,
+            teamName: 'Deleted Team'
+          };
+        }
+      }
+      
+      return ts;
+    })
+  );
+
+  return enrichedTimesheets as any;
 };
 
 export const submitTimesheets = async (

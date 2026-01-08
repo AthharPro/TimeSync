@@ -28,9 +28,11 @@ interface IReviewTimesheet {
   date: string;
   project: string;
   projectId?: string;
+  isPublicProject?: boolean;
   task: string;
   taskId?: string;
   teamId?: string;
+  isDepartmentTeam?: boolean;
   description: string;
   hours: number;
   billableType: string;
@@ -209,9 +211,11 @@ const reviewTimesheetSlice = createSlice({
               date: ts.date,
               project: project,
               projectId: ts.projectId?._id,
+              isPublicProject: ts.projectId?.isPublic,
               task: ts.taskId?.taskName || 'No Task',
               taskId: ts.taskId?._id,
               teamId: ts.teamId?._id,
+              isDepartmentTeam: ts.teamId?.isDepartment,
               description: ts.description || '',
               hours: ts.hours || 0,
               billableType: ts.billable || 'NonBillable',
