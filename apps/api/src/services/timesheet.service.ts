@@ -358,18 +358,39 @@ export const getMyTimesheets = async (
   if (startDate || endDate) {
     query.date = {};
     if (startDate) {
-      query.date.$gte = startDate;
+      // Ensure we start at the beginning of the day
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      query.date.$gte = start;
+      console.log('getMyTimesheets - startDate filter:', { 
+        original: startDate, 
+        normalized: start,
+        iso: start.toISOString() 
+      });
     }
     if (endDate) {
       // Set to end of day to include all entries on the last day
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
       query.date.$lte = end;
+      console.log('getMyTimesheets - endDate filter:', { 
+        original: endDate, 
+        normalized: end,
+        iso: end.toISOString() 
+      });
     }
   }
 
+  console.log('getMyTimesheets - MongoDB query:', JSON.stringify(query, null, 2));
+
   // Fetch timesheets WITHOUT population first
   const rawTimesheets = await Timesheet.find(query).sort({ date: 1 }).lean();
+
+  console.log('getMyTimesheets - Found raw timesheets:', rawTimesheets.length);
+  if (rawTimesheets.length > 0) {
+    console.log('getMyTimesheets - First timesheet date:', rawTimesheets[0].date);
+    console.log('getMyTimesheets - Last timesheet date:', rawTimesheets[rawTimesheets.length - 1].date);
+  }
 
   // Manually populate and check if entities still exist
   const enrichedTimesheets = await Promise.all(

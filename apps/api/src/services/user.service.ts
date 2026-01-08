@@ -33,6 +33,12 @@ export const createUser = async (data: CreateUserParams, createdBy?: string) => 
   try {
     // Get the user who created this user (authenticated admin)
     const creator = createdBy ? await UserModel.findById(createdBy) : null;
+    
+    // Log warning if createdBy was provided but creator not found
+    if (createdBy && !creator) {
+      console.warn(`Creator with ID ${createdBy} not found for user creation history log`);
+    }
+    
     const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : 'System';
     const creatorEmail = creator ? creator.email : 'system@timesync.com';
     
