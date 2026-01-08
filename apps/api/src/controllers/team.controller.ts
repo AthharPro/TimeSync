@@ -1,6 +1,6 @@
 import { CREATED, OK } from '../constants/http';
 import { catchErrors } from '../utils/error';
-import { createTeam, listTeams, listTeamsForUser, deleteTeam, listMyMemberTeams, listSupervisedTeams, listAllSupervisedTeams, updateTeamStaff } from '../services/team.service';
+import { createTeam, listTeams, listTeamsForUser, deleteTeam, listMyMemberTeams, listSupervisedTeams, listAllSupervisedTeams, updateTeamStaff, updateTeamDetails } from '../services/team.service';
 
 
 export const createTeamHandler = catchErrors(async (req, res) => {
@@ -69,6 +69,18 @@ export const updateStaffHandler = catchErrors(async (req, res) => {
   
   const performedBy = req.userId as string; // Get the authenticated user ID
   const result = await updateTeamStaff(id, { members, supervisor }, performedBy);
+  return res.status(OK).json(result);
+});
+
+export const updateTeamDetailsHandler = catchErrors(async (req, res) => {
+  const { id } = req.params as { id: string };
+  const { teamName, isDepartment } = req.body as {
+    teamName?: string;
+    isDepartment?: boolean;
+  };
+  
+  const performedBy = req.userId as string;
+  const result = await updateTeamDetails(id, { teamName, isDepartment }, performedBy);
   return res.status(OK).json(result);
 });
 

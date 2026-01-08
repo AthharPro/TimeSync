@@ -10,6 +10,9 @@ export const getUsers = async (roles?: UserRole[]) => {
 export const updateUser = async (
   userId: string,
   data: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
     designation?: string;
     contactNumber?: string;
     status?: boolean;

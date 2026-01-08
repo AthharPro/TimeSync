@@ -80,6 +80,8 @@ const transformTeam = (team: any): ITeam => {
     teamName: team.teamName,
     members,
     supervisor,
+    status: team.status,
+    isDepartment: team.isDepartment,
   };
 };
 

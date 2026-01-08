@@ -30,6 +30,29 @@ const EditAccountForm: React.FC<IEditAccountFormProps> = ({
         {/* Editable fields only */}
         <BaseTextField
           variant="outlined"
+          label="First Name"
+          placeholder="First Name"
+          {...register('firstName')}
+          error={!!errors.firstName}
+          helperText={errors.firstName?.message || ' '}
+          fullWidth
+          disabled={isLoading}
+        />
+
+        <BaseTextField
+          variant="outlined"
+          label="Last Name"
+          placeholder="Last Name"
+          {...register('lastName')}
+          error={!!errors.lastName}
+          helperText={errors.lastName?.message || ' '}
+          fullWidth
+          disabled={isLoading}
+        />
+
+
+        <BaseTextField
+          variant="outlined"
           label="Designation"
           placeholder="Designation"
           {...register('designation')}

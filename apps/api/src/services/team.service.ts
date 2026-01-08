@@ -347,6 +347,68 @@ export const updateTeamStaff = async (
   return { team };
 };
 
+export const updateTeamDetails = async (
+  teamId: string,
+  data: { teamName?: string; isDepartment?: boolean },
+  performedBy: string
+) => {
+  const team = await TeamModel.findById(teamId);
+  appAssert(team, INTERNAL_SERVER_ERROR, 'Team not found');
+
+  const oldTeamName = team.teamName;
+  const oldIsDepartment = team.isDepartment;
+
+  // Update team details
+  if (data.teamName !== undefined) {
+    team.teamName = data.teamName;
+  }
+  if (data.isDepartment !== undefined) {
+    team.isDepartment = data.isDepartment;
+  }
+
+  await team.save();
+
+  // Log history
+  try {
+    const performer = await UserModel.findById(performedBy);
+    const performerName = performer ? `${performer.firstName} ${performer.lastName}` : 'System';
+    const performerEmail = performer ? performer.email : 'system@timesync.com';
+
+    const changes: any = {};
+    if (data.teamName && data.teamName !== oldTeamName) {
+      changes.teamName = { from: oldTeamName, to: data.teamName };
+    }
+    if (data.isDepartment !== undefined && data.isDepartment !== oldIsDepartment) {
+      changes.isDepartment = { from: oldIsDepartment, to: data.isDepartment };
+    }
+
+    if (Object.keys(changes).length > 0) {
+      await createHistoryLog({
+        actionType: HistoryActionType.TEAM_UPDATED,
+        entityType: HistoryEntityType.TEAM,
+        entityId: team._id,
+        entityName: team.teamName,
+        performedBy,
+        performedByName: performerName,
+        performedByEmail: performerEmail,
+        description: generateHistoryDescription(
+          HistoryActionType.TEAM_UPDATED,
+          team.teamName
+        ),
+        metadata: { changes },
+      });
+    }
+  } catch (error) {
+    console.error('Failed to create history log for team update:', error);
+  }
+
+  const populated = await TeamModel.findById(team._id)
+    .populate({ path: 'members', select: 'firstName lastName email designation' })
+    .populate({ path: 'supervisor', select: 'firstName lastName email designation' });
+
+  return { team: populated };
+};
+
 export const deleteTeam = async (teamId: string) => {
   const existing = await TeamModel.findById(teamId).select('supervisor members teamName');
 

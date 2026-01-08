@@ -92,6 +92,49 @@ export const updateProjectStaff = async (
   return response.data;
 };
 
+export const updateProjectDetails = async (
+  projectId: string,
+  params: {
+    projectName?: string;
+    description?: string;
+    projectVisibility?: string;
+    billable?: boolean;
+    clientName?: string;
+    projectType?: string;
+    costCenter?: string;
+    startDate?: Date | null;
+    endDate?: Date | null;
+  }
+) => {
+  const payload: any = {};
+  
+  if (params.projectName !== undefined) payload.projectName = params.projectName;
+  if (params.description !== undefined) payload.description = params.description;
+  if (params.projectVisibility !== undefined) {
+    payload.isPublic = params.projectVisibility.toLowerCase() === 'public';
+  }
+  if (params.billable !== undefined) {
+    payload.billable = params.billable ? 'Billable' : 'Non Billable';
+  }
+  if (params.clientName !== undefined) payload.clientName = params.clientName;
+  if (params.projectType !== undefined) payload.projectType = params.projectType;
+  if (params.costCenter !== undefined) payload.costCenter = params.costCenter;
+  
+  if (params.startDate !== undefined && params.startDate !== null) {
+    payload.startDate = params.startDate instanceof Date 
+      ? params.startDate.toISOString() 
+      : params.startDate;
+  }
+  
+  if (params.endDate !== undefined && params.endDate !== null) {
+    payload.endDate = params.endDate instanceof Date 
+      ? params.endDate.toISOString() 
+      : params.endDate;
+  }
+  
+  const response = await API.put(`/api/project/${projectId}`, payload);
+  return response.data;
+};
 
 
 

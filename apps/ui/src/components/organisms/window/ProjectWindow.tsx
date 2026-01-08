@@ -14,6 +14,7 @@ import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import ActionButton from '../../molecules/other/ActionButton';
 import ConformationDailog from '../../molecules/other/ConformationDailog';
 import ProjectStaffManager from '../project/ProjectStaffManager';
+import EditProjectPopup from '../popup/EditProjectPopup';
 import { useProjects } from '../../../hooks/project/useProjects';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import AppSnackbar from '../../molecules/other/AppSnackbar';
@@ -31,7 +32,7 @@ function ProjectWindow() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isStaffManagerOpen, setIsStaffManagerOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [activeFilters, setActiveFilters] = useState({ projectType: 'all', status: 'all', billable: 'all', visibility: 'all', costCenter: 'all' });
@@ -47,7 +48,7 @@ function ProjectWindow() {
 
   const handleEdit = (project: IProject) => {
     setProjectToEdit(project);
-    setIsStaffManagerOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleDelete = (project: IProject) => {
@@ -84,14 +85,14 @@ function ProjectWindow() {
     setIsCreateModalOpen(false);
   };
 
-  const handleCloseStaffManager = () => {
-    setIsStaffManagerOpen(false);
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
     setProjectToEdit(null);
   };
 
-  const handleStaffSaved = () => {
-    showSuccess('Project staff updated successfully');
-    // Refresh project data after staff update
+  const handleEditSaved = () => {
+    showSuccess('Project updated successfully');
+    // Refresh project data after update
     loadProjects();
   };
 
@@ -279,22 +280,6 @@ function ProjectWindow() {
     []
   );
 
-  // Compute initial supervisor details for ProjectStaffManager
-  const projectToEditInitialSupervisor = projectToEdit
-    ? (() => {
-        const managerMember = projectToEdit.teamMembers.find(
-          (member) => member.id === projectToEdit.supervisor
-        );
-        return managerMember
-          ? {
-              id: managerMember.id,
-              name: managerMember.name,
-              designation: managerMember.role,
-            }
-          : null;
-      })()
-    : null;
-
   return (
     <>
       <WindowLayout
@@ -392,20 +377,13 @@ function ProjectWindow() {
         onCancel={handleCancelDelete}
       />
 
-      {/* Project Staff Manager Modal */}
+      {/* Edit Project Modal */}
       {projectToEdit && (
-        <ProjectStaffManager
-          open={isStaffManagerOpen}
-          onClose={handleCloseStaffManager}
-          projectId={projectToEdit.id}
-          initialEmployees={projectToEdit.teamMembers.map(member => ({
-            id: member.id,
-            name: member.name,
-            designation: member.role,
-            allocation: member.allocation ?? 0,
-          }))}
-          initialSupervisor={projectToEditInitialSupervisor}
-          onSaved={handleStaffSaved}
+        <EditProjectPopup
+          open={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          project={projectToEdit}
+          onSaved={handleEditSaved}
         />
       )}
 
