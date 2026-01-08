@@ -31,7 +31,6 @@ const getCurrentWeekDates = () => {
  */
 const checkAndSendTimesheetReminders = async () => {
   try {
-    console.log('Starting weekly timesheet reminder check...');
     
     const { weekStart, weekEnd } = getCurrentWeekDates();
     
@@ -40,8 +39,6 @@ const checkAndSendTimesheetReminders = async () => {
       status: true,
       role: { $ne: UserRole.SupervisorAdmin }
     }).select('_id firstName lastName email');
-    
-    console.log(`Checking timesheets for ${employees.length} employees from ${weekStart.toDateString()} to ${weekEnd.toDateString()}`);
     
     let remindersSent = 0;
     
@@ -59,7 +56,6 @@ const checkAndSendTimesheetReminders = async () => {
         
         // If less than 40 hours, send reminder
         if (totalHours < 40) {
-          console.log(`Employee ${employee.firstName} ${employee.lastName} has only ${totalHours} hours submitted. Sending reminder...`);
           
           // Send email reminder
           const emailTemplate = getTimesheetReminderTemplate(
@@ -86,24 +82,19 @@ const checkAndSendTimesheetReminders = async () => {
           
           remindersSent++;
         } else {
-          console.log(`Employee ${employee.firstName} ${employee.lastName} has ${totalHours} hours submitted. No reminder needed.`);
         }
       } catch (error) {
-        console.error(`Error checking timesheets for employee ${employee.email}:`, error);
         // Continue with next employee even if one fails
       }
     }
     
-    console.log(`Timesheet reminder check completed. ${remindersSent} reminders sent.`);
   } catch (error) {
-    console.error('Error in timesheet reminder job:', error);
   }
 };
 
 export const initTimesheetReminderJob = () => {
   // Run every Tuesday at 11:12 AM
   const task = cron.schedule('0 17 * * 5', async () => {
-    console.log('Executing weekly timesheet reminder job - Tuesday 11:12 AM');
     await checkAndSendTimesheetReminders();
   }, {
     timezone: 'Asia/Colombo' // Adjust timezone as needed

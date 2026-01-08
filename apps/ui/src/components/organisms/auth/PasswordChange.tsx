@@ -19,9 +19,7 @@ const PasswordChange: React.FC = () => {
   const [verificationError, setVerificationError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userInfo, setUserInfo] = useState<{ email: string } | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [verificationCodeId, setVerificationCodeId] = useState<string>('');
 
   const {
@@ -47,12 +45,9 @@ const PasswordChange: React.FC = () => {
       }
 
       try {
-        // Handle token verification logic here
-        // On success, set user info and verificationCodeId
         
        
       } catch (error) {
-        console.error('Token verification failed:', error);
         setIsVerifying(false);
       }
     };
@@ -74,9 +69,8 @@ const PasswordChange: React.FC = () => {
 
     try {
       // Handle password change logic here
-      console.log('Password change initiated');
     } catch (error) {
-      console.error('Password change failed:', error);
+      // Handle error
     } finally {
       setIsLoading(false);
     }

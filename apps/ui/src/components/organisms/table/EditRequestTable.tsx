@@ -30,8 +30,8 @@ const EditRequestTable: React.FC<EditRequestTableProps> = ({
 
   useEffect(() => {
     loadSupervisedRequests({ status: statusFilter })
-      .catch((err) => {
-        console.error('EditRequestTable: Error loading requests:', err);
+      .catch(() => {
+        // Error is handled by the hook
       });
   }, [statusFilter]);
 
@@ -45,7 +45,7 @@ const EditRequestTable: React.FC<EditRequestTableProps> = ({
     try {
       await approve(request._id);
     } catch (error) {
-      console.error('Error approving request:', error);
+      // Error is handled by the hook
     }
   };
 
@@ -60,7 +60,7 @@ const EditRequestTable: React.FC<EditRequestTableProps> = ({
         await reject(selectedRequest._id, reason);
         setSelectedRequest(null);
       } catch (error) {
-        console.error('Error rejecting request:', error);
+        // Error is handled by the hook
       }
     }
   };

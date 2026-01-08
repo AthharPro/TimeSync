@@ -127,7 +127,6 @@ export const fetchProjects = createAsyncThunk<
     // The backend returns { projects: [...] }
     // listProjectsAPI() returns response.data which should be { projects: [...] }
     if (!response) {
-      console.error('Empty response from API');
       return thunkAPI.rejectWithValue('Empty response from server');
     }
     
@@ -135,12 +134,10 @@ export const fetchProjects = createAsyncThunk<
     const projectsArray = response.projects;
     
     if (!projectsArray) {
-      console.error('No projects array in response:', response);
       return thunkAPI.rejectWithValue('Invalid response structure from server');
     }
     
     if (!Array.isArray(projectsArray)) {
-      console.error('Projects is not an array:', projectsArray);
       return thunkAPI.rejectWithValue('Invalid response structure from server');
     }
     
@@ -149,7 +146,6 @@ export const fetchProjects = createAsyncThunk<
       try {
         return transformProject(project);
       } catch (error) {
-        console.error(`Error transforming project at index ${index}:`, error, project);
         // Return a minimal valid project object to prevent complete failure
         const now = new Date().toISOString();
         return {
@@ -174,7 +170,6 @@ export const fetchProjects = createAsyncThunk<
     
     return transformedProjects;
   } catch (error: any) {
-    console.error('Error fetching projects:', error);
     const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch projects';
     return thunkAPI.rejectWithValue(errorMessage);
   }
@@ -242,12 +237,10 @@ export const createProjectAction = createAsyncThunk<
     // Backend returns { project: {...} }
     const projectData = response.data?.project;
     if (!projectData) {
-      console.error('Invalid response structure:', response.data);
       return thunkAPI.rejectWithValue('Invalid response structure from server');
     }
     return transformProject(projectData);
   } catch (error: any) {
-    console.error('Error creating project:', error);
     return thunkAPI.rejectWithValue(
       error.response?.data?.message || error.message || 'Failed to create project'
     );
@@ -267,12 +260,10 @@ export const updateProjectStaffAction = createAsyncThunk<
     });
     // response already is response.data (contains { project: ... })
     if (!response || !response.project) {
-      console.error('Invalid response structure:', response);
       return thunkAPI.rejectWithValue('Invalid response structure from server');
     }
     return transformProject(response.project);
   } catch (error: any) {
-    console.error('Error updating project staff:', error);
     return thunkAPI.rejectWithValue(
       error.response?.data?.message || error.message || 'Failed to update project staff'
     );
@@ -301,12 +292,10 @@ export const updateProjectDetailsAction = createAsyncThunk<
     const response = await updateProjectDetailsAPI(projectId, updateData);
     // response already is response.data (contains { project: ... })
     if (!response || !response.project) {
-      console.error('Invalid response structure:', response);
       return thunkAPI.rejectWithValue('Invalid response structure from server');
     }
     return transformProject(response.project);
   } catch (error: any) {
-    console.error('Error updating project details:', error);
     return thunkAPI.rejectWithValue(
       error.response?.data?.message || error.message || 'Failed to update project details'
     );

@@ -16,18 +16,7 @@ import BaseBtn from '../../atoms/other/button/BaseBtn';
 import EmployeeSection from '../../organisms/common/EmployeeSection';
 import { IEmployee } from '../../../interfaces/user/IUser';
 import { CreateTeamFormData } from '../../../interfaces/team/ITeam';
-
-interface CreateTeamFormProps {
-  control: Control<CreateTeamFormData>;
-  isValid: boolean;
-  isSubmitting: boolean;
-  selectedEmployees: IEmployee[];
-  onAddEmployeesClick: () => void;
-  onRemoveEmployee: (employeeId: string) => void;
-  onCancel: () => void;
-  onSubmit: () => void;
-}
-
+import { CreateTeamFormProps } from '../../../interfaces/team/ITeam';
 function CreateTeamForm({
   control,
   isValid,

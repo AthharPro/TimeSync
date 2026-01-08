@@ -49,7 +49,6 @@ const ForgetPassword: React.FC = () => {
         await sendPasswordResetEmail(data.email);
       } catch (err) {
         // Error is handled by Redux
-        console.error('Password reset error:', err);
       }
     };
 

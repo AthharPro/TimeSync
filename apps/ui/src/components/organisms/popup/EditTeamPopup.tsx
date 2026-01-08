@@ -150,7 +150,6 @@ function EditTeamPopup({ open, onClose, team, onSaved }: EditTeamPopupProps) {
       onSaved && onSaved();
       onClose();
     } catch (e: any) {
-      console.error('Failed to update team staff:', e);
       const errorMessage = e?.message || 'Failed to update team staff. Please try again.';
       setError(errorMessage);
     } finally {

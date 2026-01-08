@@ -53,22 +53,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // 🔄 Load user & token (if saved)
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('🔄 Initializing auth...');
       const storedUser = localStorage.getItem("user");
 
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          console.log('📦 User loaded from localStorage:', parsedUser);
 
           // Validate user and get access token from refresh token
           try {
-            console.log('🔄 Validating user with refresh token...');
             const res = await api.get("/auth/me");
             const validatedUser = res.data.user;
             const token = res.data.accessToken;
 
-            console.log('✅ User validated successfully');
 
             // Update with validated user and token
             setUser(validatedUser);
@@ -78,11 +74,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             // Initialize socket connection after successful validation
             const userId = validatedUser._id || validatedUser.id;
             if (userId) {
-              console.log('🔌 Initializing socket for validated user:', userId);
               initializeSocket(userId);
             }
           } catch (error) {
-            console.error('❌ Failed to validate user, clearing auth state:', error);
             // Clear invalid user data
             setUser(null);
             updateAccessToken(null);
@@ -90,16 +84,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             disconnectSocket();
           }
         } catch (error) {
-          console.error('❌ Failed to parse stored user, clearing localStorage:', error);
           localStorage.removeItem("user");
           disconnectSocket();
         }
       } else {
-        console.log('ℹ️ No stored user found');
       }
 
       setLoading(false);
-      console.log('✅ Auth initialization complete');
     };
 
     initializeAuth();
@@ -109,34 +100,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   // 🔐 Login
   const login = async (email: string, password: string) => {
     try {
-      console.log('🔐 Login started for:', email);
       setLoading(true);
 
       const res = await api.post("/auth/login", { email, password });
-      console.log('✅ Login API call successful');
 
       const { accessToken: token, user } = res.data;
 
       // Save to state + axios
       updateAccessToken(token);
       setUser(user);
-      console.log('✅ User state updated:', user);
 
       // Persist only user (token stays in memory)
       localStorage.setItem("user", JSON.stringify(user));
-      console.log('✅ User saved to localStorage');
 
       // Initialize Socket.io connection for real-time notifications
       const userId = user._id || user.id;
       if (userId) {
-        console.log('🔌 Initializing socket connection for user:', userId);
         initializeSocket(userId);
       }
 
-      console.log('✅ Login completed successfully');
       return { success: true, user };
     } catch (err) {
-      console.error('❌ Login failed:', err);
       return { success: false, error: err };
     } finally {
       setLoading(false);
@@ -149,11 +133,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       // Call logout endpoint to clear server-side session
       await api.get('/auth/logout');
     } catch (error) {
-      console.error('Logout API call failed:', error);
     }
 
     // Disconnect socket before logging out
-    console.log('🔌 Disconnecting socket on logout');
     disconnectSocket();
 
     // Clear state

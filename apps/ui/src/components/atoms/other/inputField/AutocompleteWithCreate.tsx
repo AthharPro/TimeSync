@@ -38,7 +38,6 @@ const AutocompleteWithCreate = ({
         await onCreateNew(taskName.trim());
         // Don't clear inputValue here - let it be controlled by the value prop
       } catch (error) {
-        console.error('Failed to create new item:', error);
       } finally {
         setCreating(false);
       }

@@ -72,7 +72,6 @@ export const useHistory = (): IUseHistoryReturn => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      console.error('Error loading history:', err);
     } finally {
       setIsLoading(false);
     }

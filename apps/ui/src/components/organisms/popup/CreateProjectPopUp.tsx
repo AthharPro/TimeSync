@@ -98,13 +98,11 @@ const CreateProjectPopUp: React.FC<CreateProjectPopupProps> = ({
 
       await createProject(projectData);
       
-      // Close modal and trigger callback
-      // Form will be reset automatically by useEffect when modal closes
+      
       onProjectCreated?.();
       onClose();
     } catch (error) {
-      console.error('Failed to create project:', error);
-      // Error is handled by Redux, but you could show a toast notification here
+      
     }
   };
 

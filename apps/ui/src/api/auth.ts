@@ -31,7 +31,6 @@ export const logout = async () => {
     try {
       return await API.get("/auth/logout");
     } catch (error) {
-      console.error("Logout failed:", error);
       throw error; 
     }
   }
@@ -40,7 +39,6 @@ export const sendPasswordResetEmail = async (email: string) => {
   try {
     return await API.post("/auth/password/forgot", { email });
   } catch (error) {
-    console.error("Password reset email failed:", error);
     throw error;
   }
 };
@@ -49,7 +47,6 @@ export const verifyPasswordResetLink = async (token: string, verificationCode: s
   try {
     return await API.get(`/auth/password/reset?token=${token}&verificationCode=${verificationCode}`);
   } catch (error) {
-    console.error("Password reset link verification failed:", error);
     throw error;
   }
 };
@@ -62,7 +59,6 @@ export const verifyPasswordResetToken = async (token: string) => {
       }
     });
   } catch (error) {
-    console.error("Token verification failed:", error);
     throw error;
   }
 };
@@ -75,7 +71,6 @@ export const resetPassword = async (data: {
   try {
     return await API.post("/auth/password/reset", data);
   } catch (error) {
-    console.error("Password reset failed:", error);
     throw error;
   }
 };
@@ -94,7 +89,6 @@ export const registerUser = async (
     const endpoint = role === UserRole.Admin ? '/api/user/admin' : '/api/user/employee';
     return await API.post(endpoint, data);
   } catch (error) {
-    console.error("User registration failed:", error);
     throw error;
   }
 };

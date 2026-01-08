@@ -1,8 +1,6 @@
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
-console.log(import.meta.env.VITE_API_URL);
-console.log("API Base URL:", API_BASE_URL);
 
 // 🔐 In-memory access token (no hooks!)
 let ACCESS_TOKEN: string | null = null;
@@ -52,7 +50,6 @@ api.interceptors.request.use((config) => {
   }
   return config;
 }, (error) => {
-  console.error('API Request Interceptor Error:', error);
   return Promise.reject(error);
 });
 
@@ -67,12 +64,6 @@ api.interceptors.response.use(
   },
 
   async (err) => {
-    console.error('API Response Interceptor Error:', {
-      url: err.config?.url,
-      status: err.response?.status,
-      message: err.message,
-      code: err.code,
-    });
     const original = err.config;
 
     // Token expired → try refresh
@@ -92,8 +83,6 @@ api.interceptors.response.use(
         // Retry original request with new token
         return api(original);
       } catch (refreshErr) {
-        console.error("Refresh token failed", refreshErr);
-
         // Logout if refresh also fails
         await axios.get(`${API_BASE_URL}/auth/logout`, {
           withCredentials: true,

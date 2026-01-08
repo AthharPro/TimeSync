@@ -4,7 +4,6 @@ import {Task} from '../../models/task.model';
 export async function ensureInternalProject() {
   const exists = await Project.findOne({ projectName: "Internal", isPublic: true });
 
-  console.log("Checking for Internal project existence:", exists);
 
   if (!exists) {
    const res=await Project.create({

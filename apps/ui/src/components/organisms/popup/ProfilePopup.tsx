@@ -53,7 +53,7 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ open, onClose, user: overri
           setSupervisors(response.supervisors);
         }
       } catch (error) {
-        console.error('Error fetching supervisors:', error);
+        // Error fetching supervisors
       } finally {
         setLoading(false);
       }

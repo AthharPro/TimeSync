@@ -69,7 +69,6 @@ export const getHistory = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching history:', error);
     res.status(INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Error fetching history',
@@ -116,7 +115,6 @@ export const getEntityHistory = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching entity history:', error);
     res.status(INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Error fetching entity history',
@@ -145,7 +143,6 @@ export const getRecentHistory = async (req: Request, res: Response) => {
       data: history,
     });
   } catch (error) {
-    console.error('Error fetching recent history:', error);
     res.status(INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Error fetching recent history',

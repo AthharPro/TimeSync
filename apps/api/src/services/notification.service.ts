@@ -20,7 +20,6 @@ interface CreateNotificationParams {
 export const createNotification = async (
   params: CreateNotificationParams
 ): Promise<INotificationDocument> => {
-  console.log('Creating notification for user:', params.userId, 'Type:', params.type);
   
   const notification = new NotificationModel({
     userId: new mongoose.Types.ObjectId(params.userId),
@@ -33,11 +32,9 @@ export const createNotification = async (
   });
 
   await notification.save();
-  console.log('Notification saved to database:', notification._id);
 
   // Send notification via Socket.io to the user's room
   const roomName = `user:${params.userId}`;
-  console.log('Emitting notification to room:', roomName);
   io.to(roomName).emit('notification', {
     _id: notification._id.toString(),
     userId: notification.userId.toString(),

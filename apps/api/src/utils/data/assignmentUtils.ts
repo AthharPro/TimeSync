@@ -137,39 +137,25 @@ export const updateUserTeamMemberships = async (
   newMembers: string[], 
   oldMembers: string[] = []
 ): Promise<void> => {
-  console.log('updateUserTeamMemberships called with:', { teamId, newMembers, oldMembers });
     
   const teamObjectId = new mongoose.Types.ObjectId(teamId);
   
   const membersToAdd = newMembers.filter(id => !oldMembers.includes(id));
   if (membersToAdd.length > 0) {
-    console.log('Adding members to team:', membersToAdd);
     const addResult = await UserModel.updateMany(
       { _id: { $in: membersToAdd.map(id => new mongoose.Types.ObjectId(id)) } },
       { $addToSet: { teams: teamObjectId } }
     );
-    console.log('Add members result:', { 
-      matchedCount: addResult.matchedCount, 
-      modifiedCount: addResult.modifiedCount,
-      acknowledged: addResult.acknowledged 
-    });
   }
 
   const membersToRemove = oldMembers.filter(id => !newMembers.includes(id));
   if (membersToRemove.length > 0) {
-    console.log('Removing members from team:', membersToRemove);
     const removeResult = await UserModel.updateMany(
       { _id: { $in: membersToRemove.map(id => new mongoose.Types.ObjectId(id)) } },
       { $pull: { teams: teamObjectId } }
     );
-    console.log('Remove members result:', { 
-      matchedCount: removeResult.matchedCount, 
-      modifiedCount: removeResult.modifiedCount,
-      acknowledged: removeResult.acknowledged 
-    });
   }
   
-  console.log('updateUserTeamMemberships completed');
 };
 
 /**

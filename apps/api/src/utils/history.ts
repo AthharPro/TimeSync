@@ -34,7 +34,6 @@ export const createHistoryLog = async (params: CreateHistoryLogParams) => {
     await historyEntry.save();
     return historyEntry;
   } catch (error) {
-    console.error('Error creating history log:', error);
     throw error;
   }
 };

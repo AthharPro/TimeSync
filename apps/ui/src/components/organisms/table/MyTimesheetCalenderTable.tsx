@@ -96,12 +96,6 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
   useEffect(() => {
     loadMyProjects();
   }, [loadMyProjects]);
-  
-  // Debug: Log when projects and teams are loaded
-  useEffect(() => {
-    console.log('MyTimesheetCalendarTable - Projects loaded:', myProjects);
-    console.log('MyTimesheetCalendarTable - Teams loaded:', myTeams);
-  }, [myProjects, myTeams]);
 
   // Load timesheets for the current week (only once per week)
   useEffect(() => {
@@ -110,12 +104,6 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
     if (currentWeekDays.length > 0 && currentWeekStartStr !== loadedWeekRef.current) {
       const startDate = currentWeekDays[0].date;
       const endDate = currentWeekDays[currentWeekDays.length - 1].date;
-      
-      console.log('MyTimesheetCalendarTable - Loading timesheets for week:', {
-        startDate,
-        endDate,
-        currentWeekStart: currentWeekStartStr,
-      });
       
       loadTimesheets(startDate, endDate);
       loadedWeekRef.current = currentWeekStartStr;
@@ -475,11 +463,10 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
     if (!taskName.trim()) return;
 
     try {
-      console.log('Creating new task:', taskName, 'for project:', projectId);
       const newTask: any = await createTask({ projectId, taskName });
       return newTask;
     } catch (error) {
-      console.error('Failed to create task:', error);
+      // Task creation failed
     }
   };
 
@@ -561,7 +548,6 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
           isChecked: false,
         });
       } catch (error: any) {
-        console.error('Failed to create timesheet:', error.message);
         // Show error toast message
         if (onError) {
           onError(error.message || 'Failed to create timesheet');
@@ -618,7 +604,6 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
           isChecked: false,
         });
       } catch (error: any) {
-        console.error('Failed to create timesheet:', error.message);
         // Show error toast message
         if (onError) {
           onError(error.message || 'Failed to create timesheet');

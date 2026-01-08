@@ -24,11 +24,9 @@ export const createMyTimesheetHandler = catchErrors(async (req: Request, res: Re
     hours: hours || 0.0
   };
 
-  console.log("createMyTimesheetHandler - params:", params);
 
   const result = await createMyTimesheet(params);
 
-  console.log("createMyTimesheetHandler - result:", result);
   return res.status(CREATED).json(result);
 });
 
@@ -43,7 +41,6 @@ export const updateMyTimesheetHandler = catchErrors(async (req: Request, res: Re
     ...parsed,
   };
 
-  console.log("updateMyTimesheetHandler - params:", params);
 
   const result = await updateMyTimesheet(params);
 
@@ -51,7 +48,6 @@ export const updateMyTimesheetHandler = catchErrors(async (req: Request, res: Re
     return res.status(404).json({ message: 'Timesheet not found' });
   }
 
-  console.log("updateMyTimesheetHandler - result:", result);
   return res.status(OK).json(result);
 });
 
@@ -62,11 +58,9 @@ export const getMyTimesheetsHandler = catchErrors(async (req: Request, res: Resp
   const parsed = getTimesheetsSchema.parse(req.query);
   const { startDate, endDate } = parsed;
 
-  console.log("getMyTimesheetsHandler - params:", { userId, startDate, endDate });
 
   const timesheets = await getMyTimesheets(userId, startDate, endDate);
 
-  console.log("getMyTimesheetsHandler - found timesheets:", timesheets.length);
   return res.status(OK).json(timesheets);
 });
 
@@ -78,11 +72,9 @@ export const submitTimesheetsHandler = catchErrors(async (req: Request, res: Res
     return res.status(400).json({ message: 'timesheetIds must be a non-empty array' });
   }
 
-  console.log("submitTimesheetsHandler - params:", { userId, timesheetIds });
 
   const result = await submitTimesheets(userId, timesheetIds);
 
-  console.log("submitTimesheetsHandler - result:", result);
   return res.status(OK).json(result);
 });
 
@@ -94,10 +86,8 @@ export const deleteTimesheetsHandler = catchErrors(async (req: Request, res: Res
     return res.status(400).json({ message: 'timesheetIds must be a non-empty array' });
   }
 
-  console.log("deleteTimesheetsHandler - params:", { userId, timesheetIds });
 
   const result = await deleteTimesheets(userId, timesheetIds);
 
-  console.log("deleteTimesheetsHandler - result:", result);
   return res.status(OK).json(result);
 });

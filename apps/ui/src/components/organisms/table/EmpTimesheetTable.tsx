@@ -40,7 +40,7 @@ interface IEmpTimesheetEntry {
   billableType: BillableType;
   status: DailyTimesheetStatus;
   isChecked?: boolean;
-  isSupervised?: boolean; // Whether the supervisor has permission to edit this timesheet
+  isSupervised?: boolean; 
 }
 
 interface EmpTimesheetTableProps {
@@ -134,7 +134,6 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     if (timesheets) {
       // Check if this employee is in a non-department team
       const isEmployeeInNonDeptTeam = nonDeptTeamEmployeeIds.includes(employeeId);
-      console.log('Is employee in non-department team?', isEmployeeInNonDeptTeam);
       
       const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => {
         // Check if this timesheet is from a public project
@@ -144,29 +143,8 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
         const isProjectSupervised = ts.projectId && supervisedProjectIds.length > 0 && supervisedProjectIds.includes(ts.projectId);
         const isTeamSupervised = ts.teamId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.teamId);
         
-        // IMPORTANT: Permission logic for supervision:
-        // 1. If timesheet is from a public project (isPublic: true), ANY supervisor can edit
-        // 2. If employee is in a non-department team (isDepartment: false), supervisor can edit ALL timesheets
-        // 3. Otherwise, supervisor can only edit timesheets from projects/teams they supervise
+       
         const isSupervised = isFromPublicProject || isEmployeeInNonDeptTeam || isProjectSupervised || isTeamSupervised;
-        
-        // Debug logging
-        console.log('===== TIMESHEET SUPERVISION CHECK =====');
-        console.log('Processing Timesheet:', {
-          project: ts.project,
-          projectId: ts.projectId,
-          isPublicProject: ts.isPublicProject,
-          teamId: ts.teamId,
-          isDepartmentTeam: ts.isDepartmentTeam,
-          isFromPublicProject,
-          isProjectSupervised,
-          isTeamSupervised,
-          isEmployeeInNonDeptTeam,
-          isSupervised,
-          supervisedProjectIdsCount: supervisedProjectIds.length,
-          supervisedTeamIdsCount: supervisedTeamIds.length,
-          nonDeptTeamEmployeeIdsCount: nonDeptTeamEmployeeIds.length,
-        });
         
         return {
           id: ts.id,
@@ -211,8 +189,7 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
         }
       }
 
-      // Note: Team filtering would need to be done on the backend
-      // as we don't have team information in the timesheet entries
+    
 
       return true;
     });
@@ -298,9 +275,8 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
         // Persist to backend with task ID using review endpoint
         try {
           await api.put(`/api/review/timesheets/${entry.id}`, { taskId: selectedTask._id });
-          console.log('Task updated successfully in database');
         } catch (error) {
-          console.error('Failed to update task in database:', error);
+          // Error updating task
         }
       } else {
         // If task not found, just update display name (will be created separately)
@@ -316,12 +292,10 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     // Use teamId if it exists, otherwise use projectId
     const lookupId = entry.teamId || entry.projectId;
     if (!lookupId) {
-      console.error('No project ID or team ID for this entry');
       return;
     }
 
     try {
-      console.log('Creating new task:', taskName, 'for project/team:', lookupId);
       const newTask: any = await createTask({ projectId: lookupId, taskName });
       
       // Update UI with the new task
@@ -333,13 +307,12 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
         // Persist to backend with new task ID using review endpoint
         try {
           await api.put(`/api/review/timesheets/${entry.id}`, { taskId: newTask._id });
-          console.log('Created and updated task successfully in database');
         } catch (error) {
-          console.error('Failed to update timesheet with new task in database:', error);
+          // Error updating timesheet with new task
         }
       }
     } catch (error) {
-      console.error('Failed to create task:', error);
+      // Error creating task
     }
   };
 
@@ -360,9 +333,8 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     const timer = setTimeout(async () => {
       try {
         await api.put(`/api/review/timesheets/${id}`, { description: value });
-        console.log('Description updated successfully in database');
       } catch (error) {
-        console.error('Failed to update description in database:', error);
+        // Error updating description
       }
       descriptionTimerRef.current.delete(id);
     }, 900);
@@ -387,9 +359,8 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     const timer = setTimeout(async () => {
       try {
         await api.put(`/api/review/timesheets/${id}`, { hours: value });
-        console.log('Hours updated successfully in database');
       } catch (error) {
-        console.error('Failed to update hours in database:', error);
+        // Error updating hours
       }
       hoursTimerRef.current.delete(id);
     }, 900);
@@ -407,9 +378,8 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     // Persist to backend immediately using review endpoint
     try {
       await api.put(`/api/review/timesheets/${id}`, { billable: value });
-      console.log('Billable type updated successfully in database');
     } catch (error) {
-      console.error('Failed to update billable type in database:', error);
+      // Error updating billable type
     }
   }, []);
 
