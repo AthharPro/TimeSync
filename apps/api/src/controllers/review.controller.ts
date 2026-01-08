@@ -8,7 +8,7 @@ import { Task } from '../models/task.model';
 import appAssert from '../utils/validation/appAssert';
 import { FORBIDDEN, NOT_FOUND } from '../constants/http';
 import { UserRole, DailyTimesheetStatus, NotificationType } from '@tms/shared';
-import { getSupervisedUserIds, getSupervisedProjectAndTeamIds } from '../utils/data/assignmentUtils';
+import { getSupervisedUserIds, getSupervisedProjectAndTeamIds, getNonDepartmentTeamEmployeeIds } from '../utils/data/assignmentUtils';
 import mongoose from 'mongoose';
 import { createBulkNotifications, createNotification } from '../services/notification.service';
 
@@ -170,13 +170,14 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
     // Manually populate and check if projectId is actually a team
     const enrichedTimesheets = await Promise.all(
       rawTimesheets.map(async (ts: any) => {
-        // Populate project
+        // Populate project and include isPublic flag
         if (ts.projectId) {
-          const projectData = await ProjectModel.findById(ts.projectId).select('projectName').lean();
+          const projectData = await ProjectModel.findById(ts.projectId).select('projectName isPublic').lean();
           if (projectData) {
             ts.projectId = {
               _id: ts.projectId,
-              projectName: projectData.projectName
+              projectName: projectData.projectName,
+              isPublic: projectData.isPublic !== undefined ? projectData.isPublic : false
             };
           } else {
             // Project not found
@@ -195,13 +196,14 @@ export const getEmployeeTimesheetsForReviewHandler: RequestHandler = async (req,
           }
         }
         
-        // Populate team (if teamId field is used)
+        // Populate team (if teamId field is used) and include isDepartment flag
         if (ts.teamId) {
-          const teamData = await TeamModel.findById(ts.teamId).select('teamName').lean();
+          const teamData = await TeamModel.findById(ts.teamId).select('teamName isDepartment').lean();
           if (teamData) {
             ts.teamId = {
               _id: ts.teamId,
-              teamName: teamData.teamName
+              teamName: teamData.teamName,
+              isDepartment: teamData.isDepartment !== undefined ? teamData.isDepartment : true
             };
           }
         }
@@ -585,22 +587,46 @@ export const updateEmployeeTimesheetHandler: RequestHandler = async (req, res) =
     const employeeId = (timesheet.userId as any)._id.toString();
 
     // Verify supervisor has permission to update this timesheet
-    // Check based on the project or team associated with the timesheet
+    // Permission is granted if:
+    // 1. User is Admin/SuperAdmin/SupervisorAdmin (unrestricted access), OR
+    // 2. Timesheet is from a public project (isPublic: true), OR
+    // 3. Supervisor supervises the project/team of the timesheet, OR
+    // 4. Employee is in a non-department team (isDepartment: false) supervised by this supervisor
     if (userRole !== UserRole.Admin && userRole !== UserRole.SupervisorAdmin && userRole !== UserRole.SuperAdmin) {
-      const { projectIds, teamIds } = await getSupervisedProjectAndTeamIds(supervisorId);
+      // Check if the timesheet is from a public project
+      let isFromPublicProject = false;
+      if (timesheet.projectId) {
+        const project = await ProjectModel.findById(timesheet.projectId).select('isPublic').lean();
+        isFromPublicProject = project?.isPublic === true;
+      }
       
-      const timesheetProjectId = timesheet.projectId?.toString();
-      const timesheetTeamId = timesheet.teamId?.toString();
-      
-      // Check if the supervisor supervises the project or team of this timesheet
-      const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
-      const hasTeamPermission = timesheetTeamId && teamIds.includes(timesheetTeamId);
-      
-      appAssert(
-        hasProjectPermission || hasTeamPermission,
-        FORBIDDEN,
-        'You do not have permission to update this timesheet. You can only update timesheets for projects or teams you supervise.'
-      );
+      if (!isFromPublicProject) {
+        // Not a public project, check other permissions
+        // Get employees in non-department teams supervised by this supervisor
+        const nonDeptTeamEmployeeIds = await getNonDepartmentTeamEmployeeIds(supervisorId);
+        
+        // If employee is in a non-department team, supervisor can edit ALL their timesheets
+        const isInNonDeptTeam = nonDeptTeamEmployeeIds.includes(employeeId);
+        
+        if (!isInNonDeptTeam) {
+          // Employee is NOT in a non-department team
+          // Check if supervisor supervises the specific project or team of this timesheet
+          const { projectIds, teamIds } = await getSupervisedProjectAndTeamIds(supervisorId);
+          
+          const timesheetProjectId = timesheet.projectId?.toString();
+          const timesheetTeamId = timesheet.teamId?.toString();
+          
+          // Check if the supervisor supervises the project or team of this timesheet
+          const hasProjectPermission = timesheetProjectId && projectIds.includes(timesheetProjectId);
+          const hasTeamPermission = timesheetTeamId && teamIds.includes(timesheetTeamId);
+          
+          appAssert(
+            hasProjectPermission || hasTeamPermission,
+            FORBIDDEN,
+            'You do not have permission to update this timesheet. You can only update timesheets for public projects, projects or teams you supervise, or for employees in your non-department teams.'
+          );
+        }
+      }
     }
 
     // Only allow updating Pending timesheets (submitted but not yet approved/rejected)
@@ -649,6 +675,41 @@ export const updateEmployeeTimesheetHandler: RequestHandler = async (req, res) =
     console.error('Error updating employee timesheet:', error);
     res.status(500).json({
       message: 'Failed to update timesheet',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Get employee IDs from non-department teams supervised by the current supervisor
+ * These employees' ALL timesheets can be approved/rejected/edited regardless of project/team
+ */
+export const getNonDepartmentTeamEmployeeIdsHandler: RequestHandler = async (req, res) => {
+  const userRole = req.userRole as UserRole;
+  const supervisorId = req.userId as string;
+
+  appAssert(
+    [UserRole.Supervisor, UserRole.SupervisorAdmin, UserRole.Admin, UserRole.SuperAdmin].includes(userRole),
+    FORBIDDEN,
+    'Access denied. Only supervisors can access this endpoint.'
+  );
+
+  try {
+    let employeeIds: string[] = [];
+
+    if (userRole === UserRole.Admin || userRole === UserRole.SuperAdmin) {
+      // Admins can approve any timesheet, so return empty array (no restrictions)
+      employeeIds = [];
+    } else {
+      // Get employees from non-department teams supervised by this supervisor
+      employeeIds = await getNonDepartmentTeamEmployeeIds(supervisorId);
+    }
+
+    res.json({ employeeIds });
+  } catch (error) {
+    console.error('Error fetching non-department team employee IDs:', error);
+    res.status(500).json({
+      message: 'Failed to fetch non-department team employee IDs',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import WindowLayout from '../../templates/other/WindowLayout'
 import { Box, Alert } from '@mui/material'
 import HistoryTable from '../table/HistoryTable'
@@ -8,51 +8,30 @@ import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import HistoryFilterPopover from '../popover/HistoryFilterPopover';
 
 function HistoryWindow() {
-  const { history, isLoading, error } = useHistory();
+  const { history, isLoading, error, loadHistory } = useHistory();
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
-  const [activeFilters, setActiveFilters] = useState({ entityType: 'all', actionCategory: 'all' });
+  const [activeFilters, setActiveFilters] = useState({ entityType: 'all', startDate: '', endDate: '' });
 
   const isFilterOpen = Boolean(filterAnchorEl);
 
-  // Filter history based on active filters
-  const filteredHistory = useMemo(() => {
-    return history.filter((item) => {
-      const entityMatch = activeFilters.entityType === 'all' || item.entityType === activeFilters.entityType;
-      
-      // Check if description contains the action category
-      let actionMatch = activeFilters.actionCategory === 'all';
-      if (!actionMatch && item.description) {
-        const desc = item.description.toLowerCase();
-        switch (activeFilters.actionCategory) {
-          case 'CREATED':
-            actionMatch = desc.includes('created');
-            break;
-          case 'UPDATED':
-            actionMatch = desc.includes('updated');
-            break;
-          case 'STATUS_CHANGED':
-            actionMatch = desc.includes('status changed');
-            break;
-          case 'SUPERVISOR_CHANGED':
-            actionMatch = desc.includes('supervisor changed');
-            break;
-          case 'MEMBER_ADDED':
-            actionMatch = desc.includes('added') && (desc.includes('employee') || desc.includes('member'));
-            break;
-          case 'MEMBER_REMOVED':
-            actionMatch = desc.includes('removed') && (desc.includes('employee') || desc.includes('member'));
-            break;
-          case 'PASSWORD_CHANGED':
-            actionMatch = desc.includes('password changed');
-            break;
-          default:
-            actionMatch = true;
-        }
-      }
-      
-      return entityMatch && actionMatch;
-    });
-  }, [history, activeFilters]);
+  // Load history when filters change
+  useEffect(() => {
+    const params: any = { limit: 50 };
+    
+    if (activeFilters.entityType !== 'all') {
+      params.entityType = activeFilters.entityType;
+    }
+    
+    if (activeFilters.startDate) {
+      params.startDate = activeFilters.startDate;
+    }
+    
+    if (activeFilters.endDate) {
+      params.endDate = activeFilters.endDate;
+    }
+    
+    loadHistory(params);
+  }, [activeFilters, loadHistory]);
 
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setFilterAnchorEl(event.currentTarget);
@@ -62,7 +41,7 @@ function HistoryWindow() {
     setFilterAnchorEl(null);
   };
 
-  const handleApplyFilter = (filters: { entityType: string; actionCategory: string }) => {
+  const handleApplyFilter = (filters: { entityType: string; startDate: string; endDate: string }) => {
     setActiveFilters(filters);
     handleCloseFilter();
   };
@@ -75,7 +54,7 @@ function HistoryWindow() {
             <Alert severity="error">{error}</Alert>
           </Box>
         )}
-        <HistoryTable rows={filteredHistory} isLoading={isLoading} />
+        <HistoryTable rows={history} isLoading={isLoading} />
       </WindowLayout>
       <HistoryFilterPopover
         anchorEl={filterAnchorEl}

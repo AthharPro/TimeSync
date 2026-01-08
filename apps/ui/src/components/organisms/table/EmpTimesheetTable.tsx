@@ -30,7 +30,9 @@ interface IEmpTimesheetEntry {
   date: string;
   project: string;
   projectId?: string;
+  isPublicProject?: boolean;
   teamId?: string;
+  isDepartmentTeam?: boolean;
   task: string;
   taskId?: string;
   description: string;
@@ -47,6 +49,7 @@ interface EmpTimesheetTableProps {
   filters?: ReviewTimesheetFilters;
   supervisedProjectIds?: string[];
   supervisedTeamIds?: string[];
+  nonDeptTeamEmployeeIds?: string[];
 }
 
 // Billable type options as Record
@@ -60,7 +63,8 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
   onSelectedTimesheetsChange, 
   filters,
   supervisedProjectIds = [],
-  supervisedTeamIds = []
+  supervisedTeamIds = [],
+  nonDeptTeamEmployeeIds = []
 }) => {
   const {
     loadEmployeeTimesheets,
@@ -124,45 +128,54 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
     console.log('=== EmpTimesheetTable useEffect triggered ===');
     console.log('Supervised Project IDs received:', supervisedProjectIds);
     console.log('Supervised Team IDs received:', supervisedTeamIds);
+    console.log('Non-Dept Team Employee IDs received:', nonDeptTeamEmployeeIds);
+    console.log('Current Employee ID:', employeeId);
     
     if (timesheets) {
+      // Check if this employee is in a non-department team
+      const isEmployeeInNonDeptTeam = nonDeptTeamEmployeeIds.includes(employeeId);
+      console.log('Is employee in non-department team?', isEmployeeInNonDeptTeam);
+      
       const transformedData: IEmpTimesheetEntry[] = timesheets.map((ts: any) => {
-        // Check if this timesheet is supervised (either by project or team)
+        // Check if this timesheet is from a public project
+        const isFromPublicProject = ts.isPublicProject === true;
+        
+        // Check if this timesheet is supervised based on project or team
         const isProjectSupervised = ts.projectId && supervisedProjectIds.length > 0 && supervisedProjectIds.includes(ts.projectId);
         const isTeamSupervised = ts.teamId && supervisedTeamIds.length > 0 && supervisedTeamIds.includes(ts.teamId);
         
-        // IMPORTANT: For employees in isDepartment:false teams, supervisors should be able to
-        // approve/reject ALL timesheets, not just those from supervised projects/teams.
-        // Since the backend already filters to only show timesheets the supervisor can review,
-        // we mark all timesheets as supervised.
-        // However, we give priority to project/team supervision for better granularity.
-        const isSupervised = true; // All timesheets shown are supervised since backend filters them
+        // IMPORTANT: Permission logic for supervision:
+        // 1. If timesheet is from a public project (isPublic: true), ANY supervisor can edit
+        // 2. If employee is in a non-department team (isDepartment: false), supervisor can edit ALL timesheets
+        // 3. Otherwise, supervisor can only edit timesheets from projects/teams they supervise
+        const isSupervised = isFromPublicProject || isEmployeeInNonDeptTeam || isProjectSupervised || isTeamSupervised;
         
         // Debug logging
         console.log('===== TIMESHEET SUPERVISION CHECK =====');
         console.log('Processing Timesheet:', {
           project: ts.project,
           projectId: ts.projectId,
+          isPublicProject: ts.isPublicProject,
           teamId: ts.teamId,
+          isDepartmentTeam: ts.isDepartmentTeam,
+          isFromPublicProject,
           isProjectSupervised,
           isTeamSupervised,
+          isEmployeeInNonDeptTeam,
           isSupervised,
           supervisedProjectIdsCount: supervisedProjectIds.length,
           supervisedTeamIdsCount: supervisedTeamIds.length,
-          projectIdInProjectList: ts.projectId ? supervisedProjectIds.includes(ts.projectId) : 'N/A',
-          teamIdInList: ts.teamId ? supervisedTeamIds.includes(ts.teamId) : 'N/A',
+          nonDeptTeamEmployeeIdsCount: nonDeptTeamEmployeeIds.length,
         });
-        console.log('Supervised Team IDs Array:', supervisedTeamIds);
-        console.log('Timesheet teamId value:', ts.teamId);
-        console.log('teamId type:', typeof ts.teamId);
-        console.log('Is teamId in array?', ts.teamId ? supervisedTeamIds.includes(ts.teamId) : false);
         
         return {
           id: ts.id,
           date: ts.date,
           project: ts.project,
           projectId: ts.projectId,
+          isPublicProject: ts.isPublicProject,
           teamId: ts.teamId,
+          isDepartmentTeam: ts.isDepartmentTeam,
           task: ts.task,
           taskId: ts.taskId,
           description: ts.description,
@@ -176,7 +189,7 @@ const EmpTimesheetTable: React.FC<EmpTimesheetTableProps> = ({
       setTimesheetData(transformedData);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timesheets, supervisedProjectIds.join(','), supervisedTeamIds.join(',')]);
+  }, [timesheets, supervisedProjectIds.join(','), supervisedTeamIds.join(','), nonDeptTeamEmployeeIds.join(','), employeeId]);
   // Use join(',') to create a stable string representation of arrays for comparison
 
   // Apply client-side filters to timesheet data

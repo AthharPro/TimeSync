@@ -142,7 +142,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
     let filteredTimesheets = newTimesheets.map((timesheet) => {
       // Priority 1: Use stored names from backend (populated data)
       // Priority 2: Look up in current projects/teams
-      // Priority 3: Fallback to "[Deleted ...]" if nothing available
+      // Priority 3: Show empty string (never show "[Deleted ...]" to avoid flash)
       
       let projectName: string;
       if (timesheet.projectName) {
@@ -160,11 +160,9 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
           projectName = project.projectName;
         } else if (team) {
           projectName = team.teamName;
-        } else if (timesheet.project) {
-          projectName = '[Deleted Project]';
-        } else if (timesheet.team) {
-          projectName = '[Deleted Team]';
         } else {
+          // Don't show "[Deleted ...]" - just show empty string
+          // This prevents the brief flash when loading or selecting projects
           projectName = '';
         }
       }
@@ -175,7 +173,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
         taskName = timesheet.taskName;
       } else {
         const task = allTasks.find(t => t._id === timesheet.task);
-        taskName = task ? task.taskName : (timesheet.task ? '[Deleted Task]' : timesheet.task);
+        taskName = task ? task.taskName : '';
       }
       
       return {
