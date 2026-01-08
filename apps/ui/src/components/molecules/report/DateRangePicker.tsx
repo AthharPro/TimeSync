@@ -43,11 +43,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           onChange={onStartDateChange}
           disabled={disabled}
         />
-        {!startDate && (
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Optional: choose a start date
-          </Typography>
-        )}
       </Box>
 
       {/* End Date */}
@@ -59,11 +54,6 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           disabled={disabled}
           minDate={minEndDate}
         />
-        {!endDate && (
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Optional: choose an end date
-          </Typography>
-        )}
       </Box>
     </Box>
   );

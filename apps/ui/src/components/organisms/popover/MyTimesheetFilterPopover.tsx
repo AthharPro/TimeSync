@@ -55,32 +55,12 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
     loadMyProjects();
   }, [loadMyProjects]);
 
-  const handleYearChange = (date: Dayjs | null) => {
-    if (!date) {
-      setFilters({ ...filters, year: null, startDate: null, endDate: null });
-    } else {
-      const year = date.year();
-      // If month is also selected, use both year and month
-      if (filters.month) {
-        const monthNum = parseInt(filters.month.split('-')[1]);
-        const startDate = dayjs(`${year}-${String(monthNum).padStart(2, '0')}-01`).format('YYYY-MM-DD');
-        const endDate = dayjs(`${year}-${String(monthNum).padStart(2, '0')}-01`).endOf('month').format('YYYY-MM-DD');
-        setFilters({ ...filters, year: date.format('YYYY'), startDate, endDate });
-      } else {
-        // Only year selected, use full year range
-        const startDate = dayjs(`${year}-01-01`).format('YYYY-MM-DD');
-        const endDate = dayjs(`${year}-12-31`).format('YYYY-MM-DD');
-        setFilters({ ...filters, year: date.format('YYYY'), startDate, endDate });
-      }
-    }
-  };
-
   const handleMonthChange = (date: Dayjs | null) => {
     if (!date) {
-      setFilters({ ...filters, month: null, startDate: null, endDate: null });
+      setFilters({ ...filters, month: null, year: null, startDate: null, endDate: null });
     } else {
       const monthNum = date.month() + 1; // month() returns 0-11
-      const year = filters.year ? parseInt(filters.year) : date.year();
+      const year = date.year();
       
       const startDate = dayjs(`${year}-${String(monthNum).padStart(2, '0')}-01`).format('YYYY-MM-DD');
       const endDate = dayjs(`${year}-${String(monthNum).padStart(2, '0')}-01`).endOf('month').format('YYYY-MM-DD');
@@ -88,7 +68,7 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
       setFilters({ 
         ...filters, 
         month: `${year}-${String(monthNum).padStart(2, '0')}`,
-        year: filters.year || date.format('YYYY'),
+        year: date.format('YYYY'),
         startDate, 
         endDate 
       });
@@ -104,15 +84,33 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
   };
 
   const handleDateFilterTypeChange = (dateFilterType: 'monthYear' | 'dateRange') => {
-    // Clear all date filters when switching type
-    setFilters({ 
-      ...filters, 
-      dateFilterType,
-      startDate: null,
-      endDate: null,
-      month: null,
-      year: null
-    });
+    if (dateFilterType === 'monthYear') {
+      // When switching to Month/Year, set to current month and year
+      const now = dayjs();
+      const monthNum = now.month() + 1;
+      const year = now.year();
+      const startDate = now.startOf('month').format('YYYY-MM-DD');
+      const endDate = now.endOf('month').format('YYYY-MM-DD');
+      
+      setFilters({ 
+        ...filters, 
+        dateFilterType,
+        month: `${year}-${String(monthNum).padStart(2, '0')}`,
+        year: now.format('YYYY'),
+        startDate,
+        endDate
+      });
+    } else {
+      // Clear all date filters when switching to date range
+      setFilters({ 
+        ...filters, 
+        dateFilterType,
+        startDate: null,
+        endDate: null,
+        month: null,
+        year: null
+      });
+    }
   };
 
   const handleStatusChange = (status: DailyTimesheetStatus | 'All') => {
@@ -138,11 +136,18 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
   };
 
   const handleReset = () => {
+    // Set to current month and year for reset
+    const now = dayjs();
+    const monthNum = now.month() + 1;
+    const year = now.year();
+    const startDate = now.startOf('month').format('YYYY-MM-DD');
+    const endDate = now.endOf('month').format('YYYY-MM-DD');
+    
     const resetFilters: TimesheetFilters = {
-      startDate: null,
-      endDate: null,
-      month: null,
-      year: null,
+      startDate,
+      endDate,
+      month: `${year}-${String(monthNum).padStart(2, '0')}`,
+      year: now.format('YYYY'),
       status: 'All',
       filterBy: 'all',
       projectId: 'All',
@@ -168,21 +173,21 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
       }}
       PaperProps={{
         sx: {
-          p: 3,
-          minWidth: 500,
-          maxWidth: 600,
+          p: 2,
+          minWidth: 450,
+          maxWidth: 500,
         },
       }}
     >
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+      <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, fontSize: '1rem' }}>
         Filter Timesheets
       </Typography>
-      <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 1.5 }} />
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {/* Date Filter Type Selection */}
         <FormControl component="fieldset">
-          <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
+          <FormLabel component="legend" sx={{ mb: 0.5, fontSize: '0.875rem', fontWeight: 600 }}>
             Date Filter
           </FormLabel>
           <RadioGroup
@@ -200,18 +205,8 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box sx={{ flex: 1 }}>
               <DatePickerAtom
-                label="Filter By Year"
-                value={filters.year ? dayjs(filters.year) : null}
-                onChange={handleYearChange}
-                disabled={false}
-                views={['year']}
-                openTo="year"
-              />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <DatePickerAtom
-                label="Filter By Month"
-                value={filters.month ? dayjs(filters.month) : null}
+                label="Filter by Month/Year"
+                value={filters.month ? dayjs(filters.month, 'YYYY-MM') : null}
                 onChange={handleMonthChange}
                 disabled={false}
                 views={['year', 'month']}
@@ -247,16 +242,17 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
           </Select>
         </FormControl>
 
-        <Divider sx={{ my: 1 }} />
+        <Divider sx={{ my: 0.5 }} />
 
         {/* Filter By: Project or Team */}
         <FormControl component="fieldset">
-          <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
+          <FormLabel component="legend" sx={{ mb: 0.5, fontSize: '0.875rem', fontWeight: 600 }}>
             Filter By
           </FormLabel>
           <RadioGroup
             value={filters.filterBy}
             onChange={(e) => handleFilterByChange(e.target.value as 'all' | 'project' | 'team')}
+            row
           >
             <FormControlLabel value="all" control={<Radio size="small" />} label="All" />
             <FormControlLabel value="project" control={<Radio size="small" />} label="Project" />
@@ -303,7 +299,7 @@ const MyTimesheetFilterPopover: React.FC<MyTimesheetFilterPopoverProps> = ({
         )}
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 1.5 }} />
 
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
