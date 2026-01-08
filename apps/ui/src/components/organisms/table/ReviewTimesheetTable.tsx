@@ -30,6 +30,7 @@ interface ReviewTimesheetTableProps {
   filters?: ReviewTimesheetFilters;
   supervisedProjectIds?: string[];
   supervisedTeamIds?: string[];
+  nonDeptTeamEmployeeIds?: string[];
   initialEmployeeId?: string | null;
 }
 
@@ -38,6 +39,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
   filters,
   supervisedProjectIds = [],
   supervisedTeamIds = [],
+  nonDeptTeamEmployeeIds = [],
   initialEmployeeId = null
 }) => {
   const {
@@ -266,6 +268,7 @@ const ReviewTimesheetTable: React.FC<ReviewTimesheetTableProps> = ({
                         filters={filters}
                         supervisedProjectIds={supervisedProjectIds}
                         supervisedTeamIds={supervisedTeamIds}
+                        nonDeptTeamEmployeeIds={nonDeptTeamEmployeeIds}
                       />
                     </Box>
                   </Box>

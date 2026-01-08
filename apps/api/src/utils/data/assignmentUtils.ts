@@ -85,6 +85,34 @@ export const getSupervisedUserIds = async (supervisorId: string): Promise<string
 };
 
 /**
+ * Get employee IDs from non-department teams (isDepartment: false) supervised by a supervisor
+ * These employees' ALL timesheets can be approved/rejected/edited by the supervisor
+ * regardless of which project/team the timesheet belongs to
+ */
+export const getNonDepartmentTeamEmployeeIds = async (supervisorId: string): Promise<string[]> => {
+  const nonDepartmentTeams = await TeamModel.find({ 
+    supervisor: supervisorId,
+    isDepartment: false 
+  }).lean();
+  
+  const employeeIds = Array.from(
+    new Set(
+      nonDepartmentTeams.flatMap(t => {
+        if (!t.members) return [];
+        return t.members.map(m => {
+          // Handle both ObjectId and populated User objects
+          if (typeof m === 'string') return m;
+          if (m && typeof m === 'object' && '_id' in m) return m._id.toString();
+          return m.toString();
+        });
+      })
+    )
+  );
+  
+  return employeeIds;
+};
+
+/**
  * Get the project IDs and team IDs that a supervisor supervises
  * Used to verify if a supervisor has permission to approve/reject/edit specific timesheets
  */

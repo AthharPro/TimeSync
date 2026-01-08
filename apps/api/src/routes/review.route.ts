@@ -6,7 +6,8 @@ import {
   getEmployeeTimesheetsForReviewHandler,
   approveTimesheetsHandler,
   rejectTimesheetsHandler,
-  updateEmployeeTimesheetHandler
+  updateEmployeeTimesheetHandler,
+  getNonDepartmentTeamEmployeeIdsHandler
 } from '../controllers/review.controller';
 
 const reviewRoutes = Router();
@@ -15,6 +16,9 @@ const supervisorRoles = [UserRole.Supervisor, UserRole.SupervisorAdmin, UserRole
 
 // Get employees that the supervisor can review timesheets for
 reviewRoutes.get('/employees', authenticate(supervisorRoles), getSupervisedEmployeesForReviewHandler);
+
+// Get employee IDs from non-department teams supervised by the supervisor
+reviewRoutes.get('/non-department-team-employees', authenticate(supervisorRoles), getNonDepartmentTeamEmployeeIdsHandler);
 
 // Get timesheets for a specific employee
 reviewRoutes.get('/employees/:employeeId/timesheets', authenticate(supervisorRoles), getEmployeeTimesheetsForReviewHandler);
