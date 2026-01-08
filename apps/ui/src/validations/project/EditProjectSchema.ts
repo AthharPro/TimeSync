@@ -24,20 +24,30 @@ export const editProjectSchema = yup.object().shape({
     then: (schema) => schema.required('Cost center is required'),
     otherwise: (schema) => schema.notRequired(),
   }),
-  startDate: yup.date().nullable().when('projectVisibility', {
-    is: (val: string) => val !== 'public',
-    then: (schema) => schema.required('Start date is required'),
-    otherwise: (schema) => schema.notRequired(),
-  }),
+  startDate: yup
+    .date()
+    .nullable()
+    .transform((value, originalValue) => {
+      if (!originalValue || originalValue === '' || originalValue === 'Invalid Date') return null;
+      const date = new Date(originalValue);
+      return isNaN(date.getTime()) ? null : date;
+    })
+    .notRequired(),
   endDate: yup
     .date()
     .nullable()
-    .when(['projectVisibility', 'startDate'], {
-      is: (visibility: string, startDate: Date) => visibility !== 'public' && startDate,
-      then: (schema) =>
-        schema
-          .required('End date is required')
-          .min(yup.ref('startDate'), 'End date must be after start date'),
-      otherwise: (schema) => schema.notRequired(),
+    .transform((value, originalValue) => {
+      if (!originalValue || originalValue === '' || originalValue === 'Invalid Date') return null;
+      const date = new Date(originalValue);
+      return isNaN(date.getTime()) ? null : date;
+    })
+    .notRequired()
+    .test('end-date-after-start', 'End date must be after start date', function (value) {
+      const { startDate } = this.parent;
+      if (!startDate || !value) return true;
+      const start = new Date(startDate);
+      const end = new Date(value);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return true;
+      return end >= start;
     }),
 });

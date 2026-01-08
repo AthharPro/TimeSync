@@ -10,28 +10,8 @@ import CostCenterSelect from './CostCenter';
 import ProjectVisibility from './ProjectVisibility';
 import DatePickerAtom from '../../atoms/report/DatePickerAtom';
 import dayjs from 'dayjs';
+import {EditProjectFormProps} from '../../../interfaces/project/IProject';
 
-export interface EditProjectFormData {
-  projectName: string;
-  description: string;
-  projectVisibility: string;
-  billable?: 'yes' | 'no';
-  costCenter?: string;
-  projectType?: string;
-  clientName?: string;
-  startDate?: Date | null;
-  endDate?: Date | null;
-}
-
-export interface EditProjectFormProps {
-  control: Control<EditProjectFormData>;
-  errors: FieldErrors<EditProjectFormData>;
-  isValid: boolean;
-  isSubmitting: boolean;
-  onCancel: () => void;
-  onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
-  projectVisibility: string;
-}
 
 const EditProjectForm: React.FC<EditProjectFormProps> = ({
   control,
@@ -184,6 +164,8 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
                     label="Start Date"
                     value={field.value ? dayjs(field.value) : null}
                     onChange={(date) => field.onChange(date ? date.toDate() : null)}
+                    error={!!errors.startDate}
+                    helperText={errors.startDate?.message}
                   />
                 )}
               />
@@ -206,6 +188,8 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
                         minDate={
                           startField.value ? dayjs(startField.value) : undefined
                         }
+                        error={!!errors.endDate}
+                        helperText={errors.endDate?.message}
                       />
                     )}
                   />
@@ -237,7 +221,6 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
           <BaseBtn
             type="submit"
             sx={{ mt: 2 }}
-            disabled={!isValid || isSubmitting}
           >
             Save Changes
           </BaseBtn>
