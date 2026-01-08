@@ -91,6 +91,7 @@ function ReviewTimesheetWindow() {
       projectId: 'All',
       teamId: 'All',
       filterEmployees: 'all' as const,
+      dateFilterType: 'monthYear' as const,
     };
   }, []);
 

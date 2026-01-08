@@ -19,32 +19,58 @@ import { IMyTimesheetTableEntry } from '../../../interfaces/layout/ITableProps';
 import { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
 import StatusChip from '../../atoms/other/Icon/StatusChip';
 
-// Optimized debounced update that delays both Redux and backend updates
+// Optimized debounced update that immediately updates Redux but debounces backend sync
 const createDebouncedUpdate = (
   updateFn: (id: string, updates: Partial<IMyTimesheetTableEntry>) => void,
   syncFn: (id: string, updates: Partial<IMyTimesheetTableEntry>) => Promise<void>,
   delay = 900
 ) => {
   const timers = new Map<string, NodeJS.Timeout>();
+  const pendingUpdates = new Map<string, Partial<IMyTimesheetTableEntry>>();
   
-  return (id: string, updates: Partial<IMyTimesheetTableEntry>) => {
+  const cancel = (id: string) => {
+    // Cancel pending timer and clear updates for this ID
+    if (timers.has(id)) {
+      const timer = timers.get(id);
+      if (timer) clearTimeout(timer);
+      timers.delete(id);
+    }
+    pendingUpdates.delete(id);
+  };
+  
+  const debouncedFn = (id: string, updates: Partial<IMyTimesheetTableEntry>) => {
+    // Immediately update Redux state for responsive UI
+    updateFn(id, updates);
+    
+    // Accumulate updates for this ID
+    const existing = pendingUpdates.get(id) || {};
+    const merged = { ...existing, ...updates };
+    pendingUpdates.set(id, merged);
+    
     // Clear existing timer for this ID
     if (timers.has(id)) {
       const timer = timers.get(id);
       if (timer) clearTimeout(timer);
     }
     
-    // Debounce both Redux update and backend sync
+    // Debounce only the backend sync
     const timer = setTimeout(() => {
-      // Update Redux state
-      updateFn(id, updates);
-      // Sync to backend
-      syncFn(id, updates);
+      const finalUpdates = pendingUpdates.get(id);
+      if (finalUpdates) {
+        // Sync accumulated updates to backend
+        syncFn(id, finalUpdates);
+        pendingUpdates.delete(id);
+      }
       timers.delete(id);
     }, delay);
     
     timers.set(id, timer);
   };
+  
+  // Attach cancel method to the debounced function
+  debouncedFn.cancel = cancel;
+  
+  return debouncedFn;
 };
 
 interface MyTimesheetTableProps {
@@ -84,12 +110,21 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
   useEffect(() => {
     // Only load if filters are provided (table view should always have filters)
     if (filters && filters.startDate && filters.endDate) {
-      const startDate = new Date(filters.startDate);
-      const endDate = new Date(filters.endDate);
+      // Parse dates carefully to avoid timezone issues
+      // When creating Date from YYYY-MM-DD string, it's interpreted as UTC midnight
+      // We need to ensure we get the local date at midnight
+      const [startYear, startMonth, startDay] = filters.startDate.split('-').map(Number);
+      const [endYear, endMonth, endDay] = filters.endDate.split('-').map(Number);
+      
+      // Create dates in local timezone
+      const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+      const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
       
       console.log('MyTimesheetTable - Loading timesheets for filtered date range:', {
-        startDate: filters.startDate,
-        endDate: filters.endDate,
+        filterStartDate: filters.startDate,
+        filterEndDate: filters.endDate,
+        actualStartDate: startDate.toISOString(),
+        actualEndDate: endDate.toISOString(),
       });
       
       loadTimesheets(startDate, endDate);
@@ -191,13 +226,19 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
         if (filters.startDate) {
           const startDate = new Date(filters.startDate);
           startDate.setHours(0, 0, 0, 0);
-          if (timesheet.date < startDate) return false;
+          // Normalize timesheet date to remove time component for accurate comparison
+          const timesheetDate = new Date(timesheet.date);
+          timesheetDate.setHours(0, 0, 0, 0);
+          if (timesheetDate < startDate) return false;
         }
         
         if (filters.endDate) {
           const endDate = new Date(filters.endDate);
           endDate.setHours(23, 59, 59, 999);
-          if (timesheet.date > endDate) return false;
+          // Normalize timesheet date to end of day for accurate comparison
+          const timesheetDate = new Date(timesheet.date);
+          timesheetDate.setHours(23, 59, 59, 999);
+          if (timesheetDate > endDate) return false;
         }
 
         // Filter by status
@@ -205,10 +246,15 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
           if (timesheet.status !== filters.status) return false;
         }
 
-        // Filter by project (comparing with original project ID from newTimesheets)
-        if (filters.project && filters.project !== 'All') {
+        // Filter by project or team based on filterBy setting
+        if (filters.filterBy === 'project' && filters.projectId && filters.projectId !== 'All') {
           const originalTimesheet = newTimesheets.find(t => t.id === timesheet.id);
-          if (originalTimesheet && originalTimesheet.project !== filters.project) return false;
+          if (originalTimesheet && originalTimesheet.project !== filters.projectId) return false;
+        }
+
+        if (filters.filterBy === 'team' && filters.teamId && filters.teamId !== 'All') {
+          const originalTimesheet = newTimesheets.find(t => t.id === timesheet.id);
+          if (originalTimesheet && originalTimesheet.team !== filters.teamId) return false;
         }
 
         return true;
@@ -261,33 +307,64 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
     });
   };
 
-  const handleProjectChange = (id: string, newProjectName: string | null | undefined) => {
+  const handleProjectChange = async (id: string, newProjectName: string | null | undefined) => {
     if (newProjectName !== null && newProjectName !== undefined) {
+      // Cancel any pending debounced updates for this row to prevent stale data from being sent
+      debouncedUpdateRef.current.cancel(id);
+      
       // Find the project ID from the project name
       const selectedProject = myProjects.find(proj => proj.projectName === newProjectName);
       // If not a project, check if it's a team
       const selectedTeam = !selectedProject ? myTeams.find(team => team.teamName === newProjectName) : null;
       
       if (selectedProject) {
-        // Store the selected project ID for this row
+        // Immediately update UI with project name and clear task
+        // Use projectName for display, and project for the ID
+        updateTimesheet(id, { 
+          project: selectedProject._id,  // Store ID in project field
+          projectName: newProjectName,    // Store name in projectName field for display
+          task: '',                       // Clear task ID
+          taskName: ''                    // Clear task name
+        });
+        
+        // Load tasks for this project BEFORE updating selectedProjects
+        // This ensures tasks are available when the component re-renders
+        await loadTasks(selectedProject._id);
+        loadedProjectsRef.current.add(selectedProject._id);
+        
+        // Now update the selected project ID for this row
         setSelectedProjects(prev => ({ ...prev, [id]: selectedProject._id }));
         
-        // Load tasks for this project
-        loadTasks(selectedProject._id);
-        
-        // Update UI with project name and sync to backend with project ID
-        updateTimesheet(id, { project: newProjectName });
-        debouncedUpdateRef.current(id, { project: selectedProject._id });
+        // Immediately sync to backend to update project and clear task
+        try {
+          await syncUpdateTimesheet(id, { project: selectedProject._id, task: '' });
+        } catch (error) {
+          console.error('Failed to sync project and clear task:', error);
+        }
       } else if (selectedTeam) {
-        // Store the selected team ID for this row
+        // Immediately update UI with team name and clear task
+        // Use teamName for display, and team for the ID
+        updateTimesheet(id, { 
+          team: selectedTeam._id,      // Store ID in team field
+          teamName: newProjectName,    // Store name in teamName field for display
+          task: '',                    // Clear task ID
+          taskName: ''                 // Clear task name
+        });
+        
+        // Load tasks for this team BEFORE updating selectedProjects
+        // This ensures tasks are available when the component re-renders
+        await loadTasks(selectedTeam._id);
+        loadedProjectsRef.current.add(selectedTeam._id);
+        
+        // Now update the selected team ID for this row
         setSelectedProjects(prev => ({ ...prev, [id]: selectedTeam._id }));
         
-        // Load tasks for this team
-        loadTasks(selectedTeam._id);
-        
-        // Update UI with team name and sync to backend with team ID
-        updateTimesheet(id, { project: newProjectName });
-        debouncedUpdateRef.current(id, { team: selectedTeam._id });
+        // Immediately sync to backend to update team and clear task
+        try {
+          await syncUpdateTimesheet(id, { team: selectedTeam._id, task: '' });
+        } catch (error) {
+          console.error('Failed to sync team and clear task:', error);
+        }
       } else {
         console.warn('Project or team not found for name:', newProjectName);
       }

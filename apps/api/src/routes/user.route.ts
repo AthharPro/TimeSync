@@ -6,7 +6,7 @@ import authenticate from '../middleware/authenticate';
 const router = Router();
 
 router.get("/", authenticate(), getAllUsersHandler);
-router.post("/admin", registerHandler(UserRole.Admin));
+router.post("/admin", authenticate([UserRole.SuperAdmin]), registerHandler(UserRole.Admin));
 router.post("/employee", authenticate([UserRole.Admin, UserRole.SupervisorAdmin]), registerHandler(UserRole.Emp));
 router.put("/:id", authenticate([UserRole.Admin, UserRole.SupervisorAdmin, UserRole.SuperAdmin]), updateUserHandler);
 router.post("/bulk", authenticate([UserRole.Admin, UserRole.SupervisorAdmin, UserRole.SuperAdmin]), bulkCreateUsers);

@@ -54,7 +54,10 @@ function MyTimesheetWindow() {
       month,
       year,
       status: 'All' as const,
-      project: 'All',
+      filterBy: 'all' as const,
+      projectId: 'All',
+      teamId: 'All',
+      dateFilterType: 'monthYear' as const,
     };
   }, []);
 
