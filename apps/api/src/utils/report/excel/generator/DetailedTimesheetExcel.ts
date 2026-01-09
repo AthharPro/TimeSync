@@ -233,10 +233,17 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
    * Mirrors the PDF logic for locating the logo so both outputs stay consistent.
    */
   private tryAddLogoImage(): number | null {
+    const runtimeAssetPath = path.join(process.cwd(), 'assets', 'logo.png');
+
+    // Local dev fallback (nx serve / ts-node)
+    const devAssetPath = path.join(
+      process.cwd(),
+      'apps/api/src/assets/logo.png'
+    );
+
     const possibleLogoPaths = [
-      path.join(__dirname, '../../../../assets/logo.png'),
-      path.join(process.cwd(), 'apps/api/src/assets/logo.png'),
-      path.join(process.cwd(), 'assets/logo.png'),
+      runtimeAssetPath, // Azure + production build
+      devAssetPath, // Local development
     ];
 
     for (const logoPath of possibleLogoPaths) {
@@ -248,7 +255,7 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
           });
         }
       } catch {
-        // continue searching other paths
+        // ignore and continue
       }
     }
 
@@ -263,9 +270,18 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
     const brandRow = this.worksheet.addRow(['', '', 'ALLION']);
     brandRow.font = { bold: true, size: 22, color: { argb: 'FF035082' } };
     brandRow.height = 26;
-    this.worksheet.mergeCells(brandRow.number, 3, brandRow.number, totalColumns);
+    this.worksheet.mergeCells(
+      brandRow.number,
+      3,
+      brandRow.number,
+      totalColumns
+    );
 
-    const nameRow = this.worksheet.addRow(['', '', 'Allion Technologies (Pvt) Ltd']);
+    const nameRow = this.worksheet.addRow([
+      '',
+      '',
+      'Allion Technologies (Pvt) Ltd',
+    ]);
     nameRow.font = { bold: true, size: 12 };
     this.worksheet.mergeCells(nameRow.number, 3, nameRow.number, totalColumns);
 
@@ -364,12 +380,15 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
 
       // Filter out 'Other' and 'Leave' categories
       const filteredCategories = timesheetWeek.categories.filter(
-        (category: any) => category.category !== 'Other' && category.category !== 'Leave'
+        (category: any) =>
+          category.category !== 'Other' && category.category !== 'Leave'
       );
 
       for (const category of filteredCategories) {
         for (const item of category.items) {
-          const dailyHours = Array.isArray(item.dailyHours) ? item.dailyHours : [];
+          const dailyHours = Array.isArray(item.dailyHours)
+            ? item.dailyHours
+            : [];
 
           let title: string | null = null;
           const includeWork = false;
@@ -402,8 +421,8 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
               weekEnd,
               title,
               includeWork,
-              work: includeWork ? (item.work || '') : undefined,
-              dailyHours: [0, 0, 0, 0, 0, 0, 0]
+              work: includeWork ? item.work || '' : undefined,
+              dailyHours: [0, 0, 0, 0, 0, 0, 0],
             });
           }
 
@@ -411,8 +430,11 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
           if (aggregatedItem) {
             // Sum up the hours for each day
             dailyHours.forEach((hours, index) => {
-              const numHours = typeof hours === 'string' ? parseFloat(hours) : (hours || 0);
-              aggregatedItem.dailyHours[index] += isNaN(numHours) ? 0 : numHours;
+              const numHours =
+                typeof hours === 'string' ? parseFloat(hours) : hours || 0;
+              aggregatedItem.dailyHours[index] += isNaN(numHours)
+                ? 0
+                : numHours;
             });
           }
         }
@@ -421,7 +443,15 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
 
     // Second pass: create rows from aggregated data
     weekTitleMap.forEach((aggregatedItem) => {
-      const { weekStartRaw, weekStart, weekEnd, title, includeWork, work, dailyHours } = aggregatedItem;
+      const {
+        weekStartRaw,
+        weekStart,
+        weekEnd,
+        title,
+        includeWork,
+        work,
+        dailyHours,
+      } = aggregatedItem;
 
       // Ensure table container for this title (each project/team gets separate table)
       if (!tablesByTitle.has(title)) {
@@ -431,13 +461,12 @@ export class DetailedTimesheetExcel extends BaseExcelGenerator {
       if (!table) return;
 
       // Calculate row total from Mon-Fri (indices 0-4)
-      const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => sum + hours, 0);
+      const rowTotal = dailyHours
+        .slice(0, 5)
+        .reduce((sum, hours) => sum + hours, 0);
 
       // Build row - one row per unique week+project/team combination
-      const baseCells: (string | number)[] = [
-        weekStart,
-        weekEnd,
-      ];
+      const baseCells: (string | number)[] = [weekStart, weekEnd];
       const workCells: (string | number)[] = includeWork ? [work || ''] : [];
       const dayCells: (string | number)[] = [
         this.formatHoursForDisplay(dailyHours[0]),

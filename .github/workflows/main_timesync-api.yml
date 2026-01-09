@@ -35,6 +35,11 @@ jobs:
         run: |
           cp package.json dist/apps/api/package.json
 
+      - name: Copy assets to build output
+        run: |
+          mkdir -p dist/apps/api/assets
+          cp -r apps/api/src/assets/* dist/apps/api/assets/
+
       - name: Install production dependencies
         run: |
           cd dist/apps/api
