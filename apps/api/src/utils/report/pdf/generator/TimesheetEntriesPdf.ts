@@ -12,18 +12,18 @@ type TimesheetEntryRow = {
 };
 
 type FlatEntry = {
-  date: string; 
+  date: string;
   originalDate: string;
   responsible: string;
   description: string;
-  timeSpent: string; 
+  timeSpent: string;
   projectName?: string;
 };
 
 export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
   private components: ProfessionalPDFComponents;
   private pageNumber = 1;
-  private latoFont = 'Helvetica'; 
+  private latoFont = 'Helvetica';
   private logoPath: string | null = null;
   private pageStartY = 0; // Track where content starts on current page
 
@@ -89,32 +89,38 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     if (data.length > 1) {
       // Collect all unique project/team names from all tables
       const allTitles = new Set<string>();
-      data.forEach(emp => {
-        emp.tables.forEach(table => {
+      data.forEach((emp) => {
+        emp.tables.forEach((table) => {
           allTitles.add(table.title);
         });
       });
-      
+
       // Determine the main title based on common pattern
       let mainTitle = '';
       const titlesArray = Array.from(allTitles);
-      
+
       // Check if all titles are for the same project or team
-      const projectTitles = titlesArray.filter(t => t.includes('Project:'));
-      const teamTitles = titlesArray.filter(t => t.includes('Team:'));
-      
+      const projectTitles = titlesArray.filter((t) => t.includes('Project:'));
+      const teamTitles = titlesArray.filter((t) => t.includes('Team:'));
+
       // Check if ALL titles are teams (and NO projects)
-      if (teamTitles.length > 0 && projectTitles.length === 0 && titlesArray.length === teamTitles.length) {
+      if (
+        teamTitles.length > 0 &&
+        projectTitles.length === 0 &&
+        titlesArray.length === teamTitles.length
+      ) {
         // All entries are from teams only
-        const teamName = this.cleanProjectName(teamTitles[0].split('Team:')[1].trim());
+        const teamName = this.cleanProjectName(
+          teamTitles[0].split('Team:')[1].trim()
+        );
         mainTitle = `Timesheet Entries for ${teamName}`;
-        
+
         data.forEach((employeeData, employeeIndex) => {
           // Add new page for each employee after the first
           if (employeeIndex > 0) {
             this.doc.addPage();
           }
-          
+
           // Add team title for each employee on their page
           this.addProjectTitle(mainTitle);
 
@@ -124,19 +130,25 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           // Add single table with all entries for this employee
           this.addTimesheetTable(allEntries);
         });
-      } 
+      }
       // Check if ALL titles are projects (and NO teams)
-      else if (projectTitles.length > 0 && teamTitles.length === 0 && titlesArray.length === projectTitles.length) {
+      else if (
+        projectTitles.length > 0 &&
+        teamTitles.length === 0 &&
+        titlesArray.length === projectTitles.length
+      ) {
         // All entries are from projects only
-        const projectName = this.cleanProjectName(projectTitles[0].split('Project:')[1].trim());
+        const projectName = this.cleanProjectName(
+          projectTitles[0].split('Project:')[1].trim()
+        );
         mainTitle = `Timesheet Entries for ${projectName} Project`;
-        
+
         data.forEach((employeeData, employeeIndex) => {
           // Add new page for each employee after the first
           if (employeeIndex > 0) {
             this.doc.addPage();
           }
-          
+
           // Add project title for each employee on their page
           this.addProjectTitle(mainTitle);
 
@@ -146,11 +158,11 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           // Add single table with all entries for this employee
           this.addTimesheetTable(allEntries);
         });
-      } 
+      }
       // Mixed project and team entries
       else if (projectTitles.length > 0 && teamTitles.length > 0) {
         mainTitle = 'Timesheet Entries - Mixed Work';
-        
+
         // Add main project/team title
         this.addProjectTitle(mainTitle);
 
@@ -169,11 +181,11 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           // Add single table with all entries for this employee
           this.addTimesheetTable(allEntries);
         });
-      } 
+      }
       // Multiple projects
       else if (projectTitles.length > 1) {
         mainTitle = 'Timesheet Entries - Multiple Projects';
-        
+
         // Add main project/team title
         this.addProjectTitle(mainTitle);
 
@@ -192,11 +204,11 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           // Add single table with all entries for this employee
           this.addTimesheetTable(allEntries);
         });
-      } 
+      }
       // Multiple teams
       else if (teamTitles.length > 1) {
         mainTitle = 'Timesheet Entries - Multiple Teams';
-        
+
         // Add main project/team title
         this.addProjectTitle(mainTitle);
 
@@ -215,11 +227,11 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           // Add single table with all entries for this employee
           this.addTimesheetTable(allEntries);
         });
-      } 
+      }
       // Fallback
       else {
         mainTitle = 'Timesheet Entries';
-        
+
         // Add main project/team title
         this.addProjectTitle(mainTitle);
 
@@ -242,66 +254,70 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     } else {
       // Single employee (individual user filter) - show entries grouped by project/team
       const employeeData = data[0];
-      
+
       // Collect all unique project/team names from all tables (excluding 'Other' and 'Leave')
       const allTitles = new Set<string>();
       employeeData.tables
-        .filter(table => table.title !== 'Other' && table.title !== 'Leave')
-        .forEach(table => {
+        .filter((table) => table.title !== 'Other' && table.title !== 'Leave')
+        .forEach((table) => {
           allTitles.add(table.title);
         });
-      
+
       // Determine the main title based on common pattern
       let mainTitle = '';
       const titlesArray = Array.from(allTitles);
-      
+
       // Check if all titles are for the same project or team
-      const projectTitles = titlesArray.filter(t => t.includes('Project:'));
-      const teamTitles = titlesArray.filter(t => t.includes('Team:'));
-      
+      const projectTitles = titlesArray.filter((t) => t.includes('Project:'));
+      const teamTitles = titlesArray.filter((t) => t.includes('Team:'));
+
       // Check if user has ONLY ONE team (and NO projects)
       if (teamTitles.length === 1 && projectTitles.length === 0) {
         // Single team only
-        const teamName = this.cleanProjectName(teamTitles[0].split('Team:')[1].trim());
+        const teamName = this.cleanProjectName(
+          teamTitles[0].split('Team:')[1].trim()
+        );
         mainTitle = `Timesheet Entries for ${teamName}`;
-        
+
         // Check space for title + table (checkPageBreak already accounts for footer)
         const requiredSpace = 60 + 30 + 25; // title + header + 1 row minimum
         this.checkPageBreak(requiredSpace);
-        
+
         // Add main team title
         this.addProjectTitle(mainTitle);
-        
+
         // Flatten all entries for this employee
         const allEntries = this.flattenEmployeeEntries(employeeData);
 
         // Add single table with all entries
         this.addTimesheetTable(allEntries);
-      } 
+      }
       // Check if user has ONLY ONE project (and NO teams)
       else if (projectTitles.length === 1 && teamTitles.length === 0) {
         // Single project only
-        const projectName = this.cleanProjectName(projectTitles[0].split('Project:')[1].trim());
+        const projectName = this.cleanProjectName(
+          projectTitles[0].split('Project:')[1].trim()
+        );
         mainTitle = `Timesheet Entries for ${projectName}`;
-        
+
         // Check space for title + table (checkPageBreak already accounts for footer)
         const requiredSpace = 60 + 30 + 25; // title + header + 1 row minimum
         this.checkPageBreak(requiredSpace);
-        
+
         // Add main project title
         this.addProjectTitle(mainTitle);
-        
+
         // Flatten all entries for this employee
         const allEntries = this.flattenEmployeeEntries(employeeData);
 
         // Add single table with all entries
         this.addTimesheetTable(allEntries);
-      } 
+      }
       // User has multiple projects/teams or mixed entries - show separate tables for each
       else if (titlesArray.length > 1) {
         // Get entries grouped by project/team
         const groupedEntries = this.getEmployeeEntriesByProject(employeeData);
-        
+
         // Create separate table for each project/team with its own title
         groupedEntries.forEach((group, index) => {
           // Check if we have enough space for spacing + title + table header + at least 1 row
@@ -311,33 +327,34 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
           const headerHeight = 30;
           const rowHeight = 25;
           const minRowsForTable = 1; // Allow table to start with just 1 row
-          const requiredSpace = spacing + titleSpace + headerHeight + (rowHeight * minRowsForTable);
+          const requiredSpace =
+            spacing + titleSpace + headerHeight + rowHeight * minRowsForTable;
           this.checkPageBreak(requiredSpace);
-          
+
           // Add spacing between tables (after page break check)
           if (index > 0) {
             this.currentY += 20;
           }
-          
+
           // Add title for this project/team
           const cleanName = this.cleanProjectName(group.projectName);
           this.addProjectTitle(`Timesheet Entries for ${cleanName}`);
-          
+
           // Add table for this project/team
           this.addTimesheetTable(group.entries);
         });
-      } 
+      }
       // Fallback - no clear project/team info
       else {
         mainTitle = 'Timesheet Entries';
-        
+
         // Check space for title + table (checkPageBreak already accounts for footer)
         const requiredSpace = 60 + 30 + 25; // title + header + 1 row minimum
         this.checkPageBreak(requiredSpace);
-        
+
         // Add main title
         this.addProjectTitle(mainTitle);
-        
+
         // Flatten all entries for this employee
         const allEntries = this.flattenEmployeeEntries(employeeData);
 
@@ -362,30 +379,25 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
   }
 
   private findLogoPath(): void {
-    // Try to find logo from multiple possible locations
     const possibleLogoPaths = [
-      // API assets folder (compiled location)
-      path.join(__dirname, '../../../../assets/logo.png'),
-      path.join(__dirname, '../../../../assets/logo.png'),
-      // API assets folder (source location)
+      // Production / Azure App Service (runtime)
+      path.join(process.cwd(), 'assets', 'logo.png'),
+
+      // Local development (nx serve / ts-node)
       path.join(process.cwd(), 'apps/api/src/assets/logo.png'),
-      path.join(process.cwd(), 'apps/api/src/assets/logo.png'),
-     
     ];
 
     for (const logoPath of possibleLogoPaths) {
       try {
         if (fs.existsSync(logoPath)) {
           this.logoPath = logoPath;
-          break;
+          return;
         }
       } catch {
-        // Continue to next path
-        continue;
+        // ignore and continue
       }
     }
   }
- 
 
   private addCompanyHeader(): void {
     const headerY = 30;
@@ -397,7 +409,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     // Draw logo if available
     if (this.logoPath) {
       try {
-        this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
+        this.doc.image(this.logoPath, logoX, logoY, {
+          width: logoSize,
+          height: logoSize,
+        });
       } catch {
         // Logo loading failed, continue without it
       }
@@ -433,19 +448,27 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         .lineWidth(1);
       const adjustedLineY = headerY + 10;
       const adjustedCompanyInfoY = adjustedLineY + 15;
-      
+
       this.doc
         .fontSize(12)
         .fillColor('#000000')
         .font(this.latoFont)
-        .text('Allion Technologies (Pvt) Ltd', companyInfoX, adjustedCompanyInfoY);
+        .text(
+          'Allion Technologies (Pvt) Ltd',
+          companyInfoX,
+          adjustedCompanyInfoY
+        );
 
       this.doc
         .fontSize(9)
         .fillColor('#000000')
         .font(this.latoFont)
         .text('Level 11, MAGA ONE', companyInfoX, adjustedCompanyInfoY + 15)
-        .text('No.200, Narahenpita - Nawala Rd', companyInfoX, adjustedCompanyInfoY + 28)
+        .text(
+          'No.200, Narahenpita - Nawala Rd',
+          companyInfoX,
+          adjustedCompanyInfoY + 28
+        )
         .text('Colombo 00500', companyInfoX, adjustedCompanyInfoY + 41)
         .text('Sri Lanka', companyInfoX, adjustedCompanyInfoY + 54);
 
@@ -481,7 +504,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     // Draw logo if available
     if (this.logoPath) {
       try {
-        this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
+        this.doc.image(this.logoPath, logoX, logoY, {
+          width: logoSize,
+          height: logoSize,
+        });
       } catch {
         // Logo loading failed, continue without it
       }
@@ -517,22 +543,30 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         .lineWidth(1);
       const adjustedLineY = headerY + 10;
       const adjustedCompanyInfoY = adjustedLineY + 15;
-      
+
       this.doc
         .fontSize(12)
         .fillColor('#000000')
         .font(this.latoFont)
-        .text('Allion Technologies (Pvt) Ltd', companyInfoX, adjustedCompanyInfoY);
+        .text(
+          'Allion Technologies (Pvt) Ltd',
+          companyInfoX,
+          adjustedCompanyInfoY
+        );
 
       this.doc
         .fontSize(9)
         .fillColor('#000000')
         .font(this.latoFont)
         .text('Level 11, MAGA ONE', companyInfoX, adjustedCompanyInfoY + 15)
-        .text('No.200, Narahenpita - Nawala Rd', companyInfoX, adjustedCompanyInfoY + 28)
+        .text(
+          'No.200, Narahenpita - Nawala Rd',
+          companyInfoX,
+          adjustedCompanyInfoY + 28
+        )
         .text('Colombo 00500', companyInfoX, adjustedCompanyInfoY + 41)
         .text('Sri Lanka', companyInfoX, adjustedCompanyInfoY + 54);
-      
+
       this.currentY = adjustedCompanyInfoY + 54 + 20;
       return;
     }
@@ -598,92 +632,36 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       .fontSize(18)
       .fillColor('#035082')
       .font(this.latoFont)
-      .text(`${employeeName}` , this.margin, this.currentY);
+      .text(`${employeeName}`, this.margin, this.currentY);
 
-   
     this.currentY += 50;
   }
 
-  private flattenEmployeeEntries(
-    employeeData: {
-      employeeName: string;
-      employeeEmail: string;
-      tables: Array<{ title: string; rows: TimesheetEntryRow[] }>;
-    }
-  ): FlatEntry[] {
+  private flattenEmployeeEntries(employeeData: {
+    employeeName: string;
+    employeeEmail: string;
+    tables: Array<{ title: string; rows: TimesheetEntryRow[] }>;
+  }): FlatEntry[] {
     const entries: FlatEntry[] = [];
 
     employeeData.tables
-      .filter(table => table.title !== 'Other' && table.title !== 'Leave')
+      .filter((table) => table.title !== 'Other' && table.title !== 'Leave')
       .forEach((table) => {
-      // Extract project name from table title
-      let projectName = 'All Projects';
-      if (table.title.startsWith('Project: ')) {
-        projectName = table.title.replace('Project: ', '');
-      } else if (table.title.startsWith('Team: ')) {
-        projectName = table.title.replace('Team: ', '');
-      } else {
-        projectName = table.title;
-      }
+        // Extract project name from table title
+        let projectName = 'All Projects';
+        if (table.title.startsWith('Project: ')) {
+          projectName = table.title.replace('Project: ', '');
+        } else if (table.title.startsWith('Team: ')) {
+          projectName = table.title.replace('Team: ', '');
+        } else {
+          projectName = table.title;
+        }
 
-      table.rows.forEach((row) => {
-        const hours = parseFloat(row.quantity) || 0;
-        const timeSpent = this.formatHoursToHHMM(hours);
+        table.rows.forEach((row) => {
+          const hours = parseFloat(row.quantity) || 0;
+          const timeSpent = this.formatHoursToHHMM(hours);
 
-        entries.push({
-          date: this.formatDateForTable(row.date),
-          originalDate: row.date, // Store original date for sorting
-          responsible: employeeData.employeeName,
-          description: row.description || '-',
-          timeSpent: timeSpent,
-          projectName: projectName,
-        });
-      });
-    });
-
-    // Sort entries by date (newest first)
-    entries.sort((a, b) => {
-      const dateCompare = new Date(b.originalDate).getTime() - new Date(a.originalDate).getTime();
-      if (dateCompare !== 0) return dateCompare;
-      return a.projectName.localeCompare(b.projectName);
-    });
-
-    return entries;
-  }
-
-  private getEmployeeEntriesByProject(
-    employeeData: {
-      employeeName: string;
-      employeeEmail: string;
-      tables: Array<{ title: string; rows: TimesheetEntryRow[] }>;
-    }
-  ): Array<{ projectName: string; entries: FlatEntry[] }> {
-    const projectMap = new Map<string, FlatEntry[]>();
-
-    employeeData.tables
-      .filter(table => table.title !== 'Other' && table.title !== 'Leave')
-      .forEach((table) => {
-      // Extract project name from table title
-      let projectName = 'All Projects';
-      if (table.title.startsWith('Project: ')) {
-        projectName = table.title.replace('Project: ', '');
-      } else if (table.title.startsWith('Team: ')) {
-        projectName = table.title.replace('Team: ', '');
-      } else {
-        projectName = table.title;
-      }
-
-      if (!projectMap.has(projectName)) {
-        projectMap.set(projectName, []);
-      }
-
-      table.rows.forEach((row) => {
-        const hours = parseFloat(row.quantity) || 0;
-        const timeSpent = this.formatHoursToHHMM(hours);
-
-        const array = projectMap.get(projectName);
-        if (array) {
-          array.push({
+          entries.push({
             date: this.formatDateForTable(row.date),
             originalDate: row.date, // Store original date for sorting
             responsible: employeeData.employeeName,
@@ -691,20 +669,76 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
             timeSpent: timeSpent,
             projectName: projectName,
           });
-        }
+        });
       });
+
+    // Sort entries by date (newest first)
+    entries.sort((a, b) => {
+      const dateCompare =
+        new Date(b.originalDate).getTime() - new Date(a.originalDate).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return a.projectName.localeCompare(b.projectName);
     });
 
-    // Sort entries by date (newest first) for each project
-    const result = Array.from(projectMap.entries()).map(([projectName, entries]) => {
-      entries.sort((a, b) => {
-        // Use originalDate for accurate sorting
-        const dateCompare = new Date(b.originalDate).getTime() - new Date(a.originalDate).getTime();
-        if (dateCompare !== 0) return dateCompare;
-        return a.responsible.localeCompare(b.responsible);
+    return entries;
+  }
+
+  private getEmployeeEntriesByProject(employeeData: {
+    employeeName: string;
+    employeeEmail: string;
+    tables: Array<{ title: string; rows: TimesheetEntryRow[] }>;
+  }): Array<{ projectName: string; entries: FlatEntry[] }> {
+    const projectMap = new Map<string, FlatEntry[]>();
+
+    employeeData.tables
+      .filter((table) => table.title !== 'Other' && table.title !== 'Leave')
+      .forEach((table) => {
+        // Extract project name from table title
+        let projectName = 'All Projects';
+        if (table.title.startsWith('Project: ')) {
+          projectName = table.title.replace('Project: ', '');
+        } else if (table.title.startsWith('Team: ')) {
+          projectName = table.title.replace('Team: ', '');
+        } else {
+          projectName = table.title;
+        }
+
+        if (!projectMap.has(projectName)) {
+          projectMap.set(projectName, []);
+        }
+
+        table.rows.forEach((row) => {
+          const hours = parseFloat(row.quantity) || 0;
+          const timeSpent = this.formatHoursToHHMM(hours);
+
+          const array = projectMap.get(projectName);
+          if (array) {
+            array.push({
+              date: this.formatDateForTable(row.date),
+              originalDate: row.date, // Store original date for sorting
+              responsible: employeeData.employeeName,
+              description: row.description || '-',
+              timeSpent: timeSpent,
+              projectName: projectName,
+            });
+          }
+        });
       });
-      return { projectName, entries };
-    });
+
+    // Sort entries by date (newest first) for each project
+    const result = Array.from(projectMap.entries()).map(
+      ([projectName, entries]) => {
+        entries.sort((a, b) => {
+          // Use originalDate for accurate sorting
+          const dateCompare =
+            new Date(b.originalDate).getTime() -
+            new Date(a.originalDate).getTime();
+          if (dateCompare !== 0) return dateCompare;
+          return a.responsible.localeCompare(b.responsible);
+        });
+        return { projectName, entries };
+      }
+    );
 
     return result;
   }
@@ -754,15 +788,19 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     });
 
     // Sort entries by date (newest first, then by responsible)
-    const result = Array.from(projectMap.entries()).map(([projectName, entries]) => {
-      entries.sort((a, b) => {
-        // Use originalDate for accurate sorting
-        const dateCompare = new Date(b.originalDate).getTime() - new Date(a.originalDate).getTime();
-        if (dateCompare !== 0) return dateCompare;
-        return a.responsible.localeCompare(b.responsible);
-      });
-      return { projectName, entries };
-    });
+    const result = Array.from(projectMap.entries()).map(
+      ([projectName, entries]) => {
+        entries.sort((a, b) => {
+          // Use originalDate for accurate sorting
+          const dateCompare =
+            new Date(b.originalDate).getTime() -
+            new Date(a.originalDate).getTime();
+          if (dateCompare !== 0) return dateCompare;
+          return a.responsible.localeCompare(b.responsible);
+        });
+        return { projectName, entries };
+      }
+    );
 
     return result;
   }
@@ -770,7 +808,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
   private formatHoursToHHMM(hours: number): string {
     const wholeHours = Math.floor(hours);
     const minutes = Math.round((hours - wholeHours) * 60);
-    return `${String(wholeHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    return `${String(wholeHours).padStart(2, '0')}:${String(minutes).padStart(
+      2,
+      '0'
+    )}`;
   }
 
   private parseHHMMToHours(timeStr: string): number {
@@ -800,7 +841,12 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       return;
     }
 
-    const headers = ['Date', 'Responsible', 'Description', 'Time Spent (Hours)'];
+    const headers = [
+      'Date',
+      'Responsible',
+      'Description',
+      'Time Spent (Hours)',
+    ];
     const columnWidths = [70, 130, 260, 70];
     const headerHeight = 30;
     const rowHeight = 25;
@@ -808,14 +854,17 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     const minRowsForTable = 3; // Minimum rows to show before allowing table to start
 
     // Check if we need a new page - ensure we have space for header + minimum rows + footer
-    const requiredSpace = headerHeight + (rowHeight * minRowsForTable) + footerSpace;
+    const requiredSpace =
+      headerHeight + rowHeight * minRowsForTable + footerSpace;
     this.checkPageBreak(requiredSpace);
 
     let tableStartY = this.currentY;
     let rowsOnCurrentPage = 0;
     // Account for footer (80px) when calculating available space
     // Header is already accounted for in currentY position
-    let maxRowsPerPage = Math.floor((this.pageHeight - this.currentY - this.margin - footerSpace) / rowHeight);
+    let maxRowsPerPage = Math.floor(
+      (this.pageHeight - this.currentY - this.margin - footerSpace) / rowHeight
+    );
 
     // Draw table header
     this.drawTableHeader(headers, columnWidths, headerHeight, tableStartY);
@@ -834,7 +883,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         this.currentY = tableStartY;
         rowsOnCurrentPage = 0;
         // Recalculate maxRowsPerPage for the new page
-        maxRowsPerPage = Math.floor((this.pageHeight - this.currentY - this.margin - footerSpace) / rowHeight);
+        maxRowsPerPage = Math.floor(
+          (this.pageHeight - this.currentY - this.margin - footerSpace) /
+            rowHeight
+        );
       }
 
       const rowY = this.currentY;
@@ -842,7 +894,12 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
 
       // Row background
       this.doc
-        .rect(this.margin, rowY, columnWidths.reduce((sum, w) => sum + w, 0), rowHeight)
+        .rect(
+          this.margin,
+          rowY,
+          columnWidths.reduce((sum, w) => sum + w, 0),
+          rowHeight
+        )
         .fill(bgColor)
         .stroke('#E2E8F0');
 
@@ -855,7 +912,9 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         .fontSize(9)
         .fillColor('#1E293B')
         .font(this.latoFont)
-        .text(entry.date, x + cellPadding, rowY + 7, { width: columnWidths[0] - cellPadding * 2 });
+        .text(entry.date, x + cellPadding, rowY + 7, {
+          width: columnWidths[0] - cellPadding * 2,
+        });
       x += columnWidths[0];
 
       // Responsible
@@ -885,7 +944,9 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
         .fontSize(9)
         .fillColor('#1E293B')
         .font(this.latoFont)
-        .text(entry.timeSpent, x + cellPadding, rowY + 7, { width: columnWidths[3] - cellPadding * 2 });
+        .text(entry.timeSpent, x + cellPadding, rowY + 7, {
+          width: columnWidths[3] - cellPadding * 2,
+        });
 
       // Column separators
       x = this.margin;
@@ -907,7 +968,11 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     this.currentY += 15;
   }
 
-  private addTotalRow(entries: FlatEntry[], columnWidths: number[], rowHeight: number): void {
+  private addTotalRow(
+    entries: FlatEntry[],
+    columnWidths: number[],
+    rowHeight: number
+  ): void {
     // Check if we need a new page for the total row
     this.checkPageBreak(rowHeight + 5);
 
@@ -926,22 +991,29 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
 
     // Draw total row background
     this.doc
-      .rect(this.margin, totalY, columnWidths.reduce((sum, w) => sum + w, 0), totalRowHeight)
+      .rect(
+        this.margin,
+        totalY,
+        columnWidths.reduce((sum, w) => sum + w, 0),
+        totalRowHeight
+      )
       .fill('white')
       .stroke('#E2E8F0');
 
     // Calculate position for "Total (Hours)" and total value (right-aligned in Time Spent column)
     const totalLabel = 'Total (Hours)';
-    const timeSpentColumnX = this.margin + columnWidths[0] + columnWidths[1] + columnWidths[2];
+    const timeSpentColumnX =
+      this.margin + columnWidths[0] + columnWidths[1] + columnWidths[2];
     const cellPadding = 8;
-    
+
     // Calculate text width to position them properly
     const totalLabelWidth = this.doc.widthOfString(totalLabel, { fontSize: 9 });
     const totalValueWidth = this.doc.widthOfString(totalHours, { fontSize: 9 });
     const spacing = 10; // Space between label and value
-    
+
     // Position: both right-aligned in the Time Spent column
-    const totalValueX = timeSpentColumnX + columnWidths[3] - cellPadding - totalValueWidth;
+    const totalValueX =
+      timeSpentColumnX + columnWidths[3] - cellPadding - totalValueWidth;
     const totalLabelX = totalValueX - spacing - totalLabelWidth;
 
     // Draw "Total (Hours)" label
@@ -961,10 +1033,20 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     this.currentY += totalRowHeight;
   }
 
-  private drawTableHeader(headers: string[], columnWidths: number[], headerHeight: number, startY: number): void {
+  private drawTableHeader(
+    headers: string[],
+    columnWidths: number[],
+    headerHeight: number,
+    startY: number
+  ): void {
     // Header background
     this.doc
-      .rect(this.margin, startY, columnWidths.reduce((sum, w) => sum + w, 0), headerHeight)
+      .rect(
+        this.margin,
+        startY,
+        columnWidths.reduce((sum, w) => sum + w, 0),
+        headerHeight
+      )
       .fill('white')
       .stroke('#E2E8F0');
 
@@ -973,7 +1055,9 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
     this.doc.fontSize(10).fillColor('#af7115').font(this.latoFont);
 
     headers.forEach((header, index) => {
-      this.doc.text(header, x + 8, startY + 9, { width: columnWidths[index] - 16 });
+      this.doc.text(header, x + 8, startY + 9, {
+        width: columnWidths[index] - 16,
+      });
       x += columnWidths[index];
     });
 
@@ -1005,7 +1089,8 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
   // Override to align page-break handling with header/footer spacing from base
   protected checkPageBreak(requiredSpace: number): void {
     const footerSpace = 80;
-    const availableSpace = this.pageHeight - this.currentY - this.margin - footerSpace;
+    const availableSpace =
+      this.pageHeight - this.currentY - this.margin - footerSpace;
 
     if (requiredSpace > availableSpace) {
       this.doc.addPage(); // addPage override will draw footer and header
@@ -1039,10 +1124,10 @@ export class TimesheetEntriesPdf extends ProfessionalBasePDFGenerator {
       .fontSize(8)
       .fillColor('#64748B')
       .font(this.latoFont)
-      .text(pageText, this.pageWidth - this.margin - pageTextWidth, footerY + 10);
+      .text(
+        pageText,
+        this.pageWidth - this.margin - pageTextWidth,
+        footerY + 10
+      );
   }
 }
-
-
-
-

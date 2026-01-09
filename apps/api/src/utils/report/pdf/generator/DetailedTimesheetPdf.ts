@@ -34,9 +34,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     this.setupHeaderAndFooter();
   }
 
-  generate(
-    data: IDetailedTimesheetReport[]
-  ): PDFDocument {
+  generate(data: IDetailedTimesheetReport[]): PDFDocument {
     // Add header with logo and company info on first page
     this.addCompanyHeader();
     this.pageStartY = this.currentY; // Track where content starts on first page
@@ -85,13 +83,11 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
   }
 
   private findLogoPath(): void {
-    // Try to find logo from multiple possible locations
     const possibleLogoPaths = [
-      // API assets folder (compiled location)
-      path.join(__dirname, '../../../../assets/logo.png'),
-      path.join(__dirname, '../../../../assets/logo.png'),
-      // API assets folder (source location)
-      path.join(process.cwd(), 'apps/api/src/assets/logo.png'),
+      // Production / Azure App Service (runtime)
+      path.join(process.cwd(), 'assets', 'logo.png'),
+
+      // Local development (nx serve / ts-node)
       path.join(process.cwd(), 'apps/api/src/assets/logo.png'),
     ];
 
@@ -99,11 +95,10 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       try {
         if (fs.existsSync(logoPath)) {
           this.logoPath = logoPath;
-          break;
+          return;
         }
       } catch {
-        // Continue to next path
-        continue;
+        // ignore and continue
       }
     }
   }
@@ -119,7 +114,10 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     // Draw logo if available
     if (this.logoPath) {
       try {
-        this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
+        this.doc.image(this.logoPath, logoX, logoY, {
+          width: logoSize,
+          height: logoSize,
+        });
       } catch {
         // Logo loading failed, continue without it
       }
@@ -158,14 +156,22 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
         .fontSize(12)
         .fillColor('#000000')
         .font(this.latoFont)
-        .text('Allion Technologies (Pvt) Ltd', companyInfoX, adjustedCompanyInfoY);
+        .text(
+          'Allion Technologies (Pvt) Ltd',
+          companyInfoX,
+          adjustedCompanyInfoY
+        );
 
       this.doc
         .fontSize(9)
         .fillColor('#000000')
         .font(this.latoFont)
         .text('Level 11, MAGA ONE', companyInfoX, adjustedCompanyInfoY + 15)
-        .text('No.200, Narahenpita - Nawala Rd', companyInfoX, adjustedCompanyInfoY + 28)
+        .text(
+          'No.200, Narahenpita - Nawala Rd',
+          companyInfoX,
+          adjustedCompanyInfoY + 28
+        )
         .text('Colombo 00500', companyInfoX, adjustedCompanyInfoY + 41)
         .text('Sri Lanka', companyInfoX, adjustedCompanyInfoY + 54);
 
@@ -202,7 +208,10 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     // Draw logo if available
     if (this.logoPath) {
       try {
-        this.doc.image(this.logoPath, logoX, logoY, { width: logoSize, height: logoSize });
+        this.doc.image(this.logoPath, logoX, logoY, {
+          width: logoSize,
+          height: logoSize,
+        });
       } catch {
         // Logo loading failed, continue without it
       }
@@ -241,14 +250,22 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
         .fontSize(12)
         .fillColor('#000000')
         .font(this.latoFont)
-        .text('Allion Technologies (Pvt) Ltd', companyInfoX, adjustedCompanyInfoY);
+        .text(
+          'Allion Technologies (Pvt) Ltd',
+          companyInfoX,
+          adjustedCompanyInfoY
+        );
 
       this.doc
         .fontSize(9)
         .fillColor('#000000')
         .font(this.latoFont)
         .text('Level 11, MAGA ONE', companyInfoX, adjustedCompanyInfoY + 15)
-        .text('No.200, Narahenpita - Nawala Rd', companyInfoX, adjustedCompanyInfoY + 28)
+        .text(
+          'No.200, Narahenpita - Nawala Rd',
+          companyInfoX,
+          adjustedCompanyInfoY + 28
+        )
         .text('Colombo 00500', companyInfoX, adjustedCompanyInfoY + 41)
         .text('Sri Lanka', companyInfoX, adjustedCompanyInfoY + 54);
 
@@ -270,7 +287,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       .text('No.200, Narahenpita - Nawala Rd', companyInfoX, companyInfoY + 28)
       .text('Colombo 00500', companyInfoX, companyInfoY + 41)
       .text('Sri Lanka', companyInfoX, companyInfoY + 54);
-    
+
     // Set currentY to match first page positioning
     this.currentY = companyInfoY + 54 + 20;
   }
@@ -294,7 +311,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
   protected checkPageBreak(requiredSpace: number): void {
     // Account for footer space (80px) when checking page breaks
     const availableSpace = this.pageHeight - this.currentY - this.margin - 80;
-    
+
     if (requiredSpace > availableSpace) {
       this.drawFooter();
       this.doc.addPage();
@@ -334,49 +351,64 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       .fontSize(8)
       .fillColor('#64748B')
       .font(this.latoFont)
-      .text(pageText, this.pageWidth - this.margin - pageTextWidth, footerY + 10);
+      .text(
+        pageText,
+        this.pageWidth - this.margin - pageTextWidth,
+        footerY + 10
+      );
   }
 
-  private groupDataByEmployee(data: IDetailedTimesheetReport[]): Map<string, IDetailedTimesheetReport[]> {
+  private groupDataByEmployee(
+    data: IDetailedTimesheetReport[]
+  ): Map<string, IDetailedTimesheetReport[]> {
     const groupedData = new Map<string, IDetailedTimesheetReport[]>();
-    
-    data.forEach(timesheetWeek => {
+
+    data.forEach((timesheetWeek) => {
       const employeeKey = `${timesheetWeek.employeeId}-${timesheetWeek.employeeName}`;
-      
+
       if (!groupedData.has(employeeKey)) {
         groupedData.set(employeeKey, []);
       }
-      
+
       const array = groupedData.get(employeeKey);
       if (array) {
         array.push(timesheetWeek);
       }
     });
-    
+
     return groupedData;
   }
 
-  private addEmployeeTables(groupedData: Map<string, IDetailedTimesheetReport[]>): void {
+  private addEmployeeTables(
+    groupedData: Map<string, IDetailedTimesheetReport[]>
+  ): void {
     if (groupedData.size === 0) {
-      this.doc.fontSize(10)
+      this.doc
+        .fontSize(10)
         .fillColor(this.colors.text.secondary)
         .font('Helvetica')
-        .text('No data available for the selected period.', this.margin, this.currentY);
-      
+        .text(
+          'No data available for the selected period.',
+          this.margin,
+          this.currentY
+        );
+
       this.currentY += 40;
       return;
     }
 
     // Sort employees by name for consistent ordering
-    const sortedEmployees = Array.from(groupedData.entries()).sort(([keyA], [keyB]) => {
-      const nameA = keyA.split('-')[1] || '';
-      const nameB = keyB.split('-')[1] || '';
-      return nameA.localeCompare(nameB);
-    });
+    const sortedEmployees = Array.from(groupedData.entries()).sort(
+      ([keyA], [keyB]) => {
+        const nameA = keyA.split('-')[1] || '';
+        const nameB = keyB.split('-')[1] || '';
+        return nameA.localeCompare(nameB);
+      }
+    );
 
     sortedEmployees.forEach(([, employeeData], index) => {
       if (index > 0) {
-        // Add page break before each new employee 
+        // Add page break before each new employee
         this.checkPageBreak(200);
         this.currentY += 20;
       }
@@ -389,16 +421,20 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     if (employeeData.length === 0) return;
 
     const employee = employeeData[0];
-    
+
     // Employee section header
     this.checkPageBreak(40);
     this.doc
       .fontSize(18)
       .fillColor('#035082')
       .font(this.latoFont)
-      .text(`${employee.employeeName} - ${employee.employeeEmail}`, this.margin, this.currentY);
+      .text(
+        `${employee.employeeName} - ${employee.employeeEmail}`,
+        this.margin,
+        this.currentY
+      );
     this.currentY += 30;
-    
+
     // Divider line
     this.doc
       .moveTo(this.margin, this.currentY)
@@ -435,67 +471,81 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     employeeData.forEach((timesheetWeek) => {
       const weekStartRaw = new Date(timesheetWeek.weekStartDate);
       const weekStart = this.formatDate(weekStartRaw);
-      const weekEnd = this.formatDate(this.addDays(timesheetWeek.weekStartDate, 4)); // Friday = Monday + 4 days
+      const weekEnd = this.formatDate(
+        this.addDays(timesheetWeek.weekStartDate, 4)
+      ); // Friday = Monday + 4 days
 
       // Filter out 'Other' and 'Leave' categories
       timesheetWeek.categories
-        .filter((category: any) => category.category !== 'Other' && category.category !== 'Leave')
+        .filter(
+          (category: any) =>
+            category.category !== 'Other' && category.category !== 'Leave'
+        )
         .forEach((category) => {
-        category.items.forEach((item) => {
-          const dailyHours = item.dailyHours || [];
+          category.items.forEach((item) => {
+            const dailyHours = item.dailyHours || [];
 
-          let title: string | null = null;
-          const includeWork = false;
-          
-          // Each project gets its own table with unique title
-          if (item.projectName) {
-            title = `Project: ${item.projectName}`;
-            hasProject = true;
-          } 
-          // Each team gets its own table with unique title
-          else if (item.teamName) {
-            title = `Team: ${item.teamName}`;
-            hasTeam = true;
-          } 
-          // Use category name as-is, don't convert 'Other' to 'Leave'
-          else {
-            title = category.category;
-          }
+            let title: string | null = null;
+            const includeWork = false;
 
-          // Skip items that don't belong to any specific category
-          if (!title) return;
+            // Each project gets its own table with unique title
+            if (item.projectName) {
+              title = `Project: ${item.projectName}`;
+              hasProject = true;
+            }
+            // Each team gets its own table with unique title
+            else if (item.teamName) {
+              title = `Team: ${item.teamName}`;
+              hasTeam = true;
+            }
+            // Use category name as-is, don't convert 'Other' to 'Leave'
+            else {
+              title = category.category;
+            }
 
-          // Create unique key combining week start date and title
-          // This ensures same project/team in different weeks are aggregated correctly
-          const weekTitleKey: WeekTitleKey = `${weekStart}_${title}`;
+            // Skip items that don't belong to any specific category
+            if (!title) return;
 
-          // Aggregate items with the same week+title combination
-          if (!weekTitleMap.has(weekTitleKey)) {
-            weekTitleMap.set(weekTitleKey, {
-              weekStartRaw,
-              weekStart,
-              weekEnd,
-              title,
-              includeWork,
-              work: includeWork ? (item.work || '') : undefined,
-              dailyHours: [0, 0, 0, 0, 0, 0, 0]
-            });
-          }
+            // Create unique key combining week start date and title
+            // This ensures same project/team in different weeks are aggregated correctly
+            const weekTitleKey: WeekTitleKey = `${weekStart}_${title}`;
 
-          const aggregatedItem = weekTitleMap.get(weekTitleKey);
-          if (aggregatedItem) {
-            // Sum up the hours for each day
-            dailyHours.forEach((hours, index) => {
-              aggregatedItem.dailyHours[index] += parseFloat(hours?.toString() || '0') || 0;
-            });
-          }
+            // Aggregate items with the same week+title combination
+            if (!weekTitleMap.has(weekTitleKey)) {
+              weekTitleMap.set(weekTitleKey, {
+                weekStartRaw,
+                weekStart,
+                weekEnd,
+                title,
+                includeWork,
+                work: includeWork ? item.work || '' : undefined,
+                dailyHours: [0, 0, 0, 0, 0, 0, 0],
+              });
+            }
+
+            const aggregatedItem = weekTitleMap.get(weekTitleKey);
+            if (aggregatedItem) {
+              // Sum up the hours for each day
+              dailyHours.forEach((hours, index) => {
+                aggregatedItem.dailyHours[index] +=
+                  parseFloat(hours?.toString() || '0') || 0;
+              });
+            }
+          });
         });
-      });
     });
 
     // Second pass: create rows from aggregated data
     weekTitleMap.forEach((aggregatedItem) => {
-      const { weekStartRaw, weekStart, weekEnd, title, includeWork, work, dailyHours } = aggregatedItem;
+      const {
+        weekStartRaw,
+        weekStart,
+        weekEnd,
+        title,
+        includeWork,
+        work,
+        dailyHours,
+      } = aggregatedItem;
 
       // Add to employee totals
       dailyHours.forEach((hours, index) => {
@@ -503,7 +553,9 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
           employeeDailyTotals[index] += hours;
         }
       });
-      const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => sum + hours, 0);
+      const rowTotal = dailyHours
+        .slice(0, 5)
+        .reduce((sum, hours) => sum + hours, 0);
       employeeGrandTotal += rowTotal;
 
       // Ensure table container for this title (each project/team gets separate table)
@@ -514,10 +566,7 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       if (!table) return;
 
       // Build row - one row per unique week+project/team combination
-      const baseCells = [
-        weekStart,
-        weekEnd,
-      ]
+      const baseCells = [weekStart, weekEnd];
       const workCells = includeWork ? [work || ''] : [];
       const dayCells = [
         this.formatHoursForDisplay(dailyHours[0]),
@@ -527,12 +576,22 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
         this.formatHoursForDisplay(dailyHours[4]),
         this.formatHoursForDisplay(rowTotal),
       ];
-      table.rows.push({ sortDate: weekStartRaw, cells: [...baseCells, ...workCells, ...dayCells] });
+      table.rows.push({
+        sortDate: weekStartRaw,
+        cells: [...baseCells, ...workCells, ...dayCells],
+      });
     });
 
     // Sort tables
     const tableOrder = Array.from(tablesByTitle.values()).sort((a, b) => {
-      const rank = (t: string) => (t.startsWith('Project:') ? 0 : t.startsWith('Team:') ? 1 : t === 'Leave' ? 2 : 3);
+      const rank = (t: string) =>
+        t.startsWith('Project:')
+          ? 0
+          : t.startsWith('Team:')
+          ? 1
+          : t === 'Leave'
+          ? 2
+          : 3;
       const rA = rank(a.title);
       const rB = rank(b.title);
       if (rA !== rB) return rA - rB;
@@ -542,16 +601,36 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     // Render each sub-table with consistent styling
     tableOrder.forEach((sub) => {
       this.checkPageBreak(60);
-      
-      this.doc.fontSize(14)
+
+      this.doc
+        .fontSize(14)
         .fillColor('#035082')
         .font(this.latoFont)
         .text(sub.title, this.margin, this.currentY);
       this.currentY += 20;
 
       const headers = sub.includeWork
-        ? ['Week Start', 'Week End', 'Work', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Total']
-        : ['Week Start', 'Week End', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Total'];
+        ? [
+            'Week Start',
+            'Week End',
+            'Work',
+            'Mon',
+            'Tue',
+            'Wed',
+            'Thu',
+            'Fri',
+            'Total',
+          ]
+        : [
+            'Week Start',
+            'Week End',
+            'Mon',
+            'Tue',
+            'Wed',
+            'Thu',
+            'Fri',
+            'Total',
+          ];
       const columnWidths = sub.includeWork
         ? [75, 75, 80, 45, 45, 45, 45, 45, 50]
         : [100, 100, 45, 45, 45, 45, 45, 50];
@@ -566,24 +645,24 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
       this.currentY += 15;
     });
 
-    
     if (hasProject && hasTeam && hasLeave) {
       // addPage will draw footer and header automatically
       this.doc.addPage();
       // currentY is already set to margin + 180 by our overridden addPage
     }
 
-    const metricsHeaders = ['Day', 'Hours']; 
+    const metricsHeaders = ['Day', 'Hours'];
     const metricsData: string[][] = [
       ['Monday', `${employeeDailyTotals[0].toFixed(2)} h`],
-      ['Tuesday',`${employeeDailyTotals[1].toFixed(2)} h`],
+      ['Tuesday', `${employeeDailyTotals[1].toFixed(2)} h`],
       ['Wednesday', `${employeeDailyTotals[2].toFixed(2)} h`],
       ['Thursday', `${employeeDailyTotals[3].toFixed(2)} h`],
       ['Friday', `${employeeDailyTotals[4].toFixed(2)} h`],
       ['Total', `${employeeGrandTotal.toFixed(2)} h`],
     ];
     this.checkPageBreak(60);
-    this.doc.fontSize(14)
+    this.doc
+      .fontSize(14)
       .fillColor('#035082')
       .font(this.latoFont)
       .text('Working Hours', this.margin, this.currentY);
@@ -591,18 +670,16 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     this.addCustomTable(metricsHeaders, metricsData, [255, 255], 20);
   }
 
-  
-  
   private addSummaryStatistics(data: IDetailedTimesheetReport[]): void {
     this.checkPageBreak(200);
-    
+
     this.doc
       .fontSize(18)
       .fillColor('#035082')
       .font(this.latoFont)
       .text('Overall Summary', this.margin, this.currentY);
     this.currentY += 30;
-    
+
     // Divider line
     this.doc
       .moveTo(this.margin, this.currentY)
@@ -612,34 +689,33 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     this.currentY += 20;
 
     const stats = this.calculateDetailedStatistics(data);
-    
+
     const summaryData = [
-      { 
-        label: 'Total Employees', 
+      {
+        label: 'Total Employees',
         value: stats.totalEmployees,
-        type: 'info' as const
+        type: 'info' as const,
       },
-      { 
-        label: 'Total Teams', 
+      {
+        label: 'Total Teams',
         value: stats.totalTeams,
-        type: 'info' as const
+        type: 'info' as const,
       },
-      { 
-        label: 'Total Projects', 
+      {
+        label: 'Total Projects',
         value: stats.totalProjects,
-        type: 'info' as const
+        type: 'info' as const,
       },
-      { 
-        label: 'Absence Days', 
+      {
+        label: 'Absence Days',
         value: stats.otherDays,
-        type: 'warning' as const
+        type: 'warning' as const,
       },
-      { 
-        label: 'Grand Total Hours', 
+      {
+        label: 'Grand Total Hours',
         value: `${stats.grandTotal} h`,
-        type: 'success' as const
+        type: 'success' as const,
       },
-      
     ];
 
     // Add summary cards with proper spacing
@@ -654,93 +730,105 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
   private addEmployeeBreakdown(data: IDetailedTimesheetReport[]): void {
     this.currentY += 20;
     this.checkPageBreak(150);
-    
+
     // Group data by employee to get individual totals
-    const employeeStats = new Map<string, { name: string; email: string; totalHours: number; weeks: number }>();
-    
-    data.forEach(timesheetWeek => {
+    const employeeStats = new Map<
+      string,
+      { name: string; email: string; totalHours: number; weeks: number }
+    >();
+
+    data.forEach((timesheetWeek) => {
       const key = timesheetWeek.employeeId;
-      
+
       if (!employeeStats.has(key)) {
         employeeStats.set(key, {
           name: timesheetWeek.employeeName,
           email: timesheetWeek.employeeEmail,
           totalHours: 0,
-          weeks: 0
+          weeks: 0,
         });
       }
-      
+
       const employeeStat = employeeStats.get(key);
       if (employeeStat) {
         employeeStat.weeks++;
-      
-      // Calculate total hours from categories
-      timesheetWeek.categories.forEach(category => {
-        category.items.forEach(item => {
-          const dailyHours = item.dailyHours || [];
-          const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => {
-            return sum + (parseFloat(hours?.toString()) || 0);
-          }, 0);
-          employeeStat.totalHours += rowTotal;
+
+        // Calculate total hours from categories
+        timesheetWeek.categories.forEach((category) => {
+          category.items.forEach((item) => {
+            const dailyHours = item.dailyHours || [];
+            const rowTotal = dailyHours.slice(0, 5).reduce((sum, hours) => {
+              return sum + (parseFloat(hours?.toString()) || 0);
+            }, 0);
+            employeeStat.totalHours += rowTotal;
+          });
         });
-      });
       }
     });
-
   }
 
-  private addSummaryCards(summaryData: { label: string; value: number | string; type: 'success' | 'warning' | 'danger' | 'info' }[]): void {
+  private addSummaryCards(
+    summaryData: {
+      label: string;
+      value: number | string;
+      type: 'success' | 'warning' | 'danger' | 'info';
+    }[]
+  ): void {
     this.checkPageBreak(150);
-    
+
     // Create a metrics table format
-    const tableWidth = this.pageWidth - (this.margin * 2);
+    const tableWidth = this.pageWidth - this.margin * 2;
     const rowHeight = 25;
-    
+
     // Table header
-    this.doc.rect(this.margin, this.currentY, tableWidth, 30)
+    this.doc
+      .rect(this.margin, this.currentY, tableWidth, 30)
       .fill(this.colors.primary);
-    
-    this.doc.fontSize(11)
+
+    this.doc
+      .fontSize(11)
       .fillColor('white')
       .font('Helvetica-Bold')
       .text('Category', this.margin + 10, this.currentY + 10)
       .text('Result', this.margin + tableWidth - 100, this.currentY + 10);
-    
+
     this.currentY += 35;
 
     // Add metrics rows
     summaryData.forEach((item, index) => {
       const rowY = this.currentY;
       const bgColor = index % 2 === 0 ? '#F8FAFC' : 'white';
-      
+
       // Row background
-      this.doc.rect(this.margin, rowY, tableWidth, rowHeight)
+      this.doc
+        .rect(this.margin, rowY, tableWidth, rowHeight)
         .fill(bgColor)
         .stroke(this.colors.border);
-      
-      // Status indicator 
+
+      // Status indicator
       const indicatorColor = this.getSummaryColor(item.type);
-      this.doc.circle(this.margin + 15, rowY + 12, 4)
-        .fill(indicatorColor);
-      
+      this.doc.circle(this.margin + 15, rowY + 12, 4).fill(indicatorColor);
+
       // Metric label
-      this.doc.fontSize(10)
+      this.doc
+        .fontSize(10)
         .fillColor(this.colors.text.primary)
         .font('Helvetica')
         .text(item.label, this.margin + 30, rowY + 8);
-      
+
       // Metric value
-      this.doc.fontSize(12)
+      this.doc
+        .fontSize(12)
         .fillColor(this.colors.text.primary)
         .font('Helvetica-Bold')
         .text(String(item.value), this.margin + tableWidth - 90, rowY + 8, {
           align: 'left',
-          width: 80
+          width: 80,
         });
-      
+
       this.currentY += rowHeight;
     });
-    
+
     this.currentY += 15;
   }
 
@@ -762,7 +850,9 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     let tableStartY = this.currentY;
     let rowsOnCurrentPage = 0;
     // Account for footer (80px) when calculating available space
-    const maxRowsPerPage = Math.floor((this.pageHeight - this.currentY - this.margin - 80) / rowHeight);
+    const maxRowsPerPage = Math.floor(
+      (this.pageHeight - this.currentY - this.margin - 80) / rowHeight
+    );
 
     // Draw table header
     this.drawTableHeader(headers, columnWidths, headerHeight, tableStartY);
@@ -790,7 +880,12 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
 
       // Row background
       this.doc
-        .rect(this.margin, rowY, columnWidths.reduce((sum, w) => sum + w, 0), rowHeight)
+        .rect(
+          this.margin,
+          rowY,
+          columnWidths.reduce((sum, w) => sum + w, 0),
+          rowHeight
+        )
         .fill(bgColor)
         .stroke('#E2E8F0');
 
@@ -827,10 +922,20 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     this.currentY += 10;
   }
 
-  private drawTableHeader(headers: string[], columnWidths: number[], headerHeight: number, startY: number): void {
+  private drawTableHeader(
+    headers: string[],
+    columnWidths: number[],
+    headerHeight: number,
+    startY: number
+  ): void {
     // Header background
     this.doc
-      .rect(this.margin, startY, columnWidths.reduce((sum, w) => sum + w, 0), headerHeight)
+      .rect(
+        this.margin,
+        startY,
+        columnWidths.reduce((sum, w) => sum + w, 0),
+        headerHeight
+      )
       .fill('white')
       .stroke('#E2E8F0');
 
@@ -839,7 +944,9 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     this.doc.fontSize(10).fillColor('#af7115').font(this.latoFont);
 
     headers.forEach((header, index) => {
-      this.doc.text(header, x + 8, startY + 9, { width: columnWidths[index] - 16 });
+      this.doc.text(header, x + 8, startY + 9, {
+        width: columnWidths[index] - 16,
+      });
       x += columnWidths[index];
     });
 
@@ -856,23 +963,30 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
 
   private getSummaryColor(type: string): string {
     switch (type) {
-      case 'success': return this.colors.accent;
-      case 'warning': return this.colors.warning;
-      case 'danger': return this.colors.danger;
-      case 'info': return this.colors.primary;
-      default: return this.colors.secondary;
+      case 'success':
+        return this.colors.accent;
+      case 'warning':
+        return this.colors.warning;
+      case 'danger':
+        return this.colors.danger;
+      case 'info':
+        return this.colors.primary;
+      default:
+        return this.colors.secondary;
     }
   }
 
-  private formatHoursForDisplay(hours: number | undefined | null | string): string {
+  private formatHoursForDisplay(
+    hours: number | undefined | null | string
+  ): string {
     if (!hours || hours === 0 || hours === '0') return '';
-    
-    // Convert to number 
+
+    // Convert to number
     const numHours = typeof hours === 'string' ? parseFloat(hours) : hours;
-    
+
     // Check if it's a valid number
     if (isNaN(numHours) || numHours === 0) return '';
-    
+
     return numHours.toFixed(2);
   }
 
@@ -883,22 +997,20 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
   }
 
   private calculateDetailedStatistics(data: IDetailedTimesheetReport[]) {
-    const totalEmployees = new Set(data.map(d => d.employeeId)).size;
+    const totalEmployees = new Set(data.map((d) => d.employeeId)).size;
     let totalHours = 0;
     let grandTotal = 0;
     let otherDays = 0;
-    
+
     const allProjects = new Set<string>();
     const allTeams = new Set<string>();
     let totalTasks = 0;
-    
-  
-    data.forEach(d => {
-     
+
+    data.forEach((d) => {
       const weeklyLeaveHours: number[] = [0, 0, 0, 0, 0];
 
-      d.categories.forEach(cat => {
-        cat.items.forEach(item => {
+      d.categories.forEach((cat) => {
+        cat.items.forEach((item) => {
           if (item.projectName) allProjects.add(item.projectName);
           if (item.teamName) allTeams.add(item.teamName);
           totalTasks++;
@@ -923,19 +1035,21 @@ export class DetailedTimesheetPdf extends ProfessionalBasePDFGenerator {
     const totalProjects = allProjects.size;
     const totalTeams = allTeams.size;
     const totalWeeks = data.length;
-    const avgHoursPerWeek = totalWeeks > 0 ? (totalHours / totalWeeks).toFixed(1) : '0';
-    const utilizationRate = totalWeeks > 0 ? Math.round((totalHours / (totalWeeks * 40)) * 100) : 0;
+    const avgHoursPerWeek =
+      totalWeeks > 0 ? (totalHours / totalWeeks).toFixed(1) : '0';
+    const utilizationRate =
+      totalWeeks > 0 ? Math.round((totalHours / (totalWeeks * 40)) * 100) : 0;
 
     return {
       totalEmployees,
       totalHours: Math.round(totalHours * 100) / 100,
-      grandTotal: Math.round(grandTotal * 100) / 100, 
+      grandTotal: Math.round(grandTotal * 100) / 100,
       totalProjects,
       totalTeams,
       totalTasks,
       otherDays: Math.round(otherDays * 100) / 100,
       avgHoursPerWeek,
-      utilizationRate
+      utilizationRate,
     };
   }
 }
