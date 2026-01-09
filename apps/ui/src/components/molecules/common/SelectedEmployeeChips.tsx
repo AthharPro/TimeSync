@@ -74,10 +74,7 @@ const SelectedEmployeeChips: React.FC<ISelectedEmployeeChipsProps> = ({
             [employee.firstName, employee.lastName].filter(Boolean).join(' ').trim() ||
             employee.email;
 
-          // Determine allocation from possible shapes:
-          // - employee.allocation (frontend selection)
-          // - employee.allocation on populated/legacy shapes
-          // - employee.user?.allocation when server returns subdocument where allocation is on parent
+         
           const rawAlloc = (employee as any).allocation ?? (employee as any).user?.allocation ?? (employee as any).user?.allocation;
           const allocation = typeof rawAlloc !== 'undefined' && rawAlloc !== null ? Number(rawAlloc) : undefined;
           const hasAllocation = typeof allocation === 'number' && !Number.isNaN(allocation);

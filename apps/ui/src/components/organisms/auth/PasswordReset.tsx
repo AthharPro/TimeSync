@@ -44,7 +44,6 @@ const PasswordReset: React.FC = () => {
   useEffect(() => {
     if (token && verificationCode) {
       verifyPasswordResetLink(token, verificationCode).catch((err) => {
-        console.error('Failed to verify reset link:', err);
         showError('Failed to verify reset link. Please request a new one.');
       });
     } else {
@@ -88,7 +87,6 @@ const PasswordReset: React.FC = () => {
         data.confirmPassword
       );
     } catch (err) {
-      console.error('Password reset error:', err);
       showError('Failed to reset password. Please try again.');
     }
   };

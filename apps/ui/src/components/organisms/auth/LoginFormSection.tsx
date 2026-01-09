@@ -35,8 +35,6 @@ const LoginFormSection: React.FC = () => {
   // If user is already logged in, redirect to appropriate page
   useEffect(() => {
     if (user && accessToken) {
-      console.log('👤 User already logged in, redirecting...');
-      
       if (!user.isChangedPwd) {
         navigate('/resetpasswordfirstlogin', { replace: true });
         return;
@@ -63,11 +61,7 @@ const LoginFormSection: React.FC = () => {
   }, [user, accessToken, navigate]);
 
   const onSubmit = async (data: ILoginData) => {
-    console.log('🔐 Login attempt:', { email: data.email });
-    
     const res = await login(data.email, data.password);
-    
-    console.log('🔐 Login response:', { success: res.success, hasUser: !!res.user });
     
     if (res.success && res.user) {
       showSuccess('Login successful! Redirecting...');
@@ -77,14 +71,11 @@ const LoginFormSection: React.FC = () => {
       
       // Check if user needs to change password on first login
       if (!loggedInUser.isChangedPwd) {
-        console.log('🔑 First login detected, redirecting to password reset');
         navigate('/resetpasswordfirstlogin', { replace: true });
         return;
       }
 
       // Redirect based on user role immediately
-      console.log('Navigating to dashboard for role:', loggedInUser.role);
-      
       switch(loggedInUser.role) {
         case UserRole.SuperAdmin:
           navigate('/super-admin', { replace: true });
@@ -102,12 +93,10 @@ const LoginFormSection: React.FC = () => {
           navigate('/admin', { replace: true });
           break;
         default:
-          console.error('❌ Unknown role, redirecting to login');
           navigate('/login', { replace: true });
       }
     } else {
       // Handle error from login response - always show user-friendly message
-      console.error('Login failed:', res.error);
       showError('Login failed due to invalid credentials. Please try again.');
     }
   };

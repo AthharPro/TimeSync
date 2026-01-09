@@ -54,9 +54,7 @@ function ReviewTimesheetWindow() {
       try {
         const response = await getNonDepartmentTeamEmployeeIds();
         setNonDeptTeamEmployeeIds(response.employeeIds);
-        console.log('Non-department team employee IDs:', response.employeeIds);
       } catch (error) {
-        console.error('Failed to fetch non-department team employee IDs:', error);
       }
     };
     fetchNonDeptEmployees();

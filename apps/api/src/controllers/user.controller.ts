@@ -100,7 +100,6 @@ export const bulkCreateUsers = async (req: Request, res: Response) => {
       results,
     });
   } catch (error) {
-    console.error('Bulk create error:', error);
     res.status(500).json({ message: 'Bulk account creation failed' });
   }
 };

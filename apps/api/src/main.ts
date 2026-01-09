@@ -28,16 +28,13 @@ export const io = new SocketIOServer(server, {
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
 
   // Join user's personal notification room
   socket.on('join', (userId: string) => {
     socket.join(`user:${userId}`);
-    console.log(`User ${userId} joined their notification room`);
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
   });
 });
 
@@ -91,8 +88,6 @@ server.listen(port, async () => {
     
     initTimesheetReminderJob();
     
-    console.log(`Server is running on port ${PORT} in ${NODE_ENV} environment`);
   } catch (error) {
-    console.error('Error during server startup:', error);
   }
 });

@@ -11,15 +11,7 @@ const TeamMembersCell: React.FC<ITeamMembersCellProps> = ({
 }) => {
   return (
     <Box display="flex" justifyContent="space-between" alignItems="center" gap={1} minHeight="40px">
-      {/* <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: 14 } }}>
-        {teamMembers.map((member) => (
-          <Tooltip key={member.id} title={member.name}>
-            <Avatar alt={member.name} src={member.avatar}>
-              {member.name.charAt(0)}
-            </Avatar>
-          </Tooltip>
-        ))}
-      </AvatarGroup> */}
+      
       <BaseBtn
         size="small"
         variant="outlined"

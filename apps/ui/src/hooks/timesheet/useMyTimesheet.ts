@@ -154,11 +154,9 @@ const addNewTimesheet = useCallback(
         const result = await (dispatch as AppDispatch)(syncTimesheetUpdate({ timesheetId: id, updates }));
         
         if (result.type === syncTimesheetUpdate.rejected.type) {
-          console.error('Sync failed:', result.payload);
           throw new Error(result.payload as string);
         }
       } catch (error) {
-        console.error('Sync error:', error);
         throw error; // Re-throw to be handled by caller
       }
     },
@@ -249,7 +247,6 @@ const addNewTimesheet = useCallback(
         // Dispatch action to update Redux state
         dispatch(setAllTimesheets(mappedTimesheets));
       } catch (error) {
-        console.error('Load timesheets error:', error);
       }
     },
     [dispatch]
@@ -316,7 +313,6 @@ const addNewTimesheet = useCallback(
 
         return result;
       } catch (error) {
-        console.error('Submit timesheets error:', error);
         throw error;
       }
     },
@@ -412,7 +408,6 @@ const addNewTimesheet = useCallback(
 
         return result;
       } catch (error) {
-        console.error('Submit current week timesheets error:', error);
         throw error;
       }
     },
@@ -461,7 +456,6 @@ const addNewTimesheet = useCallback(
           deleted: draftTimesheets.length,
         };
       } catch (error) {
-        console.error('Delete timesheets error:', error);
         throw error;
       }
     },

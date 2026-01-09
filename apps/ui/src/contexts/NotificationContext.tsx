@@ -42,7 +42,6 @@ export const NotificationProvider = ({ children, userId }: NotificationProviderP
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -51,18 +50,15 @@ export const NotificationProvider = ({ children, userId }: NotificationProviderP
   // Initialize socket connection and listen for new notifications
   useEffect(() => {
     if (!userId) {
-      console.log('⚠️ No userId provided, skipping socket initialization');
       return;
     }
 
-    console.log('🔌 Initializing notifications for user:', userId);
 
     // Initialize socket connection
     const socket = initializeSocket(userId);
 
     // Listen for new notifications
     const handleNewNotification = (notification: INotification) => {
-      console.log('📬 New notification received:', notification);
 
       // Add to the beginning of the notifications list
       setNotifications((prev) => [notification, ...prev]);
@@ -94,7 +90,6 @@ export const NotificationProvider = ({ children, userId }: NotificationProviderP
 
     // Cleanup - remove listener when component unmounts or userId changes
     return () => {
-      console.log('🔌 Cleaning up socket listener for user:', userId);
       socket.off('notification', handleNewNotification);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,7 +111,6 @@ export const NotificationProvider = ({ children, userId }: NotificationProviderP
         // Decrement unread count
         setUnreadCount((prev) => Math.max(0, prev - 1));
       } catch (error) {
-        console.error('Error marking notification as read:', error);
         enqueueSnackbar('Failed to mark notification as read', { variant: 'error' });
       }
     },
@@ -139,7 +133,6 @@ export const NotificationProvider = ({ children, userId }: NotificationProviderP
         variant: 'success',
       });
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
       enqueueSnackbar('Failed to mark all notifications as read', { variant: 'error' });
     }
   }, [enqueueSnackbar]);
@@ -163,7 +156,6 @@ export const NotificationProvider = ({ children, userId }: NotificationProviderP
 
         enqueueSnackbar('Notification deleted', { variant: 'success' });
       } catch (error) {
-        console.error('Error deleting notification:', error);
         enqueueSnackbar('Failed to delete notification', { variant: 'error' });
       }
     },

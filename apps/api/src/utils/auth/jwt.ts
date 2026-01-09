@@ -12,7 +12,7 @@ export const refreshTokenSignOptions: ITokenOptions = {
 };
 
 const ACCESS_TOKEN_OPTIONS: ITokenOptions = {
-  expiresIn: '45m',
+  expiresIn: '30d',
   secret: JWT_SECRET
 };
 

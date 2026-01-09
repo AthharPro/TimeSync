@@ -6,9 +6,8 @@ import UseRole from '../components/organisms/landing/UseRole';
 import { disconnectSocket } from '../services/socketService';
 
 const LandingPage: React.FC = () => {
-  // Ensure socket is disconnected when landing on landing page
+  
   useEffect(() => {
-    console.log('🔌 LandingPage: Ensuring socket is disconnected');
     disconnectSocket();
   }, []);
 

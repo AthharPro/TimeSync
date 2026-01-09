@@ -15,7 +15,6 @@ export const createUser = async (data: CreateUserParams, createdBy?: string) => 
   appAssert(!existingUser, CONFLICT, 'Email already exists');
 
   const generatedPassword = generateRandomPassword();
-  console.log('Generated Password: ', generatedPassword);
 
   const user = await UserModel.create({
     email: data.email,
@@ -57,7 +56,6 @@ export const createUser = async (data: CreateUserParams, createdBy?: string) => 
       metadata: { role: user.role, email: user.email },
     });
   } catch (error) {
-    console.error('Failed to create history log for user creation:', error);
   }
 
     sendEmail({
@@ -190,7 +188,6 @@ export const updateUserById = async (
       });
     }
   } catch (error) {
-    console.error('Failed to create history log for user update:', error);
   }
 
   return {

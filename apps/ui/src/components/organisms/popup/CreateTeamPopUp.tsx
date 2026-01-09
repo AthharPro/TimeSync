@@ -59,8 +59,7 @@ function CreateDeptPopUp({ open, onClose, onTeamCreated }: CreateTeamPopupProps)
       onTeamCreated?.(); // Callback to refresh teams list
       onClose();
     } catch (error) {
-      console.error('Failed to create team:', error);
-      // You might want to show an error message to the user here
+     
     }
   };
 
