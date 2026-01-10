@@ -9,6 +9,7 @@ import RecentActivitySection from '../dashboard/RecentActivitySection';
 import CalendarSection from '../dashboard/CalendarSection';
 import HoursChartSection from '../dashboard/HoursChartSection';
 import TimesheetPieChartSection from '../dashboard/TimesheetPieChartSection';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 import {
   getDashboardStats,
@@ -22,6 +23,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { startOfWeek, endOfWeek } from 'date-fns';
+import { useWindowNavigation } from '../../../hooks/useWindowNavigation';
 
 function DashboardWindow() {
   const [stats, setStats] = useState<IStatCard[]>([]);
@@ -32,6 +34,7 @@ function DashboardWindow() {
   const [timesheetData, setTimesheetData] = useState<ITimesheetSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { selectedButton, setSelectedButton } = useWindowNavigation();
 
   const fetchDashboardData = async () => {
     try {
@@ -91,6 +94,7 @@ function DashboardWindow() {
     assignment: <AssignmentIcon />,
     people: <PeopleIcon />,
     accesstime: <AccessTimeIcon />,
+    personAddIcon: <PersonAddIcon />,
   };
 
   if (loading) {
@@ -136,7 +140,20 @@ function DashboardWindow() {
                   ? (iconMap[stat.icon] ?? <AssignmentIcon />)
                   : (stat.icon as React.ReactNode);
 
-                return <StatCard key={index} {...stat} icon={iconNode} />;
+                  // If backend marks this stat clickable, pass a clickAction that sets selected button
+                  if ((stat as any).clickable && (stat as any).navigateTo) {
+                    return (
+                      <StatCard
+                        key={index}
+                        {...stat}
+                        icon={iconNode}
+                        clickAction={() => setSelectedButton((stat as any).navigateTo)}
+                        clickable={true}
+                      />
+                    );
+                  }
+
+                  return <StatCard key={index} {...stat} icon={iconNode} />;
               })
             ) : (
               <Alert severity="info">No stats available</Alert>

@@ -63,15 +63,15 @@ const HistoryFilterPopover: React.FC<HistoryFilterPopoverProps> = ({
         horizontal: 'right',
       }}
     >
-      <Box sx={{ p: 2, minWidth: 250 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600 }}>
+      <Box sx={{ p: 2, minWidth: 200, maxWidth: 280 }}>
+        <Typography variant="subtitle1" sx={{ mb: 1.25, fontWeight: 600, fontSize: '0.95rem' }}>
           Filter History
         </Typography>
 
-        <Divider sx={{ mb: 1.5 }} />
+        <Divider sx={{ mb: 1.25 }} />
 
         {/* Entity Type Filter */}
-        <FormControl fullWidth sx={{ mb: 1.5 }} size="small">
+        <FormControl fullWidth sx={{ mb: 1.25 }} size="small">
           <InputLabel id="entity-type-filter-label">Type</InputLabel>
           <Select
             labelId="entity-type-filter-label"
@@ -96,7 +96,7 @@ const HistoryFilterPopover: React.FC<HistoryFilterPopoverProps> = ({
               textField: {
                 fullWidth: true,
                 size: 'small',
-                sx: { mb: 1.5 }
+                sx: { mb: 1.25 }
               }
             }}
           />
@@ -113,7 +113,7 @@ const HistoryFilterPopover: React.FC<HistoryFilterPopoverProps> = ({
               textField: {
                 fullWidth: true,
                 size: 'small',
-                sx: { mb: 2 }
+                sx: { mb: 1.75 }
               }
             }}
           />
