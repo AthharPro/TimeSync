@@ -27,29 +27,34 @@ const HoursChartSection: React.FC<IHoursChartSectionProps> = ({ data, totalUsers
               margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis 
-                dataKey="day" 
+              <XAxis
+                dataKey="day"
                 tick={{ fontSize: 12 }}
                 stroke="#666"
               />
-              <YAxis 
+              <YAxis
                 tick={{ fontSize: 12 }}
                 stroke="#666"
+                // Keep Y axis minimum at 25 in development/overview, grow the max based on data
+                domain={[25, (dataMax: number) => Math.max(25, Math.ceil(dataMax || 0))]}
+                // Force tick formatter to show integers (no decimals)
+                tickFormatter={(value: number) => String(Math.round(value))}
               />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#fff', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#fff',
                   border: '1px solid #ccc',
                   borderRadius: 8,
-                  fontSize: 12
+                  fontSize: 12,
                 }}
-                formatter={(value) => [`${value ?? 0} users`, 'Submitted']}
+                // Ensure tooltip shows integer counts without decimals
+                formatter={(value: any) => [String(Math.round(Number(value) || 0)) + ' users', 'Submitted']}
               />
               <Bar 
                 dataKey="submissions" 
                 fill="#1976d2" 
                 radius={[8, 8, 0, 0]}
-                maxBarSize={50}
+               // maxBarSize={50}
               />
             </BarChart>
           </ResponsiveContainer>

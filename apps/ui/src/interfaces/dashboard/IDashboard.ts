@@ -5,6 +5,9 @@ export interface IStatCard {
   changeLabel?: string;
   icon: React.ReactNode;
   color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info';
+  clickable?: boolean;
+  navigateTo?: string;
+  clickAction?: () => void;
 }
 
 export interface IProjectProgress {
