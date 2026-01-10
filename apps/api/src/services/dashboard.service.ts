@@ -74,12 +74,14 @@ export const getDashboardStatsService = async () => {
         color: 'info',
       },
       {
-        title: 'Users Not Submitted Timesheets',
-        value: usersNotSubmitted,
-        change: submittedThisMonth,
-        changeLabel: 'Submitted This Month',
-        icon: 'accesstime',
-        color: 'warning',
+        title: 'Manage Admin Accounts',
+        value: '',
+        change: '',
+        changeLabel: 'Click to access accounts section',
+        icon: 'personAddIcon',
+        color: 'info',
+        clickable: true,
+        navigateTo: 'Accounts' 
       },
     ],
   };

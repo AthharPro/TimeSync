@@ -2,7 +2,13 @@
   "name": "@tms/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "start:api": "npx nx serve api",
+    "start:ui": "npx nx serve ui",
+    "start:dev": "npx nx serve api & npx nx serve ui",
+    "start:lint": "npx nx lint",
+    "start:format": "prettier --write ."
+  },
   "type": "module",
   "private": true,
   "dependencies": {

@@ -9,6 +9,8 @@ const StatCard: React.FC<IStatCard> = ({
   changeLabel,
   icon,
   color = 'primary',
+  clickable = false,
+  clickAction,
 }) => {
   const isPositive = change && change > 0;
   const isNegative = change && change < 0; 
@@ -16,11 +18,15 @@ const StatCard: React.FC<IStatCard> = ({
   return (
     <Card
       elevation={2}
+      onClick={clickable && clickAction ? clickAction : undefined}
+      role={clickable && clickAction ? 'button' : undefined}
+      tabIndex={clickable && clickAction ? 0 : undefined}
       sx={{
         height: '100%',
         transition: 'transform 0.2s, box-shadow 0.2s',
-        padding: 1
-        
+        padding: 1,
+        cursor: clickable && clickAction ? 'pointer' : undefined,
+        '&:hover': clickable && clickAction ? { transform: 'translateY(-4px)', boxShadow: 4 } : undefined,
       }}
     >
       <CardContent>
