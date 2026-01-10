@@ -8,16 +8,9 @@ import UserSelectionField from '../../molecules/report/UserSelectionField';
 import { useEffect, useRef } from 'react';
 import { ReportFilter, ReportEmployee } from '../../../interfaces/report/IReportFilter';
 import { useUserFilterType } from '../../../hooks/report/useUserFilterType';
+import { UserRole } from '@tms/shared';
+import { IReportFilterFormProps } from '../../../interfaces/report/IReport';
 
-interface IReportFilterFormProps {
-  resetTrigger?: number;
-  currentFilter: ReportFilter;
-  updateFilter: (filter: ReportFilter) => void;
-  userRole: string;
-  canSeeAllData: boolean;
-  supervisedEmployees: ReportEmployee[];
-  disabled?: boolean;
-}
 
 export const ReportFilterForm = ({ 
   resetTrigger, 
@@ -176,7 +169,8 @@ export const ReportFilterForm = ({
       : undefined,
   }));
 
-  
+  // For Supervisors, use supervisedEmployees. For Admin/SupervisorAdmin, use all users from DB
+  const availableEmployees = userRole === UserRole.Supervisor ? supervisedEmployees : users;
 
   return (
     <Box display="flex" flexDirection="column" gap={2}>
@@ -199,7 +193,7 @@ export const ReportFilterForm = ({
         <FilterColumn>
           <UserSelectionField
             filterType={userFilterType}
-            employees={userFilterType === 'individual' ? users : supervisedEmployees}
+            employees={userFilterType === 'individual' ? availableEmployees : supervisedEmployees}
             selectedEmployeeIds={currentFilter.employeeIds || []}
             onEmployeeChange={handleEmployeeChange}
             teams={teamItems}
