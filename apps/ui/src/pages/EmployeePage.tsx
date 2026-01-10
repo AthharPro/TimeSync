@@ -16,8 +16,11 @@ const EmployeePage = () => {
   const {user} = useAuth();
 
   useEffect(() => {
-    setSelectedButton("My Timesheets");
-  }, [setSelectedButton]);
+    // Only set default if no window is selected
+    if (!selectedButton) {
+      setSelectedButton("My Timesheets");
+    }
+  }, [selectedButton, setSelectedButton]);
 
   const items = [
     [
