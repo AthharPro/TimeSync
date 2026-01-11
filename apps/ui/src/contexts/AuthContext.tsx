@@ -76,18 +76,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
             if (userId) {
               initializeSocket(userId);
             }
-          } catch (error) {
-            // Clear invalid user data
-            setUser(null);
-            updateAccessToken(null);
-            localStorage.removeItem("user");
-            disconnectSocket();
+          } catch (error: any) {
+            console.error("Auth validation error:", error);
+            
+            // Only clear user data if it's a definite authentication error (401/403)
+            // For other errors (network, timeout), redirect to login without clearing storage
+            // This allows the user to try again without losing their session
+            if (error?.response?.status === 401 || error?.response?.status === 403) {
+              setUser(null);
+              updateAccessToken(null);
+              localStorage.removeItem("user");
+              disconnectSocket();
+            } else {
+              // For network/timeout errors, keep user in storage but set state to null
+              // This will redirect to login, but preserve the session for retry
+              setUser(null);
+              updateAccessToken(null);
+              disconnectSocket();
+            }
           }
         } catch (error) {
+          console.error("Failed to parse stored user:", error);
           localStorage.removeItem("user");
           disconnectSocket();
         }
       } else {
+        console.log("No stored user found");
       }
 
       setLoading(false);
