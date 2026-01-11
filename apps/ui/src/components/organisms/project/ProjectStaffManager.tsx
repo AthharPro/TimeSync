@@ -9,6 +9,7 @@ import SelectedEmployeeChips from '../../molecules/common/SelectedEmployeeChips'
 import { ProjectStaffManagerProps } from '../../../interfaces/project/IProject';
 import { useProjects } from '../../../hooks/project/useProjects';
 import { getUsers } from '../../../api/user';
+import { UserRole } from '@tms/shared';
 
 export default function ProjectStaffManager({
   open,
@@ -60,7 +61,9 @@ export default function ProjectStaffManager({
         setError(null);
         const users = await getUsers();
         if (!isMounted) return;
-        setEmployeeOptions(users.map(mapUserToEmployee));
+        // Filter out SuperAdmin users
+        const filteredUsers = users.filter((user: any) => user.role !== UserRole.SuperAdmin);
+        setEmployeeOptions(filteredUsers.map(mapUserToEmployee));
       } catch (e: unknown) {
         if (!isMounted) {
           setIsLoading(false);
