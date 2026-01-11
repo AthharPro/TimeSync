@@ -25,8 +25,11 @@ const AdminPage = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    setSelectedButton("Dashboard");
-  }, [setSelectedButton]);
+    // Only set default if no window is selected
+    if (!selectedButton) {
+      setSelectedButton("Dashboard");
+    }
+  }, [selectedButton, setSelectedButton]);
 
     const items = [
     [

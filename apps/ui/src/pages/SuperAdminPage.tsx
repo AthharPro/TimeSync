@@ -11,8 +11,11 @@ const SuperAdminPage = () => {
   const { selectedButton, setSelectedButton } = useWindowNavigation();
 
   useEffect(() => {
-    setSelectedButton("Dashboard");
-  }, [setSelectedButton]);
+    // Only set default if no window is selected
+    if (!selectedButton) {
+      setSelectedButton("Dashboard");
+    }
+  }, [selectedButton, setSelectedButton]);
 
     const items = [
     [

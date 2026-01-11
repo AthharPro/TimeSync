@@ -41,6 +41,18 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
   // Filter accounts based on active filters and search query
   const filteredAccounts = useMemo(() => {
     return newAccountDetails.filter((account) => {
+      // Hide SuperAdmin accounts from Admin and SupervisorAdmin users
+      if ((currentUser?.role === UserRole.Admin || currentUser?.role === UserRole.SupervisorAdmin) 
+          && account.role === UserRole.SuperAdmin) {
+        return false;
+      }
+      
+      // Hide Employees and Supervisors from SuperAdmin users
+      if (currentUser?.role === UserRole.SuperAdmin 
+          && (account.role === UserRole.Emp || account.role === UserRole.Supervisor)) {
+        return false;
+      }
+      
       const roleMatch = activeFilters.role === 'all' || account.role === activeFilters.role;
       const statusMatch = activeFilters.status === 'all' || account.status === activeFilters.status;
       
@@ -53,7 +65,7 @@ function AccountWindow({ roleToCreate = UserRole.Emp }: IAccountWindowProps) {
       
       return roleMatch && statusMatch && searchMatch;
     });
-  }, [newAccountDetails, activeFilters, searchQuery]);
+  }, [newAccountDetails, activeFilters, searchQuery, currentUser?.role]);
 
 
   useEffect(() => {

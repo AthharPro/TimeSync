@@ -10,6 +10,7 @@ import FirstLoginPasswordResetPage from '../pages/FirstLoginPasswordResetPage';
 import PasswordChangePage from '../pages/PasswordChangePage';
 import UnauthorizedPage from '../pages/UnauthorizedPage';
 import ProtectedRoute from './ProtectedRoute';
+import RootRedirect from './RootRedirect';
 import { UserRole } from '@tms/shared';
 import EmployeePage from '../pages/EmployeePage';
 import SuperAdminPage from '../pages/SuperAdminPage';
