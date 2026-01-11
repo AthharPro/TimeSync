@@ -18,6 +18,7 @@ import { ITimesheetTableEntry } from '../../../interfaces/component/organism/ITa
 import { IMyTimesheetTableEntry } from '../../../interfaces/layout/ITableProps';
 import { TimesheetFilters } from '../popover/MyTimesheetFilterPopover';
 import StatusChip from '../../atoms/other/Icon/StatusChip';
+import { toLocalISOString } from '../../../utils/dateUtils';
 
 // Optimized debounced update that immediately updates Redux but debounces backend sync
 const createDebouncedUpdate = (
@@ -414,7 +415,7 @@ const MyTimesheetTable: React.FC<MyTimesheetTableProps> = ({ filters, isLoading 
 
   const handleDateChange = (id: string, newDate: Date | null) => {
     if (newDate !== null) {
-      debouncedUpdateRef.current(id, { date: newDate.toISOString() });
+      debouncedUpdateRef.current(id, { date: toLocalISOString(newDate) });
     }
   };
 

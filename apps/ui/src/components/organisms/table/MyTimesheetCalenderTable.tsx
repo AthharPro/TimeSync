@@ -19,6 +19,7 @@ import { RootState } from '../../../store/store';
 import { IconButton, Box, CircularProgress, Alert } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CustomRow from './other/CustomRow';
+import { toLocalISOString } from '../../../utils/dateUtils';
 
 interface ExtendedTimesheetRow extends ITimesheetRow {
   projectId?: string; // For projects
@@ -537,7 +538,7 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
       try {
         await addNewTimesheet({
           id: crypto.randomUUID(),
-          date: date.toISOString(),
+          date: toLocalISOString(date),
           project: matchingProject ? matchingProject._id : undefined,
           team: matchingTeam ? matchingTeam._id : undefined,
           task: taskId,
@@ -593,7 +594,7 @@ const MyTimesheetCalendarTable: React.FC<MyTimesheetCalendarTableProps> = ({ onE
       try {
         await addNewTimesheet({
           id: crypto.randomUUID(),
-          date: date.toISOString(),
+          date: toLocalISOString(date),
           project: matchingProject ? matchingProject._id : undefined,
           team: matchingTeam ? matchingTeam._id : undefined,
           task: taskId,
