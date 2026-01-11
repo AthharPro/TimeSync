@@ -1,5 +1,6 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import AdminPage from '../pages/AdminPage';
 import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/LoginPage';
@@ -14,9 +15,40 @@ import EmployeePage from '../pages/EmployeePage';
 import SuperAdminPage from '../pages/SuperAdminPage';
 
 const AppRoute: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  // Helper function to get the appropriate home path based on user role
+  const getUserHomePath = () => {
+    if (!user) return null;
+    
+    switch (user.role) {
+      case UserRole.SuperAdmin:
+        return '/super-admin';
+      case UserRole.Admin:
+      case UserRole.SupervisorAdmin:
+        return '/admin';
+      case UserRole.Emp:
+      case UserRole.Supervisor:
+        return '/employee';
+      default:
+        return '/login';
+    }
+  };
+
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route 
+        path="/" 
+        element={
+          loading ? (
+            <div>Loading...</div>
+          ) : user ? (
+            <Navigate to={getUserHomePath() || '/login'} replace />
+          ) : (
+            <LandingPage />
+          )
+        } 
+      />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgotpassword" element={<ForgetPasswordPage />} />
       <Route path="/password/reset" element={<PasswordResetPage />} />
@@ -35,6 +67,7 @@ const AppRoute: React.FC = () => {
             <Route path="/employee" element={<ProtectedRoute allowedRoles={[UserRole.Emp,UserRole.Supervisor]}>
         <EmployeePage/>
       </ProtectedRoute>} />
+
     </Routes>
   );
 };
