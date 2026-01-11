@@ -144,6 +144,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     // Clear localStorage
     localStorage.removeItem("user");
+    localStorage.removeItem("selectedWindow"); // Clear the saved window selection
 
     // Force reload to clear all state
     window.location.href = "/login";
