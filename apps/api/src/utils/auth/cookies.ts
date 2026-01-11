@@ -6,7 +6,7 @@ export const REFRESH_PATH = "/auth/refresh";
 const secure = NODE_ENV !== "development";
 
 const defaults: CookieOptions = {
-  sameSite: NODE_ENV === "development" ? "lax" : "none", // Use 'none' for production to support cross-site requests
+  sameSite: NODE_ENV === "production" ? "none" : "strict",
   httpOnly: true,
   secure, // Must be true when sameSite is 'none'
 };
