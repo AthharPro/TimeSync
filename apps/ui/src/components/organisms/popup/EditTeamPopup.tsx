@@ -10,6 +10,7 @@ import { ITeam } from '../../../interfaces/team/ITeam';
 import { useTeam } from '../../../hooks/team';
 import { getUsers } from '../../../api/user';
 import BaseBtn from '../../atoms/other/button/BaseBtn';
+import { UserRole } from '@tms/shared';
 
 interface EditTeamPopupProps {
   open: boolean;
@@ -68,7 +69,9 @@ function EditTeamPopup({ open, onClose, team, onSaved }: EditTeamPopupProps) {
         setError(null);
         const users = await getUsers();
         if (!isMounted) return;
-        setEmployeeOptions(users.map(mapUserToEmployee));
+        // Filter out SuperAdmin users
+        const filteredUsers = users.filter((user: any) => user.role !== UserRole.SuperAdmin);
+        setEmployeeOptions(filteredUsers.map(mapUserToEmployee));
       } catch (e: any) {
         if (!isMounted) return;
         setError(

@@ -7,6 +7,7 @@ import { Box, Typography } from '@mui/material';
 import Divider from '@mui/material/Divider';
 import { AddEmployeePopupProps } from '../../../interfaces/popup/IPopupProps';
 import { getUsers } from '../../../api/user';
+import { UserRole } from '@tms/shared';
 
 const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
   open,
@@ -60,7 +61,9 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
         setError(null);
         const users = await getUsers(roleFilters);
         if (!isMounted) return;
-        const mappedEmployees = users.map(mapUserToEmployee);
+        // Filter out SuperAdmin users
+        const filteredUsers = users.filter((user: any) => user.role !== UserRole.SuperAdmin);
+        const mappedEmployees = filteredUsers.map(mapUserToEmployee);
         setAllEmployees(mappedEmployees);
       } catch (err: any) {
         if (!isMounted) return;
