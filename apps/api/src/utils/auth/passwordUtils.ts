@@ -3,7 +3,7 @@ import crypto from "crypto";
 const UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const LOWER = "abcdefghijklmnopqrstuvwxyz";
 const DIGITS = "0123456789";
-const SPECIAL = "!@#$%^&*()_+[]{}|;:,.<>?";
+const SPECIAL = "@#";
 const ALL = UPPER + LOWER + DIGITS + SPECIAL;
 
 function cryptoRandomInt(maxExclusive: number): number {
