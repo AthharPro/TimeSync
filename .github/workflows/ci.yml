@@ -254,12 +254,11 @@ jobs:
           scan-ref: '.'
           severity: 'CRITICAL,HIGH'
       
-      - name: Trivy Secret Scan
+      - name: Trivy config scan
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
+          scan-type: 'config'
           scan-ref: '.'
-          scanners: 'secret'
           severity: 'CRITICAL,HIGH'
 
   # Job 8: Dependency Review (for PRs only)
