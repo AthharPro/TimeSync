@@ -59,6 +59,13 @@ const ReviewTimesheetFilterPopover: React.FC<ReviewTimesheetFilterPopoverProps> 
     loadAllSupervisedTeams();
   }, [loadMyProjects, loadAllSupervisedTeams]);
 
+  // Sync internal filters state with currentFilters prop when popover opens or filters change
+  useEffect(() => {
+    if (open) {
+      setFilters(currentFilters);
+    }
+  }, [open, currentFilters]);
+
   const handleMonthChange = (date: Dayjs | null) => {
     if (!date) {
       setFilters({ ...filters, month: null, year: null, startDate: null, endDate: null });

@@ -84,10 +84,11 @@ export const syncTimesheetUpdate = createAsyncThunk(
 const getWeekStart = (date: Date): Date => {
   const d = new Date(date);
   const day = d.getDay(); // 0 (Sunday) to 6 (Saturday)
-  const diff = d.getDate() - day; // Adjust to get Sunday
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0); // Reset time to midnight
-  return d;
+  const diff = -day; // Number of days to subtract to get to Sunday
+  const weekStart = new Date(d);
+  weekStart.setDate(d.getDate() + diff);
+  weekStart.setHours(0, 0, 0, 0); // Reset time to midnight
+  return weekStart;
 };
 
 const initialState: ITimesheetState = {
