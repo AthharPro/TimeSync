@@ -149,7 +149,7 @@ const AddEmployeePopup: React.FC<AddEmployeePopupProps> = ({
       maxWidth="md"
       paperHeight="810px"
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '600px' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '500px' }}>
         {isLoading && (
           <Typography variant="body2" sx={{ mb: 1 }}>
             Loading employees...
