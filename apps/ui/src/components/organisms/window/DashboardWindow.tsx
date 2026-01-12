@@ -10,6 +10,7 @@ import CalendarSection from '../dashboard/CalendarSection';
 import HoursChartSection from '../dashboard/HoursChartSection';
 import TimesheetPieChartSection from '../dashboard/TimesheetPieChartSection';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 
 import {
   getDashboardStats,
@@ -95,6 +96,7 @@ function DashboardWindow() {
     people: <PeopleIcon />,
     accesstime: <AccessTimeIcon />,
     personAddIcon: <PersonAddIcon />,
+    assessment: <AssessmentIcon />,
   };
 
   if (loading) {

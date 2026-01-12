@@ -7,7 +7,7 @@ import { DailyTimesheetStatus, UserRole } from '@tms/shared';
 /**
  * Dashboard main stats (cards)
  */
-export const getDashboardStatsService = async () => {
+export const getDashboardStatsService = async (userRole: UserRole) => {
   const today = new Date();
 
   // Month range
@@ -55,6 +55,25 @@ export const getDashboardStatsService = async () => {
   const submittedThisMonth = submittedThisMonthAgg[0]?.count || 0;
   const usersNotSubmitted = totalUsers - submittedThisMonth;
 
+  const roleSpecificCard = 
+    userRole === UserRole.SuperAdmin ? {
+        title: 'Supervisor Admins',
+        value: supervisorAdmins,
+        change: adminUsers,
+        changeLabel: 'Admin Users',
+        icon: 'people',
+        color: 'info',
+    } : {
+          title: 'Generate Report',
+          value: '',
+          change: '',
+          changeLabel: 'Click to generate reports',
+          icon: 'assessment',
+          color: 'success',
+          clickable: true,
+          navigateTo: 'Reports',
+    };
+
   return {
     stats: [
       {
@@ -65,14 +84,7 @@ export const getDashboardStatsService = async () => {
         icon: 'assignment',
         color: 'primary',
       },
-      {
-        title: 'Supervisor Admins',
-        value: supervisorAdmins,
-        change: adminUsers,
-        changeLabel: 'Admin Users',
-        icon: 'people',
-        color: 'info',
-      },
+      roleSpecificCard,
       {
         title: 'Manage Admin Accounts',
         value: '',

@@ -10,7 +10,8 @@ import {
 
 const router = Router();
 
-authenticate(); // authenitcates only one time
+// authenticate(); // authenitcates only one time
+router.use(authenticate());
 
 // Get main dashboard statistics (active projects, admins, timesheet status)
 router.get('/stats', getDashboardStats);

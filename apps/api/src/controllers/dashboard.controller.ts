@@ -12,11 +12,17 @@ import {
  */
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    const data = await getDashboardStatsService();
+    const userRole = (req as any).userRole;
 
-    res.status(200).json(data);
+    if (!userRole) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const data = await getDashboardStatsService(userRole);
+    return res.status(200).json(data);
   } catch (error) {
-    res.status(500).json({
+    console.error('Dashboard stats error:', error);
+    return res.status(500).json({
       error: 'Failed to fetch dashboard statistics',
     });
   }
