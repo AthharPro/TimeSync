@@ -242,7 +242,7 @@ jobs:
     name: Security Scan (Trivy)
     runs-on: ubuntu-latest
     needs: security
-    continue-on-error: true
+  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -253,7 +253,6 @@ jobs:
           scan-type: 'fs'
           scan-ref: '.'
           severity: 'CRITICAL,HIGH'
-          format: 'table'
       
       - name: Trivy Secret Scan
         uses: aquasecurity/trivy-action@master
@@ -262,7 +261,6 @@ jobs:
           scan-ref: '.'
           scanners: 'secret'
           severity: 'CRITICAL,HIGH'
-          format: 'table'
 
   # Job 8: Dependency Review (for PRs only)
   dependency-review:
