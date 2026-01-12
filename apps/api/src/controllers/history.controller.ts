@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import HistoryModel from '../models/history.model';
+import { UserModel } from '../models/user.model';
 import { OK, INTERNAL_SERVER_ERROR } from '../constants';
+import { UserRole } from '@tms/shared';
 
 /**
  * Get all history entries with pagination and filtering
@@ -16,6 +18,7 @@ export const getHistory = async (req: Request, res: Response) => {
       performedBy,
       startDate,
       endDate,
+      excludeSuperAdmin,
     } = req.query;
 
     const query: any = {};
@@ -40,6 +43,16 @@ export const getHistory = async (req: Request, res: Response) => {
       }
       if (endDate) {
         query.createdAt.$lte = new Date(endDate as string);
+      }
+    }
+
+    // Exclude history entries performed by SuperAdmins if requested
+    if (excludeSuperAdmin === 'true') {
+      const superAdminUsers = await UserModel.find({ role: UserRole.SuperAdmin }).select('_id').lean();
+      const superAdminIds = superAdminUsers.map((user: any) => user._id);
+      
+      if (superAdminIds.length > 0) {
+        query.performedBy = { $nin: superAdminIds };
       }
     }
 

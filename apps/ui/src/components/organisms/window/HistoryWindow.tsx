@@ -6,9 +6,12 @@ import { useHistory } from '../../../hooks/history'
 import { BaseBtn } from '../../atoms';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import HistoryFilterPopover from '../popover/HistoryFilterPopover';
+import { useAuth } from '../../../contexts/AuthContext';
+import { UserRole } from '@tms/shared';
 
 function HistoryWindow() {
   const { history, isLoading, error, loadHistory } = useHistory();
+  const { user } = useAuth();
   const [filterAnchorEl, setFilterAnchorEl] = useState<HTMLElement | null>(null);
   const [activeFilters, setActiveFilters] = useState({ entityType: 'all', startDate: '', endDate: '' });
 
@@ -29,9 +32,14 @@ function HistoryWindow() {
     if (activeFilters.endDate) {
       params.endDate = activeFilters.endDate;
     }
+
+    // Exclude SuperAdmin history for Admin and SupervisorAdmin users
+    if (user?.role === UserRole.Admin || user?.role === UserRole.SupervisorAdmin) {
+      params.excludeSuperAdmin = 'true';
+    }
     
     loadHistory(params);
-  }, [activeFilters, loadHistory]);
+  }, [activeFilters, loadHistory, user?.role]);
 
   const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
     setFilterAnchorEl(event.currentTarget);
