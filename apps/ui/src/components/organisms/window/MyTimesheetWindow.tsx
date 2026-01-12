@@ -23,6 +23,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import EditRequestDialog from '../dialog/EditRequestDialog';
+import { toLocalISOString } from '../../../utils/dateUtils';
 import { useEditRequest } from '../../../hooks/editRequest/useEditRequest';
 
 function MyTimesheetWindow() {
@@ -106,9 +107,9 @@ function MyTimesheetWindow() {
       // Otherwise, use the first day of the filtered month
       let dateToUse: string;
       if (filteredMonth.isSame(now, 'month')) {
-        dateToUse = now.toISOString();
+        dateToUse = toLocalISOString(now.toDate());
       } else {
-        dateToUse = filteredMonth.startOf('month').toISOString();
+        dateToUse = toLocalISOString(filteredMonth.startOf('month').toDate());
       }
       
       const newTime = {
