@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
         >
           
           <Typography variant="body2" sx={{color:theme.palette.text.secondary,textAlign:'center'}} >
-            © 2025 TimeSync. All rights reserved.
+            © 2026 TimeSync. All rights reserved.
           </Typography>
         </Box>
       </SectionContainer>
